@@ -33,17 +33,17 @@
     #define __CCWRAP_NATIVE_C_HEADER_DIR	../include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR	../ucrt
   #elif _MSC_VER >= 1900
-    #define __CCWRAP_NATIVE_C_HEADER_DIR	../../vc/include
+    #define __CCWRAP_NATIVE_C_HEADER_DIR	../../VC/include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR	../ucrt
   #elif _MSC_VER >= 1400
-    #define __CCWRAP_NATIVE_C_HEADER_DIR		../../vc/include
-    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../vc/include
+    #define __CCWRAP_NATIVE_C_HEADER_DIR	../../VC/include
+    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../VC/include
   #elif _MSC_VER >= 1300
-    #define __CCWRAP_NATIVE_C_HEADER_DIR   	../../vc7/include
-    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../vc7/include
+    #define __CCWRAP_NATIVE_C_HEADER_DIR   	../../Vc7/include
+    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../Vc7/include
   #elif _MSC_VER >= 1200
-    #define __CCWRAP_NATIVE_C_HEADER_DIR   	../../vc6/include
-    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../vc6/include
+    #define __CCWRAP_NATIVE_C_HEADER_DIR   	../../VC6/include
+    #define __CCWRAP_NATIVE_UC_HEADER_DIR	../../VC6/include
   #endif
 #endif
 
@@ -65,14 +65,16 @@
   //#if !defined(__has_feature)
   // #define __has_feature(x)	    0
   //#endif
+  #define _XKEYCHECK_H
   #if _MSC_VER < 1900
-    #define _XKEYCHECK_H
     #if _MSC_VER < 1600
       #if _MSC_VER >= 1400
         #if !defined(_Pragma)
-          #define _Pragma(...)   	__pragma(__VA_ARGS__)
-        #else
-          #define _Pragma(x)   	    __pragma(x)
+          #define _Pragma(...)   		__pragma(__VA_ARGS__)
+        #endif
+      #else
+        #if !defined(_Pragma)
+          #define _Pragma(x)   	    	__pragma(x)
         #endif
       #endif
     #endif
@@ -81,56 +83,61 @@
 
 
 #if defined(__cplusplus)
-  #if _MSC_VER < 1900	// vc12 or less
-    #if !defined(alignas)
-      #define alignas(a)     	    __declspec(align(a))
-    #endif
-    #if !defined(alignof)
-       #define alignof(a)     	    __alignof(a)
-    #endif
-    #if !defined(__func__)
-      #define __func__	    	    __FUNCTION__
-    #endif
-    #if !defined(thread_local)
-      #define thread_local   	    __declspec(thread)
-    #endif
-    #if _MSC_VER < 1700	// vc10 or less
-      #if !defined(final) && _MSC_VER >= 1400	// vc8-10
-        #define final  	    	    sealed
-      #else
-        #define final
+  #if _MSC_VER < 1910
+    //#if _MSC_VER >= 1600
+	 //#define static_assert(c, ...)	static_assert((c), "" __VA_ARGS__)
+    //#endif
+    #if _MSC_VER < 1900	// vc12 or less
+      #if !defined(alignas)
+        #define alignas(a)     		    __declspec(align(a))
       #endif
-      #if _MSC_VER < 1600	// vc9 or less
-        #if !defined(noexcept)
-          #define noexcept	    	throw()
+      #if !defined(alignof)
+         #define alignof(a)     	    __alignof(a)
+      #endif
+      #if !defined(__func__)
+        #define __func__	    	    __FUNCTION__
+      #endif
+      #if !defined(thread_local)
+        #define thread_local   		    __declspec(thread)
+      #endif
+      #if _MSC_VER < 1700	// vc10 or less
+        #if !defined(final) && _MSC_VER >= 1400	// vc8-10
+          #define final  	    	    sealed
+        #else
+          #define final
         #endif
-        #if !defined(nullptr)
-          #define nullptr	    	(0)
-        #endif
-        #if !defined(static_assert)
-          namespace __ccwrap { template<int x> struct static_assert_check{}; }
-          template <bool x> struct __static_assert_FAILED_;
-          template <> struct __static_assert_FAILED_<true> { enum { value = 1 }; };
-          #if _MSC_VER >= 1400	// vc8, vc9
-            #define static_assert(c, ...)	typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
-          #else	// vc7.1 or less
-            #define static_assert(c, m)		typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
+        #if _MSC_VER < 1600	// vc9 or less
+          #if !defined(noexcept)
+            #define noexcept	    	throw()
           #endif
-        #endif
-        #define __CCWRAP_NO_CXX11_AUTO	1
-	    #define __CCWRAP_NO_DECLTYPE 	1
-        #define __CCWRAP_LLONG		__int64
-        #define __CCWRAP_ULLONG		unsigned __int64
-        #define __CCWRAP_PFMT_LL	"I64"
-        #define __CCWRAP_PFMT_WLL	L"I64"
-        typedef unsigned	    	char32_t;
-        #if _MSC_VER >= 1400		// vc8, vc9
-          typedef wchar_t 	   	    char16_t;
-        #else						// vc7.1 or less
-          typedef unsigned short	char16_t;
-  		  #define WCHAR_MAX 		((wchar_t)-1)
-          #if !defined(override)
-            #define override
+          #if !defined(nullptr)
+            #define nullptr	    		(0)
+          #endif
+          #if !defined(static_assert)
+            namespace __ccwrap { template<int x> struct static_assert_check{}; }
+            template <bool x> struct __static_assert_FAILED_;
+            template <> struct __static_assert_FAILED_<true> { enum { value = 1 }; };
+            #if _MSC_VER >= 1400	// vc8, vc9
+              #define static_assert(c, ...)	typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
+            #else	// vc7.1 or less
+              #define static_assert(c, m)	typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
+            #endif
+          #endif
+          #define __CCWRAP_NO_CXX11_AUTO	1
+          #define __CCWRAP_NO_DECLTYPE 		1
+          #define __CCWRAP_LLONG		__int64
+          #define __CCWRAP_ULLONG		unsigned __int64
+          #define __CCWRAP_PFMT_LL		"I64"
+          #define __CCWRAP_PFMT_WLL		L"I64"
+          typedef unsigned	    		char32_t;
+          #if _MSC_VER >= 1400			// vc8, vc9
+            typedef wchar_t 	   		char16_t;
+          #else							// vc7.1 or less
+            typedef unsigned short		char16_t;
+    		  #define WCHAR_MAX 		((wchar_t)-1)
+            #if !defined(override)
+              #define override
+            #endif
           #endif
         #endif
       #endif
@@ -194,6 +201,7 @@
            #define __CCWRAP_NO_HEADER_SYSTEM_ERROR		0
 	      #else
            #define __CCWRAP_NO_HEADER_SYSTEM_ERROR		1
+           #define __CCWRAP_NO_CXX11_VARIADIC_MACROS	1
 	      #endif
 	    #endif
       #endif

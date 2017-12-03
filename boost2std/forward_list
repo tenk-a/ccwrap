@@ -1,3 +1,5 @@
+// This source is a modification of boost/container/slist.hpp
+//
 //////////////////////////////////////////////////////////////////////////////
 //
 // (C) Copyright Ion Gaztanaga 2004-2015. Distributed under the Boost
@@ -52,7 +54,7 @@
 #include <boost/container/detail/type_traits.hpp>
 // intrusive
 #include <boost/intrusive/pointer_traits.hpp>
-#include <boost/intrusive/slist.hpp>
+//#include <boost/intrusive/slist.hpp>
 // move
 #include <boost/move/iterator.hpp>
 #include <boost/move/traits.hpp>
@@ -80,22 +82,22 @@ class forward_list;
 namespace container_detail {
 
 template<class VoidPointer>
-struct slist_hook
+struct forward_list_hook
 {
    typedef typename container_detail::bi::make_slist_base_hook
       <container_detail::bi::void_pointer<VoidPointer>, container_detail::bi::link_mode<container_detail::bi::normal_link> >::type type;
 };
 
 template <class T, class VoidPointer>
-struct slist_node
-   :  public slist_hook<VoidPointer>::type
+struct forward_list_node
+   :  public forward_list_hook<VoidPointer>::type
 {
    private:
-   slist_node();
+   forward_list_node();
 
    public:
    typedef T value_type;
-   typedef typename slist_hook<VoidPointer>::type hook_type;
+   typedef typename forward_list_hook<VoidPointer>::type hook_type;
 
    T m_data;
 
@@ -107,7 +109,7 @@ struct slist_node
 };
 
 template <class T, class VoidPointer>
-struct iiterator_node_value_type< slist_node<T,VoidPointer> > {
+struct iiterator_node_value_type< forward_list_node<T,VoidPointer> > {
   typedef T type;
 };
 
@@ -120,12 +122,12 @@ struct intrusive_slist_type
       <typename allocator_traits_type::pointer>::template
          rebind_pointer<void>::type
             void_pointer;
-   typedef typename container_detail::slist_node
+   typedef typename container_detail::forward_list_node
          <value_type, void_pointer>             node_type;
 
    typedef typename container_detail::bi::make_slist
       <node_type
-      ,container_detail::bi::base_hook<typename slist_hook<void_pointer>::type>
+      ,container_detail::bi::base_hook<typename forward_list_hook<void_pointer>::type>
       ,container_detail::bi::constant_time_size<true>
       , container_detail::bi::size_type
          <typename allocator_traits_type::size_type>
@@ -1676,7 +1678,7 @@ namespace boost {
 //!has_trivial_destructor_after_move<> == true_type
 //!specialization for optimizations
 template <class T, class Allocator>
-struct has_trivial_destructor_after_move<boost::container::slist<T, Allocator> >
+struct has_trivial_destructor_after_move<boost::container::forward_list<T, Allocator> >
 {
    typedef typename ::boost::container::allocator_traits<Allocator>::pointer pointer;
    static const bool value = ::boost::has_trivial_destructor_after_move<Allocator>::value &&
@@ -1698,10 +1700,10 @@ BOOST_CONTAINER_DOC1ST(namespace std {, BOOST_MOVE_STD_NS_BEG)
 //! A specialization of insert_iterator
 //! that works with slist
 template <class T, class Allocator>
-class insert_iterator<boost::container::slist<T, Allocator> >
+class insert_iterator<boost::container::forward_list<T, Allocator> >
 {
    private:
-   typedef boost::container::slist<T, Allocator> Container;
+   typedef boost::container::forward_list<T, Allocator> Container;
    Container* container;
    typename Container::iterator iter;
 
