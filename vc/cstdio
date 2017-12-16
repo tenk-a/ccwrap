@@ -1,9 +1,9 @@
 #pragma once
 
 #include <ccwrap_header.h>
-#include <stdio.h>
 #include <stddef.h>
 
+#include <stdio.h>
 #include __CCWRAP_NATIVE_STL_HEADER_PATH(cstdio)
 
 #if _MSC_VER < 1900

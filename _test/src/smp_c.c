@@ -97,6 +97,9 @@ int main(int argc, char* argv[])
 	if (((uintptr_t)(&aa2) & 7) != 0) printf("bad alignas(8) aa2\n");
  #endif
 
+	assert(strtoll("-123456789",0,0) == -123456789);
+	assert(strtoull("1234567890",0,0) == 1234567890);
+
 	printf("\n");
 
 	noreturnFunc();
