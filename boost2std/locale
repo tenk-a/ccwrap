@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_LOCALE_INCLUDED
+#define __CCWRAP_LOCALE_INCLUDED
+
+#include <cstddef>
+#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(locale)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <locale>
+#else
+#include <../include/locale>
+#endif
+
+#endif	// __CCWRAP_LOCALE_INCLUDED

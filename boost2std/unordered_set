@@ -2,6 +2,7 @@
 #define __CCWRAP_UNORDERED_SET_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
 
 
 #ifndef __CCWRAP_NO_HEADER_UNORDERED_SET

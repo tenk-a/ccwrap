@@ -2,6 +2,7 @@
 #define __CCWRAP_MUTEX_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_MUTEX
 
@@ -23,6 +24,8 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/once.hpp>
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/lock_algorithms.hpp>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)

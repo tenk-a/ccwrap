@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_BITSET_INCLUDED
+#define __CCWRAP_BITSET_INCLUDED
+
+#include <cstddef>
+#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(bitset)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <bitset>
+#else
+#include <../include/bitset>
+#endif
+
+#endif	// __CCWRAP_BITSET_INCLUDED

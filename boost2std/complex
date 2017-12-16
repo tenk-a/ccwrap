@@ -2,6 +2,7 @@
 #define __CCWRAP_COMPLEX_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
 
 #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
 #include __CCWRAP_NATIVE_STL_HEADER_PATH(complex)

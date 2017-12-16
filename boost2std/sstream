@@ -1,0 +1,16 @@
+#ifndef __CCWRAP_SSTREAM_INCLUDED
+#define __CCWRAP_SSTREAM_INCLUDED
+
+#include <cstddef>
+#include <algorithm>
+#include <string>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(sstream)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <sstream>
+#else
+#include <../include/sstream>
+#endif
+
+#endif	// __CCWRAP_SSTREAM_INCLUDED

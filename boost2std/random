@@ -2,6 +2,7 @@
 #define __CCWRAP_RANDOM_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_RANDOM
 

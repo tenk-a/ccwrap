@@ -20,6 +20,7 @@
 # pragma warning(disable:4355)
 #endif
 
+#include <algorithm>
 #include <boost/chrono.hpp>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400

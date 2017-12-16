@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_ITERATOR_INCLUDED
+#define __CCWRAP_ITERATOR_INCLUDED
+
+#include <cstddef>
+#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(iterator)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <iterator>
+#else
+#include <../include/iterator>
+#endif
+
+#endif	// __CCWRAP_ITERATOR_INCLUDED

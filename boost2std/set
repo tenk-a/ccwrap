@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_SET_INCLUDED
+#define __CCWRAP_SET_INCLUDED
+
+#include <cstddef>
+//#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(set)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <set>
+#else
+#include <../include/set>
+#endif
+
+#endif	// __CCWRAP_SET_INCLUDED

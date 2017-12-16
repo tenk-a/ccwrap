@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_STACK_INCLUDED
+#define __CCWRAP_STACK_INCLUDED
+
+#include <cstddef>
+#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(stack)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <stack>
+#else
+#include <../include/stack>
+#endif
+
+#endif	// __CCWRAP_STACK_INCLUDED

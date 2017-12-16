@@ -1,0 +1,14 @@
+#ifndef __CCWRAP_STREAMBUF_INCLUDED
+#define __CCWRAP_STREAMBUF_INCLUDED
+
+#include <cstddef>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(streambuf)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <streambuf>
+#else
+#include <../include/streambuf>
+#endif
+
+#endif	// __CCWRAP_STREAMBUF_INCLUDED

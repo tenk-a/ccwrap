@@ -2,6 +2,7 @@
 #define __CCWRAP_SYSTEM_ERROR_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_SYSTEM_ERROR
 
@@ -21,6 +22,7 @@
 #endif
 
 #include <boost/system/system_error.hpp>
+//#include <boost/system/error_code.hpp>
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
@@ -30,8 +32,8 @@ namespace std {
 	using ::boost::system::generic_category;
 	using ::boost::system::is_error_code_enum;
 	using ::boost::system::is_error_condition_enum;
-	using ::boost::system::make_error_code;
-	using ::boost::system::make_error_condition;
+	using ::boost::system::errc::make_error_code;
+	using ::boost::system::errc::make_error_condition;
 	using ::boost::system::system_category;
 	using ::boost::system::system_error;
 	using ::boost::system::error_category;

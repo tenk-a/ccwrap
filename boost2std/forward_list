@@ -14,7 +14,7 @@
 #define __CCWRAP_FORWARD_LIST_INCLUDED
 
 #include <cstddef>
-
+#include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_FORWARD_LIST
 

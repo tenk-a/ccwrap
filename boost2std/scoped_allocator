@@ -2,6 +2,8 @@
 #define __CCWRAP_SCOPED_ALLOCATOR_INCLUDED
 
 #include <cstddef>
+#include <algorithm>
+
 
 #ifndef __CCWRAP_NO_HEADER_SCOPED_ALLOCATOR
 

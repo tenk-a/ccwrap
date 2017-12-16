@@ -1,0 +1,15 @@
+#ifndef __CCWRAP_VALARRAY_INCLUDED
+#define __CCWRAP_VALARRAY_INCLUDED
+
+#include <cstddef>
+//#include <algorithm>
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(valarray)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <valarray>
+#else
+#include <../include/valarray>
+#endif
+
+#endif	// __CCWRAP_VALARRAY_INCLUDED
