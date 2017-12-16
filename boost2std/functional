@@ -43,15 +43,38 @@ namespace std {
 	using	::boost::mem_fn;
 	using	::boost::ref;
 	using	::boost::cref;
- #if 0
-	using	::boost::bit_and;
-	using	::boost::bit_or;
-	using	::boost::bit_xor;
-	using	::boost::bit_not;
- #endif
+
 	namespace placeholders {
 		using namespace ::boost::placeholders;
 	}
+
+	template <class T>
+	struct bit_and {
+		typedef T first_argument_type;
+		typedef T second_argument_type;
+		typedef T result_type;
+		T operator()(T const& x, T const& y) const { return x & y; }
+	};
+	template <class T>
+	struct bit_or {
+		typedef T first_argument_type;
+		typedef T second_argument_type;
+		typedef T result_type;
+		T operator()(T const& x, T const& y) const { return x | y; }
+	};
+	template <class T>
+	struct bit_xor {
+		typedef T first_argument_type;
+		typedef T second_argument_type;
+		typedef T result_type;
+		T operator()(T const& x, T const& y) const { return x ^ y; }
+	};
+	template <class T>
+	struct bit_not {
+		typedef T argument_type;
+		typedef T result_type;
+		T operator()(T const& x) const { return ~x; }
+	};
 }
 //#elif defined(_MSC_VER) && _MSC_VER == 1600
 #endif

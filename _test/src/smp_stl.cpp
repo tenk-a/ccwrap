@@ -29,7 +29,7 @@
 #if !__CCWRAP_NO_HEADER_ARRAY
 #include <array>
 #endif
-#ifndef __CCWRAP_NO_HEADER_ATOMIC
+#if !__CCWRAP_NO_HEADER_ATOMIC
 #include <atomic>
 #endif
 #include <bitset>
@@ -380,12 +380,11 @@ void functional_test() {
 	assert(std::mem_fn(&SubClass1::mfn1)(sc1, 1) == 2);
 	assert(std::mem_fn(&SubClass1::mfn2)(sc1, 1, 2) == 3);
 
- #if 0
-	assert(std::bit_and<unsigned char>()(0xcc,0x88) == 0xcc & 0x88);
-	assert(std::bit_or<unsigned char>()(0x50,0x0c) == 0x50 | 0x0c);
-	assert(std::bit_xor<unsigned char>()(0x0f,0xff) == 0x0f ^ 0xff);
-	assert(std::bit_not<unsigned char>()(0x33) == ~0x33);
- #endif
+	typedef unsigned char uc;
+	assert(std::bit_and<uc>()(uc(0xcc),uc(0x88)) == uc(0xcc & 0x88));
+	assert(std::bit_or<uc>()(uc(0x50),uc(0x0c)) == uc(0x50 | 0x0c));
+	assert(std::bit_xor<uc>()(uc(0x0f),uc(0xff)) == uc(0x0f ^ 0xff));
+	//assert(std::bit_not<uc>()(uc(0x33)) == ~0x33);
 
 	n = 11;
 	std::reference_wrapper<int>	rwn = std::ref(n);
@@ -413,9 +412,128 @@ void functional_test() {
  #endif
 	static_assert(std::is_placeholder<int>::value == 0,"");
 	static_assert(std::is_bind_expression<int(int)>::value == 0,"");
-
-
 }
+
+
+
+// ---------------------------
+
+#if !__CCWRAP_NO_HEADER_ATOMIC
+template<typename T>
+void atomic_test1() {
+	std::atomic<T>		ai(1);
+	T  before = ai.fetch_add(2);
+	assert(before == 1);
+	assert(ai.load() == 3);
+	before = ai.fetch_sub(1);
+	assert(before == 3);
+	assert(ai.load() == 2);
+	before = ai.fetch_or(1);
+	assert(before == 2);
+	assert(ai.load() == 3);
+	before = ai.fetch_and(1);
+	assert(before == 3);
+	assert(ai.load() == 1);
+	before = ai.fetch_xor(3);
+	assert(before == 1);
+	assert(ai.load() == 2);
+	++ai;
+	assert(ai.load() == 3);
+	--ai;
+	assert(ai.load() == 2);
+	ai += 3;
+	assert(ai.load() == 5);
+	ai -= 4;
+	assert(ai.load() == 1);
+	ai |= 6;
+	assert(ai.load() == 7);
+	ai &= 5;
+	assert(ai.load() == 5);
+	ai ^= 1;
+	assert(ai.load() == 4);
+}
+
+template<typename T>
+void atomic_test2() {
+	static T	buf[10];
+	std::atomic<T*>		ap( buf );
+	ap.fetch_add(2);
+	ap.fetch_sub(1);
+	++ap;
+	--ap;
+	ap += 3;
+	ap -= 4;
+}
+
+void atomic_test() {
+	std::atomic_char			ac;
+	std::atomic_schar			asc;
+	std::atomic_uchar			auc;
+	std::atomic_short			ash;
+	std::atomic_ushort			aush;
+	std::atomic_int				ai;
+	std::atomic_uint			aui;
+	std::atomic_long			al;
+	std::atomic_ulong			aul;
+	std::atomic_llong			all;
+	std::atomic_ullong			aull;
+
+	std::atomic_bool			ab;
+	std::atomic_wchar_t			awc;
+ #ifndef __CCWRAP_NO_CHAR1632_T
+	std::atomic_char16_t		ac16;
+	std::atomic_char32_t		ac32;
+ #endif
+	std::atomic_size_t			asz;
+	std::atomic_ptrdiff_t		apd;
+	std::atomic_intmax_t		aim;
+	std::atomic_uintmax_t		auim;
+
+	std::atomic_int8_t			ai8;
+	std::atomic_uint8_t			aui8;
+	std::atomic_int16_t			ai16;
+	std::atomic_uint16_t		aui16;
+	std::atomic_int32_t			ai32;
+	std::atomic_uint32_t		aui32;
+	std::atomic_int64_t			ai64;
+	std::atomic_uint64_t		aui64;
+	std::atomic_intptr_t		aip;
+	std::atomic_uintptr_t		auip;
+
+	std::atomic_int_least8_t	ail8;
+	std::atomic_uint_least8_t	auil8;
+	std::atomic_int_least16_t	ail16;
+	std::atomic_uint_least16_t	auil16;
+	std::atomic_int_least32_t	ail32;
+	std::atomic_uint_least32_t	auil32;
+	std::atomic_int_least64_t	ail64;
+	std::atomic_uint_least64_t	auil64;
+	std::atomic_int_fast8_t		aif8;
+	std::atomic_uint_fast8_t	auif8;
+	std::atomic_int_fast16_t	aif16;
+	std::atomic_uint_fast16_t	auif16;
+	std::atomic_int_fast32_t	aif32;
+	std::atomic_uint_fast32_t	auif32;
+	std::atomic_int_fast64_t	aif64;
+	std::atomic_uint_fast64_t	auif64;
+
+	atomic_test1<char>();
+	atomic_test1<signed char>();
+	atomic_test1<unsigned char>();
+	atomic_test1<short>();
+	atomic_test1<unsigned short>();
+	atomic_test1<int>();
+	atomic_test1<unsigned int>();
+	atomic_test1<long>();
+	atomic_test1<unsigned long>();
+	atomic_test1<std::int64_t>();
+	atomic_test1<std::uint64_t>();
+
+	atomic_test2<int>();
+	atomic_test2<std::intptr_t>();
+}
+
+#endif
 
 // ---------------------------
 
@@ -430,6 +548,9 @@ int main(int argc, char* argv[])
 	Containers_test();
 	algorithm_test();
 	chrono_test();
+ #if !__CCWRAP_NO_HEADER_ATOMIC
+	atomic_test();
+ #endif
 	//std::printf("\tdone\n");
 	return 0;
 }

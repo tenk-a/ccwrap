@@ -125,16 +125,17 @@
           #endif
           #define __CCWRAP_NO_CXX11_AUTO	1
           #define __CCWRAP_NO_DECLTYPE 		1
-          #define __CCWRAP_LLONG		__int64
-          #define __CCWRAP_ULLONG		unsigned __int64
-          #define __CCWRAP_PFMT_LL		"I64"
-          #define __CCWRAP_PFMT_WLL		L"I64"
-          typedef unsigned	    		char32_t;
-          #if _MSC_VER >= 1400			// vc8, vc9
-            typedef wchar_t 	   		char16_t;
-          #else							// vc7.1 or less
-            typedef unsigned short		char16_t;
-    		  #define WCHAR_MAX 		((wchar_t)-1)
+          #define __CCWRAP_LLONG			__int64
+          #define __CCWRAP_ULLONG			unsigned __int64
+          #define __CCWRAP_PFMT_LL			"I64"
+          #define __CCWRAP_PFMT_WLL			L"I64"
+		  #define __CCWRAP_NO_CHAR1632_T	0
+          typedef unsigned	    			char32_t;
+          #if _MSC_VER >= 1400				// vc8, vc9
+            typedef wchar_t 	   			char16_t;
+          #else								// vc7.1 or less
+            typedef unsigned short			char16_t;
+    		  #define WCHAR_MAX 			((wchar_t)-1)
             #if !defined(override)
               #define override
             #endif
@@ -159,7 +160,7 @@
         #else
          #define __CCWRAP_NO_HEADER_THREAD				1
         #endif
-        #define __CCWRAP_NO_HEADER_ATOMIC				1
+        #define __CCWRAP_NO_HEADER_ATOMIC				0
         #define __CCWRAP_NO_HEADER_CHRONO				0
         #define __CCWRAP_NO_HEADER_CONDITION_VARIABLE	0
         #if _MSC_VER >= 1400
