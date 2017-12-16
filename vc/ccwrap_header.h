@@ -101,6 +101,7 @@
         #define thread_local   		    __declspec(thread)
       #endif
       #if _MSC_VER < 1700	// vc10 or less
+        #define __CCWRAP_NO_CHAR1632_T	0
         #if !defined(final) && _MSC_VER >= 1400	// vc8-10
           #define final  	    	    sealed
         #else
@@ -129,7 +130,6 @@
           #define __CCWRAP_ULLONG			unsigned __int64
           #define __CCWRAP_PFMT_LL			"I64"
           #define __CCWRAP_PFMT_WLL			L"I64"
-		  #define __CCWRAP_NO_CHAR1632_T	0
           typedef unsigned	    			char32_t;
           #if _MSC_VER >= 1400				// vc8, vc9
             typedef wchar_t 	   			char16_t;

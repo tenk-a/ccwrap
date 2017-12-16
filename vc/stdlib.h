@@ -4,8 +4,10 @@
 #include <stddef.h>
 #include __CCWRAP_NATIVE_UC_HEADER_PATH(stdlib.h)
 
-#if _MSC_VER < 1800
+#if _MSC_VER < 1600
 __forceinline __int64  			llabs(__int64 v) { return _abs64(v); }
+#endif
+#if _MSC_VER < 1800
 __forceinline __int64 			atoll(char const* p) { return _atoi64(p); }
 __forceinline __int64  			strtoll(char const* p, char **e, int r) { return _strtoi64(p,e,r); }
 __forceinline unsigned __int64	strtoull(char const* p, char **e, int r) { return _strtoui64(p,e,r); }

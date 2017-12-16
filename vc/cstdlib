@@ -7,7 +7,9 @@
 
 #if _MSC_VER < 1800
 namespace std {
+ #if _MSC_VER < 1600
 	using ::llabs;
+ #endif
 	using ::atoll;
 	using ::strtoll;
 	using ::strtoull;
