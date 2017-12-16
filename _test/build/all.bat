@@ -38,20 +38,16 @@ call setcc.bat orangec
 pushd orangec
 call mk.bat
 popd
-call setcc.bat mingw
-pushd mingw
+call setcc.bat msys2mingw64
+pushd msys2mingw64
+call mk.bat
+popd
+call setcc.bat msys2clang64
+pushd msys2clang64
 call mk.bat
 popd
 call setcc.bat dmc
 pushd dmc
-call mk.bat
-popd
-call setcc.bat clang64msys2
-pushd clang64msys2
-call mk.bat
-popd
-call setcc.bat clang-msvc
-pushd clang-msvc
 call mk.bat
 popd
 call setcc.bat bcc32c
