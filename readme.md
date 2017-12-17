@@ -4,8 +4,7 @@
 c11/c++11以前の古いC/C++コンパイラ向けに、標準ライブラリのincludeに
 ワンクッション噛ませて、いくらか定義を補完する。
 
-
-## 対応は大まかに２つ
+対応は大まかに２つ
 
 1. コンパイラ独自名(__alignof等)を新規標準名(alignof等)へ#defineしたり
    stdint.h 等の足りてない標準cヘッダの追加
@@ -21,9 +20,11 @@ c11/c++11以前の古いC/C++コンパイラ向けに、標準ライブラリの
    - (現状 include してみただけでほとんど使っていないので実用性不明)
 
 
-## 暗黙include・includeパス
+## メモ
 
-コンパイラオプションで 
+### 暗黙include・includeパス
+
+コンパイラオプションで
 - 暗黙のincludeファイル指定  
   (vc: -FI  bc55:無し  ow:-fi=  dmc:-HI  mingw(gcc):-include)
 - ccwrap/??/ ディレクトリを、他より先に検索されるように include パス設定
@@ -31,8 +32,6 @@ c11/c++11以前の古いC/C++コンパイラ向けに、標準ライブラリの
   (vc: -I  bc55:-I  ow:-i=  dmc:-I  mingw(gcc):-I )
 
 
-
-## 辻褄合わせ内容
 
 ### ccwrap_header.h
 
@@ -46,10 +45,23 @@ c11/c++11以前の古いC/C++コンパイラ向けに、標準ライブラリの
 #define して代用品を用意している
 
 - c++用:  
-    alignas, alignof, char16_t, char32_t, final, __func__,  
+    alignas, alignof, char16_t, char32_t, final, __ func __,  
     noexcept, nullptr, override, _Pragma, static_assert, thread_local
 - c 用:  
     _Alignas, _Alignof, _Bool, inline, _Noreturn, restrict,  
     _Static_assert, _Thread_local  
     (※vcでは__restrictをrestrictに#defineすると問題有で未定義)
 - ※ その他の(c89/c++03より)新しい語は未定義
+
+
+## boost2std 利用時
+
+std のヘッダをラップしてboostヘッダをincludeしているため、
+boost 内からincludeされる標準ライブラリは不整合が起きやすい。
+現状  
+    memory utility string ios istream ostream sstream streambuf  
+あたりはエラーが出やすい。
+
+他のc++標準ヘッダに先んじて  
+    #include <algorithm>  
+をしておくと回避できることが多そうな模様。
