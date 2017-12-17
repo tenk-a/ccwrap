@@ -21,6 +21,10 @@
 #endif
 
 #include <boost/atomic/atomic.hpp>
+#include <boost/atomic/atomic_flag.hpp>
+#include <boost/memory_order.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
@@ -80,6 +84,46 @@ namespace std {
 	using ::boost::atomic_uint_fast32_t;
 	using ::boost::atomic_int_fast64_t;
 	using ::boost::atomic_uint_fast64_t;
+
+	using ::boost::memory_order;
+
+	using ::boost::atomic_is_lock_free;
+	//using ::boost::atomic_init;
+	using ::boost::atomic_store;
+	using ::boost::atomic_store_explicit;
+	using ::boost::atomic_load;
+	using ::boost::atomic_load_explicit;
+	using ::boost::atomic_exchange;
+	using ::boost::atomic_exchange_explicit;
+ #if 0
+	using ::boost::atomic_compare_exchange_weak;
+	using ::boost::atomic_compare_exchange_strong;
+	using ::boost::atomic_compare_exchange_weak_explicit;
+	using ::boost::atomic_compare_exchange_strong_explicit;
+ #endif
+ #if 0
+	using ::boost::atomic_fetch_add;
+	using ::boost::atomic_fetch_add_explicit;
+	using ::boost::atomic_fetch_sub;
+	using ::boost::atomic_fetch_sub_explicit;
+	using ::boost::atomic_fetch_and;
+	using ::boost::atomic_fetch_and_explicit;
+	using ::boost::atomic_fetch_or;
+	using ::boost::atomic_fetch_or_explicit;
+	using ::boost::atomic_fetch_xor;
+	using ::boost::atomic_fetch_xor_explicit;
+ #endif
+
+	using ::boost::atomic_flag;
+ #if 0
+	using ::boost::atomic_flag_test_and_set;
+	using ::boost::atomic_flag_test_and_set_explicit;
+	using ::boost::atomic_flag_clear;
+	using ::boost::atomic_flag_clear_explicit;
+ #endif
+
+	using ::boost::atomic_thread_fence;
+	using ::boost::atomic_signal_fence;
 }
 
 #endif
