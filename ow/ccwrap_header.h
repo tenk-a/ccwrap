@@ -23,6 +23,8 @@
   #define __CCWRAP_NATIVE_C_HEADER_PATH(x)   <__CCWRAP_NATIVE_C_HEADER_DIR/##x>
 #endif
 
+#define __CCWRAP_HAS_PRAGMA_ONCE
+
 #define __CCWRAP_NO_ALIGNAS
 #define __CCWRAP_NO_THREAD_LOCAL
 

@@ -25,6 +25,16 @@
 #include <cfenv>
 #endif
 
+//atode #include <string>
+//atode #include <ios>
+//atode #include <istream>
+//atode #include <memory>
+//atode #include <ostream>
+//atode #include <random>
+//atode #include <sstream>
+//atode #include <streambuf>
+//atode #include <utility>
+
 #include <algorithm>
 #if !__CCWRAP_NO_HEADER_ARRAY
 #include <array>

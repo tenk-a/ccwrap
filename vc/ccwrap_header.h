@@ -58,6 +58,9 @@
 #endif
 
 
+#define __CCWRAP_HAS_PRAGMA_ONCE
+
+
 #if _MSC_VER < 1910
   //#if !defined(__has_include)
   // #define __has_include(x)	    0

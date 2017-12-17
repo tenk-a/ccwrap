@@ -6,4 +6,9 @@
 #undef NO_OLDNAMES
 #undef _NO_OLDNAMES
 
+//#ifdef __clang__
+//#define __CCWRAP_HAS_PRAGMA_ONCE		1
+//#endif
+#define __CCWRAP_HAS_INCLUDE_NEXT
+
 #endif
