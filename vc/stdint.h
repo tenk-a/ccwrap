@@ -175,10 +175,10 @@ typedef uint64_t    	    uint_fast64_t;
 #define UINT16_C(val)	    val
 #define INT32_C(val)	    (INT32_MAX - INT32_MAX + (val))
 #define UINT32_C(val)	    (UINT32_MAX - UINT32_MAX + (val))
-#define INT64_C(val)	    (INT64_MAX - INT64_MAX + (val))		// val##LL
+#define INT64_C(val)	    (INT64_MAX - INT64_MAX + (val)) 	// val##LL
 #define UINT64_C(val)	    (UINT64_MAX - UINT64_MAX + (val))	// val##ULL
 #define INTMAX_C(val)	    (INTMAX_MAX - INTMAX_MAX + (val))	// val##LL
-#define UINTMAX_C(val)	    (UINTMAX_MAX - UINTMAX_MAX + (val))	// val##ULL
+#define UINTMAX_C(val)	    (UINTMAX_MAX - UINTMAX_MAX + (val)) // val##ULL
 
 #endif	// !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
 

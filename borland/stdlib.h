@@ -14,8 +14,8 @@
   #ifdef __cplusplus
     namespace std {
   #endif
-	static inline __int64 strtoll(char const* p, char** pe, int rdx) { return strtol(p, pe, rdx); }
-	static inline unsigned __int64 strtoull(char const* p, char** pe, int rdx) { return strtoul(p, pe, rdx); }
+    static inline __int64 strtoll(char const* p, char** pe, int rdx) { return strtol(p, pe, rdx); }
+    static inline unsigned __int64 strtoull(char const* p, char** pe, int rdx) { return strtoul(p, pe, rdx); }
   #ifdef __cplusplus
     }
     using std::strtoll;

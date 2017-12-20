@@ -22,11 +22,11 @@
 static inline char* stpcpy(char* d, char const* s) { return _stpcpy(d, s); }
 #endif
 
-static inline int	strcasecmp(char const* l, char const* r) { return stricmp(l, r); }
-static inline int	strncasecmp(char const* l, char const* r, size_t n) { return strnicmp(l, r, n); }
+static inline int   strcasecmp(char const* l, char const* r) { return stricmp(l, r); }
+static inline int   strncasecmp(char const* l, char const* r, size_t n) { return strnicmp(l, r, n); }
 #if __BORLANDC__ >= 0x560
-static inline int	wcscasecmp(wchar_t const* l, wchar_t const* r) { return _wcsicmp(l, r); }
-static inline int	wcsncasecmp(wchar_t const* l, wchar_t const* r, size_t n) { return _wcsnicmp(l, r, n); }
+static inline int   wcscasecmp(wchar_t const* l, wchar_t const* r) { return _wcsicmp(l, r); }
+static inline int   wcsncasecmp(wchar_t const* l, wchar_t const* r, size_t n) { return _wcsnicmp(l, r, n); }
 #endif
 
 

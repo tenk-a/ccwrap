@@ -16,9 +16,9 @@
 #ifndef __cplusplus
   #if 1 //__BORLANDC__ < 0x620/*?*/
    #if __BORLANDC__ >= 0x561
-    #define static_assert(c,...)	_Static_assert(c,__VA_ARGS__)
+    #define static_assert(c,...)    _Static_assert(c,__VA_ARGS__)
    #else
-    #define static_assert(c,m)		_Static_assert(c,m)
+    #define static_assert(c,m)	    _Static_assert(c,m)
    #endif
   #endif
 #endif

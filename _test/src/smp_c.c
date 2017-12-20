@@ -47,61 +47,61 @@ _Bool	b1 = false;
 bool	b2 = true;
 
 #ifndef __CCWRAP_NO_ALIGNAS
-_Alignas(8)	int		aa1 = (int)_Alignof(bool);
-alignas(8)	int 	aa2 = (int)alignof(int);
+_Alignas(8) int     aa1 = (int)_Alignof(bool);
+alignas(8)  int     aa2 = (int)alignof(int);
 #endif
 
 static noreturn void  noreturnFunc(void) {
-	if (b1)
-		noreturnFunc1();
-	exit(0);
+    if (b1)
+    	noreturnFunc1();
+    exit(0);
 }
 
 
 int main(int argc, char* argv[])
 {
-	char	buf[1024] = {0};
-	char* 	p 		  = strdup("hello");
-	assert(p != NULL);
-	assert(strlen(p) == 5);
-	assert(strcmp(p, "hello") == 0);
-	//assert(strcasecmp(p, "HELLO") == 0);
+    char    buf[1024] = {0};
+    char*   p	      = strdup("hello");
+    assert(p != NULL);
+    assert(strlen(p) == 5);
+    assert(strcmp(p, "hello") == 0);
+    //assert(strcasecmp(p, "HELLO") == 0);
 
-	printf("\n%s\n", argv[0]);
-	printf("%s (%d): %s -- __FILE__,__LINE__,__func__\n", __FILE__, __LINE__, __func__);
+    printf("\n%s\n", argv[0]);
+    printf("%s (%d): %s -- __FILE__,__LINE__,__func__\n", __FILE__, __LINE__, __func__);
  #ifdef __STDC_VERSION__
-	printf("\t__STDC_VERSION__ = %ld\n", __STDC_VERSION__);
+    printf("\t__STDC_VERSION__ = %ld\n", __STDC_VERSION__);
  #endif
-	printf("\tsizeof(_Bool) = %d\n", (int)sizeof(_Bool));
-	printf("\tsizeof(wchar_t) = %d\n", (int)sizeof(wchar_t));
-	printf("\tsizeof(intmax_t) = %2d  _Alignof(intmax_t) = %2d\n", (int)sizeof(intmax_t), (int)alignof(intmax_t));
-	printf("\tsizeof(long double) = %2d  _Alignof(long double) = %2d\n", (int)sizeof(long double), (int)alignof(long double));
-	printf("\talignof(max_align_t) = %d\n", (int)(_Alignof(max_align_t)));
+    printf("\tsizeof(_Bool) = %d\n", (int)sizeof(_Bool));
+    printf("\tsizeof(wchar_t) = %d\n", (int)sizeof(wchar_t));
+    printf("\tsizeof(intmax_t) = %2d  _Alignof(intmax_t) = %2d\n", (int)sizeof(intmax_t), (int)alignof(intmax_t));
+    printf("\tsizeof(long double) = %2d  _Alignof(long double) = %2d\n", (int)sizeof(long double), (int)alignof(long double));
+    printf("\talignof(max_align_t) = %d\n", (int)(_Alignof(max_align_t)));
 
-	snprintf(buf, sizeof buf, "%s world! (%d)", p, (int)(strlen(p)));
-	assert(strcmp(buf,"hello world! (5)") == 0);
-	free(p);
+    snprintf(buf, sizeof buf, "%s world! (%d)", p, (int)(strlen(p)));
+    assert(strcmp(buf,"hello world! (5)") == 0);
+    free(p);
 
  #ifdef PRId32
-	snprintf(buf,  sizeof buf, "%" PRId32 "  %" PRIx32 "\n", INT32_C(1234567890), INT32_C(0x12345678));
-	assert(strcmp(buf, "1234567890  12345678\n") == 0);
+    snprintf(buf,  sizeof buf, "%" PRId32 "  %" PRIx32 "\n", INT32_C(1234567890), INT32_C(0x12345678));
+    assert(strcmp(buf, "1234567890  12345678\n") == 0);
  #endif
 
  #ifdef PRId64
-	snprintf(buf, sizeof buf, "%" PRId64 "  %" PRIx64 "\n", INT64_C(1234567890123456789), INT64_C(0x123456789abcdef0));
-	assert(strcmp(buf, "1234567890123456789  123456789abcdef0\n") == 0);
+    snprintf(buf, sizeof buf, "%" PRId64 "  %" PRIx64 "\n", INT64_C(1234567890123456789), INT64_C(0x123456789abcdef0));
+    assert(strcmp(buf, "1234567890123456789  123456789abcdef0\n") == 0);
  #endif
 
  #ifndef __CCWRAP_NO_ALIGNAS
-	if (((uintptr_t)(&aa1) & 7) != 0) printf("bad _Alignas(8) aa1\n");
-	if (((uintptr_t)(&aa2) & 7) != 0) printf("bad alignas(8) aa2\n");
+    if (((uintptr_t)(&aa1) & 7) != 0) printf("bad _Alignas(8) aa1\n");
+    if (((uintptr_t)(&aa2) & 7) != 0) printf("bad alignas(8) aa2\n");
  #endif
 
-	assert(strtoll("-123456789",0,0) == -123456789);
-	assert(strtoull("1234567890",0,0) == 1234567890);
+    assert(strtoll("-123456789",0,0) == -123456789);
+    assert(strtoull("1234567890",0,0) == 1234567890);
 
-	printf("\n");
+    printf("\n");
 
-	noreturnFunc();
-	return 0;
+    noreturnFunc();
+    return 0;
 }

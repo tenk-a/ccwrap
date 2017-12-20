@@ -7,7 +7,7 @@
 #ifndef __cplusplus
  #ifndef bool
   #if defined(_Bool)
-   #define bool		_Bool
+   #define bool     _Bool
   #else
    #error not impliment stdbool.h
   #endif

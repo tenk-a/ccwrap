@@ -13,7 +13,7 @@
 #endif
 
 #ifndef errno
-#define errno		errno
+#define errno	    errno
 #endif
 
 #endif

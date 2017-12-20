@@ -18,10 +18,10 @@
 #elif !defined(__cplusplus)
 
 #if defined(_Bool) // || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
- #define bool                   _Bool
- #define true                   1
- #define false                  0
- #define __bool_is_defined      1
+ #define bool	    	    	_Bool
+ #define true	    	    	1
+ #define false	    	    	0
+ #define __bool_is_defined  	1
 #else
  #error not impliment stdbool.h
 #endif

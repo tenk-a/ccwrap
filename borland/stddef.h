@@ -11,13 +11,13 @@
 #include __CCWRAP_NATIVE_C_HEADER_PATH(stddef.h)
 #if 1
 struct __ccwrap_max_align_t {
-	__int64		ll_;
-	double		d_;
-	long double ld_;
+    __int64 	ll_;
+    double  	d_;
+    long double ld_;
 };
-typedef struct __ccwrap_max_align_t	max_align_t;
+typedef struct __ccwrap_max_align_t max_align_t;
 #else
-typedef long double	max_align_t;
+typedef long double max_align_t;
 #endif
 #endif
 

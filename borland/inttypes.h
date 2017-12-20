@@ -48,10 +48,10 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRId64 	    "lld"
      #define PRIdLEAST64     PRId64
-     #define PRIdFAST64	    PRId64
-     #define PRIdMAX 	    PRId64
+     #define PRIdFAST64     PRId64
+     #define PRIdMAX	    PRId64
     #else
-     //#define PRIdMAX 	    "d"
+     //#define PRIdMAX	    "d"
     #endif
     #if 0 //defined(_WIN64)
      #define PRIdPTR	    PRId64
@@ -71,10 +71,10 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRIi64 	    "lli"
      #define PRIiLEAST64    PRIi64
-     #define PRIiFAST64	    PRIi64
-     #define PRIiMAX 	    PRIi64
+     #define PRIiFAST64     PRIi64
+     #define PRIiMAX	    PRIi64
     #else
-     //#define PRIiMAX 	    "i"
+     //#define PRIiMAX	    "i"
     #endif
     #if 0 //defined(_WIN64)
      #define PRIiPTR	    PRIi64
@@ -94,8 +94,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRIu64 	    "llu"
      #define PRIuLEAST64    PRIu64
-     #define PRIuFAST64	    PRIu64
-     #define PRIuMAX 	    PRIu64
+     #define PRIuFAST64     PRIu64
+     #define PRIuMAX	    PRIu64
     #endif
     #if 0 //defined(_WIN64)
      #define PRIuPTR	    PRIu64
@@ -115,8 +115,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRIo64 	    "llo"
      #define PRIoLEAST64    PRIo64
-     #define PRIoFAST64	    PRIo64
-     #define PRIoMAX 	    PRIo64
+     #define PRIoFAST64     PRIo64
+     #define PRIoMAX	    PRIo64
     #endif
     #if 0 //defined(_WIN64)
      #define PRIoPTR	    PRIo64
@@ -136,8 +136,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRIx64 	    "llx"
      #define PRIxLEAST64    PRIx64
-     #define PRIxFAST64	    PRIx64
-     #define PRIxMAX 	    PRIx64
+     #define PRIxFAST64     PRIx64
+     #define PRIxMAX	    PRIx64
     #endif
     #if 0 //defined(_WIN64)
      #define PRIxPTR	    PRIx64
@@ -157,8 +157,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define PRIX64 	    "llX"
      #define PRIXLEAST64    PRIX64
-     #define PRIXFAST64	    PRIX64
-     #define PRIXMAX 	    PRIX64
+     #define PRIXFAST64     PRIX64
+     #define PRIXMAX	    PRIX64
     #endif
     #if 0 //defined(_WIN64)
      #define PRIXPTR	    PRIX64
@@ -182,8 +182,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define SCNd64 	    "lld"
      #define SCNdLEAST64    SCNd64
-     #define SCNdFAST64	    SCNd64
-     #define SCNdMAX 	    SCNd64
+     #define SCNdFAST64     SCNd64
+     #define SCNdMAX	    SCNd64
     #endif
     #if 0 //defined(_WIN64)
      #define SCNdPTR	    SCNd64
@@ -203,8 +203,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define SCNi64 	    "lli"
      #define SCNiLEAST64    SCNi64
-     #define SCNiFAST64	    SCNi64
-     #define SCNiMAX 	    SCNi64
+     #define SCNiFAST64     SCNi64
+     #define SCNiMAX	    SCNi64
     #endif
     #if 0 //defined(_WIN64)
      #define SCNiPTR	    SCNi64
@@ -224,8 +224,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define SCNu64 	    "llu"
      #define SCNuLEAST64     SCNu64
-     #define SCNuFAST64	    SCNu64
-     #define SCNuMAX 	    SCNu64
+     #define SCNuFAST64     SCNu64
+     #define SCNuMAX	    SCNu64
     #endif
     #if 0 //defined(_WIN64)
      #define SCNuPTR	    SCNu64
@@ -245,8 +245,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define SCNoLEAST64     SCNo64
      #define SCNo64 	    "llo"
-     #define SCNoFAST64	    SCNo64
-     #define SCNoMAX 	    SCNo64
+     #define SCNoFAST64     SCNo64
+     #define SCNoMAX	    SCNo64
     #endif
     #if 0 //defined(_WIN64)
      #define SCNoPTR	    SCNo64
@@ -266,8 +266,8 @@ static __inline intmax_t   wcstoumax(const wchar_t * s, wchar_t** endp, int radi
     #if __BORLANDC__ >= 0x560
      #define SCNx64 	    "llx"
      #define SCNxLEAST64    SCNx64
-     #define SCNxFAST64	    SCNx64
-     #define SCNxMAX 	    SCNx64
+     #define SCNxFAST64     SCNx64
+     #define SCNxMAX	    SCNx64
     #endif
     #if 0 //defined(_WIN64)
      #define SCNxPTR	    SCNx64
