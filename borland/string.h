@@ -12,6 +12,7 @@
  #include __CCWRAP_NATIVE_C_HEADER_PATH(limits.h)
  #include __CCWRAP_NATIVE_C_HEADER_PATH(float.h)
  #include __CCWRAP_NATIVE_C_HEADER_PATH(string.h)
+ #include __CCWRAP_NATIVE_C_HEADER_PATH(mem.h)
  #if defined(__cplusplus) && __BORLANDC__ < 0x561
   using std::strlen;
   using std::strspn;
