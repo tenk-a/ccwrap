@@ -14,7 +14,7 @@
 #ifdef __CCWRAP_NO_CXX11_NUMERIC
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -25,8 +25,8 @@
 #endif
 
 namespace std {
-	using	::boost::algorithm::iota;
+    using   ::boost::algorithm::iota;
 }
 #endif
 
-#endif	// __CCWRAP_NUMERIC_INCLUDED
+#endif  // __CCWRAP_NUMERIC_INCLUDED

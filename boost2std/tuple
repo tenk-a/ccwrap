@@ -17,7 +17,7 @@
 #else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -27,19 +27,19 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::tuples::tuple;
-	using ::boost::tuples::ignore;
-	using ::boost::tuples::make_tuple;
-	using ::boost::tuples::tie;
-	//	using ::boost::tuples::foward_as_tuple;
-	//	using ::boost::tuples::tuple_cat;
-	//	using ::boost::tuples::tuple_element;
-	//	using ::boost::tuples::tuple_size;
+    using ::boost::tuples::tuple;
+    using ::boost::tuples::ignore;
+    using ::boost::tuples::make_tuple;
+    using ::boost::tuples::tie;
+    //  using ::boost::tuples::foward_as_tuple;
+    //  using ::boost::tuples::tuple_cat;
+    //  using ::boost::tuples::tuple_element;
+    //  using ::boost::tuples::tuple_size;
 }
 
 #endif
 
-#endif	// __CCWRAP_TUPLE_INCLUDED
+#endif  // __CCWRAP_TUPLE_INCLUDED

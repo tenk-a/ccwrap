@@ -15,7 +15,7 @@
 #ifdef __CCWRAP_NO_CXX11_COMPLEX
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -31,15 +31,15 @@
 #endif
 
 namespace std {
-	using	::boost::math::acos;
-	using	::boost::math::acosh;
-	using	::boost::math::asin;
-	using	::boost::math::asinh;
-	using	::boost::math::atan;
-	using	::boost::math::atanh;
-	//using	::boost::math::proj;
+    using   ::boost::math::acos;
+    using   ::boost::math::acosh;
+    using   ::boost::math::asin;
+    using   ::boost::math::asinh;
+    using   ::boost::math::atan;
+    using   ::boost::math::atanh;
+    //using ::boost::math::proj;
 }
 
 #endif
 
-#endif	// __CCWRAP_COMPLEX_INCLUDED
+#endif  // __CCWRAP_COMPLEX_INCLUDED

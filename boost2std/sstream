@@ -13,4 +13,4 @@
 #include <../include/sstream>
 #endif
 
-#endif	// __CCWRAP_SSTREAM_INCLUDED
+#endif  // __CCWRAP_SSTREAM_INCLUDED

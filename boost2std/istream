@@ -13,4 +13,4 @@
 #include <../include/istream>
 #endif
 
-#endif	// __CCWRAP_ISTREAM_INCLUDED
+#endif  // __CCWRAP_ISTREAM_INCLUDED

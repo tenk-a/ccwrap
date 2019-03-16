@@ -17,7 +17,7 @@
 #else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -25,12 +25,12 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::ratio;
+    using ::boost::ratio;
 }
 
 #endif
 
-#endif	// __CCWRAP_RATIO_INCLUDED
+#endif  // __CCWRAP_RATIO_INCLUDED

@@ -12,4 +12,4 @@
 #include <../include/iostream>
 #endif
 
-#endif	// __CCWRAP_IOSTREAM_INCLUDED
+#endif  // __CCWRAP_IOSTREAM_INCLUDED

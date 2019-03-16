@@ -14,7 +14,7 @@
 #ifdef __CCWRAP_NO_CXX11_UTILITY
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -32,24 +32,24 @@
 #endif
 
 namespace std {
-	using	::boost::tuple;
-	using	::boost::make_tuple;
-	using	::boost::tie;
-	using	::boost::get;
+    using   ::boost::tuple;
+    using   ::boost::make_tuple;
+    using   ::boost::tie;
+    using   ::boost::get;
 
-	using	::boost::declval;
-	using	::boost::fusion::extension::as_const;
+    using   ::boost::declval;
+    using   ::boost::fusion::extension::as_const;
 
-	//using	::boost::context::detail::exchange;
-	//using	::boost::forward;
-	//using	::boost::container::piecewise_construct_t;
-	//using	::boost::poly_collection::detail::integer_sequence;
-	//using	::boost::poly_collection::detail::make_integer_sequence;
-	//using	::boost::context::detail::index_sequence;
-	//using	::boost::context::detail::make_index_sequence;
-	//using	::boost::context::detail::index_sequence_for;
+    //using ::boost::context::detail::exchange;
+    //using ::boost::forward;
+    //using ::boost::container::piecewise_construct_t;
+    //using ::boost::poly_collection::detail::integer_sequence;
+    //using ::boost::poly_collection::detail::make_integer_sequence;
+    //using ::boost::context::detail::index_sequence;
+    //using ::boost::context::detail::make_index_sequence;
+    //using ::boost::context::detail::index_sequence_for;
 }
 
-#endif	// __CCWRAP_NO_CXX11_UTILITY
+#endif  // __CCWRAP_NO_CXX11_UTILITY
 
 #endif

@@ -12,4 +12,4 @@
 #include <../include/set>
 #endif
 
-#endif	// __CCWRAP_SET_INCLUDED
+#endif  // __CCWRAP_SET_INCLUDED

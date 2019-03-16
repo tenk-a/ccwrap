@@ -15,7 +15,7 @@
 #ifdef __CCWRAP_NO_CXX11_IOMANIP
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -26,8 +26,8 @@
 #endif
 
 namespace std {
-	using	::boost::io::quoted;
+    using   ::boost::io::quoted;
 }
 #endif
 
-#endif	// __CCWRAP_IOMANIP_INCLUDED
+#endif  // __CCWRAP_IOMANIP_INCLUDED

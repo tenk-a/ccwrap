@@ -17,7 +17,7 @@
 #else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -27,14 +27,14 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::shared_mutex;
-	using ::boost::shared_timed_mutex;
-	using ::boost::shared_lock;
+    using ::boost::shared_mutex;
+    using ::boost::shared_timed_mutex;
+    using ::boost::shared_lock;
 }
 
 #endif
 
-#endif	// __CCWRAP_SHARED_MUTEX_INCLUDED
+#endif  // __CCWRAP_SHARED_MUTEX_INCLUDED

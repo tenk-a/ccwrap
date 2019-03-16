@@ -11,4 +11,4 @@
 #include <../include/ios>
 #endif
 
-#endif	// __CCWRAP_IOS_INCLUDED
+#endif  // __CCWRAP_IOS_INCLUDED

@@ -18,7 +18,7 @@
 #else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -26,13 +26,13 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::container::scoped_allocator_adaptor;
+    using ::boost::container::scoped_allocator_adaptor;
 }
 
 #endif
 
-#endif	// __CCWRAP_SCOPED_ALLOCATOR_INCLUDED
+#endif  // __CCWRAP_SCOPED_ALLOCATOR_INCLUDED
 

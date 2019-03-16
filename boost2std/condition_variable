@@ -13,10 +13,10 @@
 #include <../include/condition_variable>
 #endif
 
-#else 
+#else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -25,14 +25,14 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::condition_variable;
-	using ::boost::condition_variable_any;
-	using ::boost::cv_status;
+    using ::boost::condition_variable;
+    using ::boost::condition_variable_any;
+    using ::boost::cv_status;
 }
 
 #endif
 
-#endif	// __CCWRAP_CONDITION_VARIABLE_INCLUDED
+#endif  // __CCWRAP_CONDITION_VARIABLE_INCLUDED

@@ -12,4 +12,4 @@
 #include <../include/list>
 #endif
 
-#endif	// __CCWRAP_LIST_INCLUDED
+#endif  // __CCWRAP_LIST_INCLUDED

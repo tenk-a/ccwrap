@@ -16,7 +16,7 @@
 #else
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -31,101 +31,101 @@
 #endif
 
 namespace std {
-	using ::boost::atomic;
+    using ::boost::atomic;
 
-	using ::boost::atomic_char;
-	using ::boost::atomic_schar;
-	using ::boost::atomic_uchar;
-	using ::boost::atomic_short;
-	using ::boost::atomic_ushort;
-	using ::boost::atomic_int;
-	using ::boost::atomic_uint;
-	using ::boost::atomic_long;
-	using ::boost::atomic_ulong;
-	using ::boost::atomic_llong;
-	using ::boost::atomic_ullong;
+    using ::boost::atomic_char;
+    using ::boost::atomic_schar;
+    using ::boost::atomic_uchar;
+    using ::boost::atomic_short;
+    using ::boost::atomic_ushort;
+    using ::boost::atomic_int;
+    using ::boost::atomic_uint;
+    using ::boost::atomic_long;
+    using ::boost::atomic_ulong;
+    using ::boost::atomic_llong;
+    using ::boost::atomic_ullong;
 
-	using ::boost::atomic_bool;
-	using ::boost::atomic_wchar_t;
+    using ::boost::atomic_bool;
+    using ::boost::atomic_wchar_t;
  #ifndef __CCWRAP_NO_CHAR1632_T
-	using ::boost::atomic_char16_t;
-	using ::boost::atomic_char32_t;
+    using ::boost::atomic_char16_t;
+    using ::boost::atomic_char32_t;
  #endif
 
-	using ::boost::atomic_size_t;
-	using ::boost::atomic_ptrdiff_t;
-	using ::boost::atomic_intmax_t;
-	using ::boost::atomic_uintmax_t;
+    using ::boost::atomic_size_t;
+    using ::boost::atomic_ptrdiff_t;
+    using ::boost::atomic_intmax_t;
+    using ::boost::atomic_uintmax_t;
 
-	using ::boost::atomic_int8_t;
-	using ::boost::atomic_uint8_t;
-	using ::boost::atomic_int16_t;
-	using ::boost::atomic_uint16_t;
-	using ::boost::atomic_int32_t;
-	using ::boost::atomic_uint32_t;
-	using ::boost::atomic_int64_t;
-	using ::boost::atomic_uint64_t;
-	using ::boost::atomic_intptr_t;
-	using ::boost::atomic_uintptr_t;
+    using ::boost::atomic_int8_t;
+    using ::boost::atomic_uint8_t;
+    using ::boost::atomic_int16_t;
+    using ::boost::atomic_uint16_t;
+    using ::boost::atomic_int32_t;
+    using ::boost::atomic_uint32_t;
+    using ::boost::atomic_int64_t;
+    using ::boost::atomic_uint64_t;
+    using ::boost::atomic_intptr_t;
+    using ::boost::atomic_uintptr_t;
 
-	using ::boost::atomic_int_least8_t;
-	using ::boost::atomic_uint_least8_t;
-	using ::boost::atomic_int_least16_t;
-	using ::boost::atomic_uint_least16_t;
-	using ::boost::atomic_int_least32_t;
-	using ::boost::atomic_uint_least32_t;
-	using ::boost::atomic_int_least64_t;
-	using ::boost::atomic_uint_least64_t;
-	using ::boost::atomic_int_fast8_t;
-	using ::boost::atomic_uint_fast8_t;
-	using ::boost::atomic_int_fast16_t;
-	using ::boost::atomic_uint_fast16_t;
-	using ::boost::atomic_int_fast32_t;
-	using ::boost::atomic_uint_fast32_t;
-	using ::boost::atomic_int_fast64_t;
-	using ::boost::atomic_uint_fast64_t;
+    using ::boost::atomic_int_least8_t;
+    using ::boost::atomic_uint_least8_t;
+    using ::boost::atomic_int_least16_t;
+    using ::boost::atomic_uint_least16_t;
+    using ::boost::atomic_int_least32_t;
+    using ::boost::atomic_uint_least32_t;
+    using ::boost::atomic_int_least64_t;
+    using ::boost::atomic_uint_least64_t;
+    using ::boost::atomic_int_fast8_t;
+    using ::boost::atomic_uint_fast8_t;
+    using ::boost::atomic_int_fast16_t;
+    using ::boost::atomic_uint_fast16_t;
+    using ::boost::atomic_int_fast32_t;
+    using ::boost::atomic_uint_fast32_t;
+    using ::boost::atomic_int_fast64_t;
+    using ::boost::atomic_uint_fast64_t;
 
-	using ::boost::memory_order;
+    using ::boost::memory_order;
 
-	using ::boost::atomic_is_lock_free;
-	//using ::boost::atomic_init;
-	using ::boost::atomic_store;
-	using ::boost::atomic_store_explicit;
-	using ::boost::atomic_load;
-	using ::boost::atomic_load_explicit;
-	using ::boost::atomic_exchange;
-	using ::boost::atomic_exchange_explicit;
+    using ::boost::atomic_is_lock_free;
+    //using ::boost::atomic_init;
+    using ::boost::atomic_store;
+    using ::boost::atomic_store_explicit;
+    using ::boost::atomic_load;
+    using ::boost::atomic_load_explicit;
+    using ::boost::atomic_exchange;
+    using ::boost::atomic_exchange_explicit;
  #if 0
-	using ::boost::atomic_compare_exchange_weak;
-	using ::boost::atomic_compare_exchange_strong;
-	using ::boost::atomic_compare_exchange_weak_explicit;
-	using ::boost::atomic_compare_exchange_strong_explicit;
+    using ::boost::atomic_compare_exchange_weak;
+    using ::boost::atomic_compare_exchange_strong;
+    using ::boost::atomic_compare_exchange_weak_explicit;
+    using ::boost::atomic_compare_exchange_strong_explicit;
  #endif
  #if 0
-	using ::boost::atomic_fetch_add;
-	using ::boost::atomic_fetch_add_explicit;
-	using ::boost::atomic_fetch_sub;
-	using ::boost::atomic_fetch_sub_explicit;
-	using ::boost::atomic_fetch_and;
-	using ::boost::atomic_fetch_and_explicit;
-	using ::boost::atomic_fetch_or;
-	using ::boost::atomic_fetch_or_explicit;
-	using ::boost::atomic_fetch_xor;
-	using ::boost::atomic_fetch_xor_explicit;
+    using ::boost::atomic_fetch_add;
+    using ::boost::atomic_fetch_add_explicit;
+    using ::boost::atomic_fetch_sub;
+    using ::boost::atomic_fetch_sub_explicit;
+    using ::boost::atomic_fetch_and;
+    using ::boost::atomic_fetch_and_explicit;
+    using ::boost::atomic_fetch_or;
+    using ::boost::atomic_fetch_or_explicit;
+    using ::boost::atomic_fetch_xor;
+    using ::boost::atomic_fetch_xor_explicit;
  #endif
 
-	using ::boost::atomic_flag;
+    using ::boost::atomic_flag;
  #if 0
-	using ::boost::atomic_flag_test_and_set;
-	using ::boost::atomic_flag_test_and_set_explicit;
-	using ::boost::atomic_flag_clear;
-	using ::boost::atomic_flag_clear_explicit;
+    using ::boost::atomic_flag_test_and_set;
+    using ::boost::atomic_flag_test_and_set_explicit;
+    using ::boost::atomic_flag_clear;
+    using ::boost::atomic_flag_clear_explicit;
  #endif
 
-	using ::boost::atomic_thread_fence;
-	using ::boost::atomic_signal_fence;
+    using ::boost::atomic_thread_fence;
+    using ::boost::atomic_signal_fence;
 }
 
 #endif
 
-#endif	// __CCWRAP_ATOMIC_INCLUDED
+#endif  // __CCWRAP_ATOMIC_INCLUDED

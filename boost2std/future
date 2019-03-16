@@ -13,14 +13,14 @@
 #include <../include/future>
 #endif
 
-#else 
+#else
 
 #ifndef BOOST_THREAD_PROVIDES_FUTURE
 #define BOOST_THREAD_PROVIDES_FUTURE
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -29,28 +29,28 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using ::boost::future_errc;
-	using ::boost::launch;
-	using ::boost::future_status;
-	using ::boost::future_category;
-	using ::boost::future_error;
-	using ::boost::promise;
-	using ::boost::future;	//BOOST_THREAD_FUTURE;
-	using ::boost::shared_future;
-	using ::boost::packaged_task;
-	using ::boost::async;
+    using ::boost::future_errc;
+    using ::boost::launch;
+    using ::boost::future_status;
+    using ::boost::future_category;
+    using ::boost::future_error;
+    using ::boost::promise;
+    using ::boost::future;  //BOOST_THREAD_FUTURE;
+    using ::boost::shared_future;
+    using ::boost::packaged_task;
+    using ::boost::async;
 
   #if defined(_MSC_VER) && _MSC_VER == 1600
   #else
-	using ::boost::system::is_error_code_enum;
-	using ::boost::system::make_error_code;
-	using ::boost::system::make_error_condition;
+    using ::boost::system::is_error_code_enum;
+    using ::boost::system::make_error_code;
+    using ::boost::system::make_error_condition;
   #endif
 }
 
 #endif
 
-#endif	// __CCWRAP_FUTURE_INCLUDED
+#endif  // __CCWRAP_FUTURE_INCLUDED

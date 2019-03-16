@@ -12,4 +12,4 @@
 #include <../include/fstream>
 #endif
 
-#endif	// __CCWRAP_FSTREAM_INCLUDED
+#endif  // __CCWRAP_FSTREAM_INCLUDED

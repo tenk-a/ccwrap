@@ -14,7 +14,7 @@
 #ifdef __CCWRAP_NO_CXX11_FUNCTIONAL
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# pragma warning(push)  
+# pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
@@ -29,54 +29,54 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
-#endif 
+#endif
 
 namespace std {
-	using	::boost::function;
-	using	::boost::bad_function_call;
-	using	::boost::bind;
-	using	::boost::is_bind_expression;
-	using	::boost::is_placeholder;
-	using	::boost::hash;
-	using	::boost::reference_wrapper;
+    using   ::boost::function;
+    using   ::boost::bad_function_call;
+    using   ::boost::bind;
+    using   ::boost::is_bind_expression;
+    using   ::boost::is_placeholder;
+    using   ::boost::hash;
+    using   ::boost::reference_wrapper;
 
-	using	::boost::mem_fn;
-	using	::boost::ref;
-	using	::boost::cref;
+    using   ::boost::mem_fn;
+    using   ::boost::ref;
+    using   ::boost::cref;
 
-	namespace placeholders {
-		using namespace ::boost::placeholders;
-	}
+    namespace placeholders {
+        using namespace ::boost::placeholders;
+    }
 
-	template <class T>
-	struct bit_and {
-		typedef T first_argument_type;
-		typedef T second_argument_type;
-		typedef T result_type;
-		T operator()(T const& x, T const& y) const { return x & y; }
-	};
-	template <class T>
-	struct bit_or {
-		typedef T first_argument_type;
-		typedef T second_argument_type;
-		typedef T result_type;
-		T operator()(T const& x, T const& y) const { return x | y; }
-	};
-	template <class T>
-	struct bit_xor {
-		typedef T first_argument_type;
-		typedef T second_argument_type;
-		typedef T result_type;
-		T operator()(T const& x, T const& y) const { return x ^ y; }
-	};
-	template <class T>
-	struct bit_not {
-		typedef T argument_type;
-		typedef T result_type;
-		T operator()(T const& x) const { return ~x; }
-	};
+    template <class T>
+    struct bit_and {
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef T result_type;
+        T operator()(T const& x, T const& y) const { return x & y; }
+    };
+    template <class T>
+    struct bit_or {
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef T result_type;
+        T operator()(T const& x, T const& y) const { return x | y; }
+    };
+    template <class T>
+    struct bit_xor {
+        typedef T first_argument_type;
+        typedef T second_argument_type;
+        typedef T result_type;
+        T operator()(T const& x, T const& y) const { return x ^ y; }
+    };
+    template <class T>
+    struct bit_not {
+        typedef T argument_type;
+        typedef T result_type;
+        T operator()(T const& x) const { return ~x; }
+    };
 }
 //#elif defined(_MSC_VER) && _MSC_VER == 1600
 #endif
 
-#endif	// CCWRAP_ALGORITHM_INCLUDED
+#endif  // CCWRAP_ALGORITHM_INCLUDED
