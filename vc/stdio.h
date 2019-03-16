@@ -8,6 +8,9 @@
 
 #include <stdarg.h>
 
+#pragma warning(push)
+#pragma warning(disable:4996)
+
 __forceinline int   vsnprintf(char buf[], size_t bufsz, char const* fmt, va_list a) {
  #if _MSC_VER >= 1400
     return _vsnprintf(buf, bufsz, fmt, a);
@@ -51,5 +54,7 @@ __forceinline int   snwprintf(wchar_t buf[], size_t bufsz, wchar_t const* fmt, .
     va_end(a);
     return n;
 }
+
+#pragma warning(pop)
 
 #endif

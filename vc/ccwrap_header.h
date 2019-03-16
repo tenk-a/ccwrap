@@ -211,6 +211,9 @@
       #endif
     #endif
   #endif
+  #if !defined __CCWRAP_BOOL
+   #define __CCWRAP_BOOL			bool
+  #endif
 #else	// for c
   #define __STDC_NO_VLA__
   #define __STDC_NO_COMPLEX__
@@ -246,6 +249,9 @@
    #endif
    #if !defined _Bool
     #define _Bool   	    	    char
+   #endif
+   #if !defined __CCWRAP_BOOL
+    #define __CCWRAP_BOOL			int
    #endif
    #if _MSC_VER < 1400
     #define WCHAR_MAX	    	    ((wchar_t)-1)

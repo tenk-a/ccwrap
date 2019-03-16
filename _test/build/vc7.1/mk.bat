@@ -4,7 +4,7 @@ setlocal
 set SRCDIR=..\..\src
 set INCDIR=..\..\..\..\ccwrap\vc
 set INCDIR2=..\..\..\..\ccwrap\boost2std
-rem set BOOSTDIR=d:\libs_vc\boost_1_65_1
+rem set BOOSTDIR=d:\libs_vc\boost_1_68_0
 rem set BOOSTLIBDIR=%BOOSTDIR%\stage\vc71_Win32\lib\
 
 if exist smp.exe del smp.exe
