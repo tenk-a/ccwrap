@@ -5,7 +5,7 @@
  */
 #pragma once
 
-/*
+/*	vs		vc		_MSC_VER
     6.0     6.0     1200
     2002    7.0     1300
     2003    7.1     1310
@@ -16,6 +16,7 @@
     2013    12.0    1800
     2015    14.0    1900
     2017    14.1    1910
+    2019    14.2    1920
 */
 
 #if !defined(_MSC_VER)
@@ -225,9 +226,9 @@
   #endif
   #ifndef _Static_assert
    #if _MSC_VER >= 1400
-    #define _Static_assert(c,...)   typedef char __CCWRAP_M_CAT(__static_assert_failed_L,__LINE__)[(c) ? 1/*OK*/ : -1/*NG*/]
+    #define _Static_assert(c,...)   typedef char __CCWRAP_M_CAT(__static_assert_failed_L,__LINE__)[(c) ? 1 : -1]
    #else
-    #define _Static_assert(c, m)    typedef char __CCWRAP_M_CAT(__static_assert_failed_L,__LINE__)[(c) ? 1/*OK*/ : -1/*NG*/]
+    #define _Static_assert(c, m)    typedef char __CCWRAP_M_CAT(__static_assert_failed_L,__LINE__)[(c) ? 1 : -1]
    #endif
   #endif
   #if !defined(_Alignof)
