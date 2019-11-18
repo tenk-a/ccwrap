@@ -104,6 +104,9 @@
       #if !defined(thread_local)
     	#define thread_local	    	__declspec(thread)
       #endif
+   	  #if !defined(noexcept)
+   	    #define noexcept	        	throw()
+   	  #endif
       #if _MSC_VER < 1700   // vc10 or less
     	#define __CCWRAP_NO_CHAR1632_T	0
     	#if !defined(final) && _MSC_VER >= 1400 // vc8-10
@@ -112,9 +115,6 @@
     	  #define final
     	#endif
     	#if _MSC_VER < 1600 // vc9 or less
-    	  #if !defined(noexcept)
-    	    #define noexcept	    	throw()
-    	  #endif
     	  #if !defined(nullptr)
     	    #define nullptr 	    	(0)
     	  #endif
