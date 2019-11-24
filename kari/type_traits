@@ -1,0 +1,517 @@
+/**
+ *  @file   type_traits
+ *  @brief  type traits for c++03
+ *  @author tenk* (Masashi Kitamura)
+ *  @date   2014,2019
+ *  @note
+ *
+ */
+#ifndef STD_TYPE_TRAITS_INCLUDED
+#define STD_TYPE_TRAITS_INCLUDED
+
+#include <ccwrap_header.h>
+#include <stddef.h>
+
+namespace std {
+
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+enum __ccwrap_test_enum_t { __ccwrap_test_enum_t1=1, __ccwrap_test_enum_t2=2 };
+
+struct __CCWRAP_TestStruct {
+    void func();
+};
+struct __CCWRAP_TestStruct2 {
+    virtual ~__CCWRAP_TestStruct2();
+    virtual void func();
+};
+#endif  // __CCWRAP_TYPE_TRAITS_CHECK
+
+
+// integral_constant
+#ifndef __CCWRAP_NO_STATIC_CONST_INT_MEMBER
+#ifndef __WATCOMC__
+template <class _Tp, _Tp __v>
+#else
+template <class _Tp, int __v>
+#endif
+struct integral_constant {
+    static const _Tp            value = __v;
+    typedef _Tp                 value_type;
+    typedef integral_constant   type;
+    operator value_type() const noexcept {return value;}
+};
+template <class _Tp, int __v> const _Tp integral_constant<_Tp, __v>::value;
+#else   // __CCWRAP_NO_STATIC_CONST_INT_MEMBER
+template <class _Tp, int __v>
+struct integral_constant {
+    enum { value = __v };
+    typedef _Tp                 value_type;
+    typedef integral_constant   type;
+    operator value_type() const noexcept {return value;}
+};
+#endif
+
+
+// bool_constant
+template <bool __v>
+struct bool_constant : public integral_constant<bool, __v> {};
+
+typedef bool_constant<true>  true_type;
+typedef bool_constant<false> false_type;
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(true_type::value, "");
+static_assert(false_type::value == false, "");
+#endif
+
+
+// conditional
+template <bool _Cc, class _Then, class _Else>
+    struct conditional {typedef _Then type;};
+
+template <class _Then, class _Else>
+struct conditional<false, _Then, _Else> {typedef _Else type;};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert((conditional<true, true_type, false_type>::type::value), "");
+static_assert((conditional<false, true_type, false_type>::type::value) == false, "");
+#endif
+
+
+// enable_if
+template <bool, class _Tp = void> struct enable_if {};
+template <class _Tp> struct enable_if<true, _Tp> {typedef _Tp type;};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert((enable_if<true, true_type>::type::value), "");
+//static_assert(enable_if<false, true_type>::type  == false, "");
+#endif
+
+
+// is_const
+template <class _Tp> struct is_const            : public false_type {};
+template <class _Tp> struct is_const<_Tp const> : public true_type {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_const<int const>::value, "");
+static_assert(is_const<int>::value == false, "");
+static_assert(is_const<void const* const>::value, "");
+static_assert(is_const<float * const>::value, "");
+static_assert(is_const<float volatile* const>::value, "");
+static_assert(is_const<double const* >::value == false, "");
+static_assert(is_const<float * volatile>::value == false, "");
+#endif
+
+
+// is_volatile
+template <class _Tp> struct is_volatile               : public false_type {};
+template <class _Tp> struct is_volatile<_Tp volatile> : public true_type {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_volatile<volatile int>::value, "");
+static_assert(is_volatile<int>::value == false, "");
+static_assert(is_volatile<void volatile* volatile>::value, "");
+static_assert(is_volatile<float * volatile>::value, "");
+static_assert(is_volatile<double volatile* >::value == false, "");
+static_assert(is_volatile<int volatile* const>::value == false, "");
+#endif
+
+
+// remove_const
+template <class _Tp> struct remove_const            {typedef _Tp type;};
+template <class _Tp> struct remove_const<const _Tp> {typedef _Tp type;};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_const<remove_const<int>::type>::value == false, "");
+static_assert(is_const<remove_const<int const>::type>::value == false, "");
+static_assert(is_const<remove_const<double const volatile>::type>::value == false, "");
+#endif
+
+
+// remove_volatile
+template <class _Tp> struct remove_volatile               {typedef _Tp type;};
+template <class _Tp> struct remove_volatile<volatile _Tp> {typedef _Tp type;};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_volatile<remove_volatile<int>::type>::value == false, "");
+static_assert(is_volatile<remove_volatile<int volatile>::type>::value == false, "");
+static_assert(is_volatile<remove_volatile<int const volatile>::type>::value == false, "");
+#endif
+
+
+// remove_cv
+template <class _Tp> struct remove_cv { typedef typename remove_volatile<typename remove_const<_Tp>::type>::type type; };
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_const<remove_cv<int>::type>::value == false, "");
+static_assert(is_const<remove_cv<int const>::type>::value == false, "");
+static_assert(is_const<remove_cv<int const volatile>::type>::value == false, "");
+static_assert(is_volatile<remove_cv<int>::type>::value == false, "");
+static_assert(is_volatile<remove_cv<int volatile>::type>::value == false, "");
+static_assert(is_volatile<remove_cv<int const volatile>::type>::value == false, "");
+#endif
+
+
+template <class _Tp> struct __ccwrap_is_void       : public false_type {};
+template <>          struct __ccwrap_is_void<void> : public true_type {};
+template <class _Tp> struct is_void : public __ccwrap_is_void<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_void<void>::value, "");
+static_assert(is_void<int>::value == false, "");
+static_assert(is_void<bool>::value == false, "");
+static_assert(is_void<long*>::value == false, "");
+static_assert(is_void<void*>::value == false, "");
+#endif
+
+//template <class _Tp> struct __is_nullptr_t_impl       : public false_type {};
+//template <>          struct __is_nullptr_t_impl<nullptr_t> : public true_type {};
+//template <class _Tp> struct __is_nullptr_t : public __is_nullptr_t_impl<typename remove_cv<_Tp>::type> {};
+
+
+// is_integral
+template <class _Tp> struct __ccwrap_is_integral                     : public false_type {};
+template <>          struct __ccwrap_is_integral<bool>               : public true_type {};
+template <>          struct __ccwrap_is_integral<char>               : public true_type {};
+template <>          struct __ccwrap_is_integral<signed char>        : public true_type {};
+template <>          struct __ccwrap_is_integral<unsigned char>      : public true_type {};
+template <>          struct __ccwrap_is_integral<wchar_t>            : public true_type {};
+#if 0 //ndef _CCWRAP_HAS_NO_UNICODE_CHARS
+template <>          struct __ccwrap_is_integral<char16_t>           : public true_type {};
+template <>          struct __ccwrap_is_integral<char32_t>           : public true_type {};
+#endif  // _CCWRAP_HAS_NO_UNICODE_CHARS
+template <>          struct __ccwrap_is_integral<short>              : public true_type {};
+template <>          struct __ccwrap_is_integral<unsigned short>     : public true_type {};
+template <>          struct __ccwrap_is_integral<int>                : public true_type {};
+template <>          struct __ccwrap_is_integral<unsigned int>       : public true_type {};
+template <>          struct __ccwrap_is_integral<long>               : public true_type {};
+template <>          struct __ccwrap_is_integral<unsigned long>      : public true_type {};
+template <>          struct __ccwrap_is_integral<long long>          : public true_type {};
+template <>          struct __ccwrap_is_integral<unsigned long long> : public true_type {};
+#if 0 //ndef _CCWRAP_HAS_NO_INT128
+template <>          struct __ccwrap_is_integral<__int128_t>         : public true_type {};
+template <>          struct __ccwrap_is_integral<__uint128_t>        : public true_type {};
+#endif
+template <class _Tp> struct is_integral : public __ccwrap_is_integral<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_integral<void>::value == false, "");
+static_assert(is_integral<__ccwrap_test_enum_t>::value == false, "");
+static_assert(is_integral<float>::value == false, "");
+static_assert(is_integral<double>::value == false, "");
+static_assert(is_integral<long double>::value == false, "");
+static_assert(is_integral<true_type>::value == false, "");
+static_assert(is_integral<int*>::value == false, "");
+static_assert(is_integral<bool>::value, "");
+static_assert(is_integral<char>::value, "");
+static_assert(is_integral<signed char>::value, "");
+static_assert(is_integral<unsigned char>::value, "");
+static_assert(is_integral<wchar_t>::value, "");
+static_assert(is_integral<short>::value, "");
+static_assert(is_integral<unsigned short>::value, "");
+static_assert(is_integral<int>::value, "");
+static_assert(is_integral<unsigned int>::value, "");
+static_assert(is_integral<long>::value, "");
+static_assert(is_integral<unsigned long>::value, "");
+static_assert(is_integral<long long>::value, "");
+static_assert(is_integral<unsigned long long>::value, "");
+#endif
+
+
+// is_floating_point
+template <class _Tp> struct __ccwrap_is_floating_point              : public false_type {};
+template <>          struct __ccwrap_is_floating_point<float>       : public true_type {};
+template <>          struct __ccwrap_is_floating_point<double>      : public true_type {};
+template <>          struct __ccwrap_is_floating_point<long double> : public true_type {};
+
+template <class _Tp> struct is_floating_point : public __ccwrap_is_floating_point<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_floating_point<void>::value == false, "");
+static_assert(is_floating_point<int>::value == false, "");
+static_assert(is_floating_point<long>::value == false, "");
+static_assert(is_floating_point<__ccwrap_test_enum_t>::value == false, "");
+static_assert(is_floating_point<true_type>::value == false, "");
+static_assert(is_floating_point<float>::value, "");
+static_assert(is_floating_point<double>::value, "");
+static_assert(is_floating_point<long double>::value, "");
+static_assert(is_floating_point<long double*>::value == false, "");
+#endif
+
+
+// is_array
+template <class _Tp> struct is_array : public false_type {};
+template <class _Tp> struct is_array<_Tp[]> : public true_type {};
+template <class _Tp, size_t _Np> struct is_array<_Tp[_Np]> : public true_type {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_array<int>::value == false, "");
+static_assert(is_array<void>::value == false, "");
+static_assert(is_array<int*>::value == false, "");
+static_assert(is_array<int[]>::value, "");
+static_assert(is_array<__ccwrap_test_enum_t[]>::value, "");
+static_assert(is_array<__CCWRAP_TestStruct[]>::value, "");
+typedef int __ccwrap_intary0[];
+static_assert(is_array<__ccwrap_intary0>::value, "");
+#ifndef __WATCOMC__
+static_assert(is_array<int[10]>::value, "");
+typedef int __ccwrap_intary10[10];
+static_assert(is_array<__ccwrap_intary10>::value, "");
+#endif
+#endif
+
+
+// is_pointer
+template <class _Tp> struct __ccwrap_is_pointer       : public false_type {};
+template <class _Tp> struct __ccwrap_is_pointer<_Tp*> : public true_type {};
+template <class _Tp> struct is_pointer : public __ccwrap_is_pointer<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_pointer<void>::value == false, "");
+static_assert(is_pointer<int>::value == false, "");
+static_assert(is_pointer<true_type>::value == false, "");
+static_assert(is_pointer<int&>::value == false, "");
+static_assert(is_pointer<void*>::value, "");
+static_assert(is_pointer<void**>::value, "");
+static_assert(is_pointer<void** const>::value, "");
+static_assert(is_pointer<void const** volatile>::value, "");
+static_assert(is_pointer<int*>::value, "");
+static_assert(is_pointer<true_type*>::value, "");
+#endif
+
+
+// is_reference
+template <class _Tp> struct is_lvalue_reference       : public false_type {};
+template <class _Tp> struct is_lvalue_reference<_Tp&> : public true_type {};
+template <class _Tp> struct is_rvalue_reference        : public false_type {};
+#if 0 //ndef _CCWRAP_HAS_NO_RVALUE_REFERENCES
+template <class _Tp> struct is_rvalue_reference<_Tp&&> : public true_type {};
+#endif
+template <class _Tp> struct is_reference        : public false_type {};
+template <class _Tp> struct is_reference<_Tp&>  : public true_type {};
+#if 0 //ndef _CCWRAP_HAS_NO_RVALUE_REFERENCES
+template <class _Tp> struct is_reference<_Tp&&> : public true_type {};
+#endif
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_lvalue_reference<void>::value == false, "");
+static_assert(is_lvalue_reference<int*>::value == false, "");
+static_assert(is_lvalue_reference<int*&>::value, "");
+static_assert(is_lvalue_reference<int&>::value, "");
+static_assert(is_lvalue_reference<true_type&>::value, "");
+static_assert(is_reference<void>::value == false, "");
+static_assert(is_reference<int*>::value == false, "");
+static_assert(is_reference<int*&>::value, "");
+static_assert(is_reference<int&>::value, "");
+static_assert(is_reference<true_type&>::value, "");
+#endif
+
+
+// is_union
+template <class _Tp> struct __ccwrap_union : public false_type {};
+template <class _Tp> struct is_union : public __ccwrap_union< typename remove_cv<_Tp>::type > {};
+//template <class _Tp> struct is_union : public false_type {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_union<__CCWRAP_TestStruct>::value == false, "");
+static_assert(is_union<__CCWRAP_TestStruct2>::value == false, "");
+static_assert(is_union<void>::value == false, "");
+static_assert(is_union<int>::value == false, "");
+#endif
+
+
+// is_class
+namespace __is_class_imp {
+    template <class _Tp> char  __test(char _Tp::*);
+    template <class _Tp> long  __test(...);
+}
+template <class _Tp> struct  is_class : public bool_constant<
+    sizeof(__is_class_imp::__test< typename remove_cv<_Tp>::type >(0)) == 1 && !is_union<_Tp>::value
+> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_class<void>::value == false, "");
+static_assert(is_class<int>::value == false, "");
+static_assert(is_class<__CCWRAP_TestStruct*>::value == false, "");
+static_assert(is_class<__CCWRAP_TestStruct>::value, "");
+static_assert(is_class<__CCWRAP_TestStruct2>::value, "");
+static_assert(is_class<const __CCWRAP_TestStruct>::value);
+static_assert(is_class<__CCWRAP_TestStruct2 const>::value, "");
+#endif
+
+
+// is_same
+template <class _Tp, class _Up> struct is_same           : public false_type {};
+template <class _Tp>            struct is_same<_Tp, _Tp> : public true_type {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert((is_same<void, void>::value), "");
+static_assert((is_same<int, int>::value), "");
+static_assert((is_same<double, double>::value), "");
+static_assert((is_same<__CCWRAP_TestStruct, __CCWRAP_TestStruct>::value), "");
+static_assert((is_same<__CCWRAP_TestStruct2, __CCWRAP_TestStruct2>::value), "");
+static_assert((is_same<void*, void>::value) == false, "");
+static_assert((is_same<__CCWRAP_TestStruct, __CCWRAP_TestStruct*>::value) == false, "");
+static_assert((is_same<__CCWRAP_TestStruct, __CCWRAP_TestStruct&>::value) == false, "");
+static_assert((is_same<__CCWRAP_TestStruct2*, __CCWRAP_TestStruct2*&>::value) == false, "");
+#endif
+
+
+// is_function
+namespace __ccwrap_is_function_imp {
+    template <class _Tp> char  __test(_Tp*);
+    template <class _Tp> long  __test(...);
+    template <class _Tp> _Tp&  __source();
+}
+template <class _Tp, bool
+    =   is_class<_Tp>::value
+     || is_union<_Tp>::value
+     || is_void<_Tp>::value
+     || is_reference<_Tp>::value
+   //|| __is_nullptr_t<_Tp>::value
+>
+struct __ccwrap_is_function : public bool_constant< sizeof(
+        __ccwrap_is_function_imp::__test<_Tp>(__ccwrap_is_function_imp::__source<_Tp>())
+    ) == 1 > {};
+template <class _Tp> struct __ccwrap_is_function<_Tp, true> : public false_type {};
+template <class _Tp> struct is_function : public __ccwrap_is_function<_Tp> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_function<void>::value == false, "");
+static_assert(is_function<int>::value == false, "");
+static_assert(is_function<double>::value == false, "");
+static_assert(is_function<__CCWRAP_TestStruct*>::value == false, "");
+static_assert(is_function<__CCWRAP_TestStruct>::value == false, "");
+static_assert(is_function<__CCWRAP_TestStruct2 const>::value == false, "");
+static_assert(is_function<int()>::value, "");
+static_assert(is_function<void(int,int)>::value);
+static_assert(is_function<void*(...)>::value, "");
+typedef void (*__ccwrap_dmyfunc_t)(int,int);
+static_assert(is_function<__ccwrap_dmyfunc_t>::value == false, "");
+#endif
+
+
+// is_member_function_pointer
+template <class _Tp> struct            __ccwrap_is_member_function_pointer             : public false_type {};
+template <class _Tp, class _Up> struct __ccwrap_is_member_function_pointer<_Tp _Up::*> : public is_function<_Tp> {};
+template <class _Tp> struct is_member_function_pointer
+    : public __ccwrap_is_member_function_pointer<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_member_function_pointer<void>::value == false, "");
+static_assert(is_member_function_pointer<int>::value == false, "");
+static_assert(is_member_function_pointer<double>::value == false, "");
+static_assert(is_member_function_pointer<__CCWRAP_TestStruct*>::value == false, "");
+static_assert(is_member_function_pointer<__CCWRAP_TestStruct>::value == false, "");
+static_assert(is_member_function_pointer<__CCWRAP_TestStruct const>::value == false, "");
+static_assert(is_member_function_pointer<int(void)>::value == false, "");
+static_assert(is_member_function_pointer< void (__CCWRAP_TestStruct::*) >::value == false, "");
+static_assert(is_member_function_pointer< void (__CCWRAP_TestStruct::*)() >::value, "");
+#endif
+
+
+// is_member_pointer
+template <class _Tp>            struct __ccwrap_is_member_pointer             : public false_type {};
+template <class _Tp, class _Up> struct __ccwrap_is_member_pointer<_Tp _Up::*> : public true_type {};
+template <class _Tp> struct is_member_pointer : public __ccwrap_is_member_pointer<typename remove_cv<_Tp>::type> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_member_pointer<void>::value == false, "");
+static_assert(is_member_pointer<int>::value == false, "");
+static_assert(is_member_pointer<double>::value == false, "");
+static_assert(is_member_pointer<__CCWRAP_TestStruct*>::value == false, "");
+static_assert(is_member_pointer<__CCWRAP_TestStruct>::value == false, "");
+static_assert(is_member_pointer<__CCWRAP_TestStruct const>::value == false, "");
+static_assert(is_member_pointer<int(void)>::value == false, "");
+static_assert(is_member_pointer< void (__CCWRAP_TestStruct::*) >::value);
+static_assert(is_member_pointer< void (__CCWRAP_TestStruct::*)() >::value, "");
+#endif
+
+
+// is_member_object_pointer
+template <class _Tp> struct is_member_object_pointer
+    : public bool_constant< is_member_pointer<_Tp>::value && !is_member_function_pointer<_Tp>::value> {};
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_member_object_pointer<void>::value == false, "");
+static_assert(is_member_object_pointer<int>::value == false, "");
+static_assert(is_member_object_pointer<double>::value == false, "");
+static_assert(is_member_object_pointer<__CCWRAP_TestStruct*>::value == false, "");
+static_assert(is_member_object_pointer<__CCWRAP_TestStruct>::value == false, "");
+static_assert(is_member_object_pointer<__CCWRAP_TestStruct const>::value == false, "");
+static_assert(is_member_object_pointer<int(void)>::value == false, "");
+static_assert(is_member_object_pointer< void (__CCWRAP_TestStruct::*) >::value);
+static_assert(is_member_object_pointer< void (__CCWRAP_TestStruct::*)() >::value == false, "");
+#endif
+
+
+// is_enum
+template <class _Tp> struct is_enum
+    : public bool_constant<
+        !is_void<_Tp>::value
+    &&  !is_integral<_Tp>::value
+    &&  !is_floating_point<_Tp>::value
+    &&  !is_array<_Tp>::value
+    &&  !is_pointer<_Tp>::value
+    &&  !is_reference<_Tp>::value
+    &&  !is_member_pointer<_Tp>::value
+    &&  !is_union<_Tp>::value
+    &&  !is_class<_Tp>::value
+    &&  !is_function<_Tp>::value
+> { };
+
+#ifdef __CCWRAP_TYPE_TRAITS_CHECK
+static_assert(is_enum<void>::value == false, "");
+static_assert(is_enum<int>::value == false, "");
+static_assert(is_enum<long>::value == false, "");
+static_assert(is_enum<double>::value == false, "");
+static_assert(is_enum<double*>::value == false, "");
+static_assert(is_enum<__ccwrap_test_enum_t>::value);
+static_assert(is_enum<__ccwrap_test_enum_t[]>::value == false, "");
+#ifndef __WATCOMC__
+static_assert(is_enum<__ccwrap_test_enum_t[10]>::value == false, "");
+#endif
+#endif
+
+
+// is_arithmetic
+template <class _Tp> struct is_arithmetic
+    : public bool_constant<is_integral<_Tp>::value || is_floating_point<_Tp>::value> {};
+
+
+// is_fundamental
+template <class _Tp> struct is_fundamental : public bool_constant<
+    is_void<_Tp>::value
+    //|| __is_nullptr_t<_Tp>::value
+    || is_arithmetic<_Tp>::value
+> {};
+
+
+// is_scalar
+template <class _Tp> struct is_scalar : public bool_constant<
+       is_arithmetic<_Tp>::value
+    || is_member_pointer<_Tp>::value
+    || is_pointer<_Tp>::value
+    //|| __is_nullptr_t<_Tp>::value
+    || is_enum<_Tp>::value
+> {};
+//template <> struct is_scalar<nullptr_t> : public true_type {};
+
+
+// is_object
+template <class _Tp> struct is_object : public bool_constant<
+       is_scalar<_Tp>::value
+    || is_array<_Tp>::value
+    || is_union<_Tp>::value
+    || is_class<_Tp>::value
+> {};
+
+
+// is_compound
+template <class _Tp> struct is_compound : public bool_constant<!is_fundamental<_Tp>::value> {};
+
+
+} // namespace std
+
+#endif
