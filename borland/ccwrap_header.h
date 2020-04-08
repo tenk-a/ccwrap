@@ -13,14 +13,14 @@
 #undef _NO_INLINING
 
 #ifndef __CCWRAP_M_CAT
-  #define __CCWRAP_M_CAT(a,b)	    __CCWRAP_M_CAT_S2(a,b)
+  #define __CCWRAP_M_CAT(a,b)       __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)    __CCWRAP_M_CAT_S3(a##b)
-  #define __CCWRAP_M_CAT_S3(x)	    x
+  #define __CCWRAP_M_CAT_S3(x)      x
 #endif
 
 #if __BORLANDC__ < 0x700
 #ifndef __CCWRAP_NATIVE_C_HEADER_DIR
-#define __CCWRAP_NATIVE_C_HEADER_DIR	../include
+#define __CCWRAP_NATIVE_C_HEADER_DIR    ../include
 #endif
 
 #ifndef __CCWRAP_NATIVE_C_HEADER_PATH
@@ -31,7 +31,7 @@
 #define __CCWRAP_NATIVE_STL_HEADER_PATH(x)   <__CCWRAP_NATIVE_C_HEADER_DIR/##x>
 #endif
 #else
-//#define __CCWRAP_NATIVE_C_HEADER_DIR	../crtl
+//#define __CCWRAP_NATIVE_C_HEADER_DIR  ../crtl
 #endif
 
 #define __CCWRAP_HAS_PRAGMA_ONCE
@@ -42,21 +42,24 @@
 #define __CCWRAP_NO_HEADER_STDALIGN
 #define __CCWRAP_NO_HEADER_STDNORETURN
 
+#define __CCWRAP_LONG_BIT           32
+#define __CCWRAP_NATIVE_INT_BIT     32
+
 #if __BORLANDC__ < 0x700
   //#if !defined(__has_include)
-  //	#define __has_include(x)    	0
+  //    #define __has_include(x)        0
   //#endif
   //#if !defined(__has_feature)
-  //  #define __has_feature(x)	    	0
+  //  #define __has_feature(x)          0
   //#endif
   #if __BORLANDC__ < 0x610
    #if BORLANDC__ < 0x561
     #define __CCWRAP_NO_HEADER_STDBOOL
     #if !defined(__FUNCTION__)
-     #define __FUNCTION__   	    ""
+     #define __FUNCTION__           ""
     #endif
     #if !defined(__func__)
-     #define __func__	    	    ""
+     #define __func__               ""
     #endif
    #endif
   #endif
@@ -64,8 +67,9 @@
 
 #if defined(__cplusplus)
  #if __BORLANDC__ < 0x700
+  #define __CCWRAP_LESS_CXX11
   #if !defined(nullptr)
-    #define nullptr 	    	    (0)
+    #define nullptr                 (0)
   #endif
   #if !defined(override)
     #define override
@@ -77,18 +81,21 @@
   //  #define thread_local
   //#endif
   #if !defined(noexcept)
-    #define noexcept	    	    	throw()
+    #define noexcept                    throw()
+  #endif
+  #if !defined(constexpr)
+    #define constexpr
   #endif
   #if !defined(alignof)
     namespace __ccwrap_detail {
-    	template<class T> class __alignof {
-    	    struct U { char a_; T b_; };
-    	public:
-    	    //enum { value = int(ptrdiff_t(&((U const*)0)->b_)) };
-    	    enum { value = int((char*)&const_cast<char&>(reinterpret_cast<char const volatile&>(((U const*)0)->b_))) };
-    	};
+        template<class T> class __alignof {
+            struct U { char a_; T b_; };
+        public:
+            //enum { value = int(ptrdiff_t(&((U const*)0)->b_)) };
+            enum { value = int((char*)&const_cast<char&>(reinterpret_cast<char const volatile&>(((U const*)0)->b_))) };
+        };
     }
-    #define alignof(a)	    	    (__ccwrap_detail::__alignof<a>::value)
+    #define alignof(a)              (__ccwrap_detail::__alignof<a>::value)
   #endif
   //#if !defined(alignas)
   //  #define alignas(a)
@@ -96,8 +103,8 @@
   #if __BORLANDC__ < 0x610
    #define __CCWRAP_NO_CXX11_AUTO   1
    #define __CCWRAP_NO_DECLTYPE     1
-   typedef wchar_t  	    	    char16_t;
-   typedef unsigned 	    	    char32_t;
+   typedef wchar_t                  char16_t;
+   typedef unsigned                 char32_t;
    #if !defined(static_assert)
     namespace __ccwrap { template<int x> struct static_assert_check{}; }
     template <bool x> struct __static_assert_FAILED_;
@@ -111,24 +118,25 @@
      #define _Pragma(...)
     #endif
    #else //if BORLANDC__ < 0x561
-    #define __CCWRAP_NO_CXX11_VARIADIC_MACROS	1
+    #define __CCWRAP_NO_STATIC_CONST_INT_MEMBER_INITIALIZATION
+    #define __CCWRAP_NO_CXX11_VARIADIC_MACROS   1
     #if !defined(static_assert)
      #define static_assert(c, m)    typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
     #endif
    #endif
   #endif
  #endif
-#else	// for c
+#else   // for c
  #if __BORLANDC__ < 0x700
   #if __BORLANDC__ < 0x610
    #if !defined inline
-    #define inline  	    	    __inline
+    #define inline                  __inline
    #endif
    #if !defined restrict
     #define restrict
    #endif
    #if !defined _Bool
-    #define _Bool   	    	    char
+    #define _Bool                   char
    #endif
    #ifndef _Noreturn
     #define _Noreturn
@@ -140,7 +148,7 @@
    // #define _Alignas(a)
    //#endif
    #if !defined(_Alignof)
-    #define _Alignof(T)     	    ((unsigned)(&((struct {char a; T t_;}*)(0))->t_))
+    #define _Alignof(T)             ((unsigned)(&((struct {char a; T t_;}*)(0))->t_))
    #endif
    #if __BORLANDC__ >= 0x561
     #if !defined(_Static_assert)
@@ -167,4 +175,4 @@
 #endif
 
 
-#endif	// CCWRAP_HEADER_H_INCLUDED
+#endif  // CCWRAP_HEADER_H_INCLUDED

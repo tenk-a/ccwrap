@@ -9,9 +9,9 @@
 #endif
 
 #ifndef __CCWRAP_M_CAT
-  #define __CCWRAP_M_CAT(a,b)	    __CCWRAP_M_CAT_S2(a,b)
+  #define __CCWRAP_M_CAT(a,b)       __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)    __CCWRAP_M_CAT_S3(a##b)
-  #define __CCWRAP_M_CAT_S3(x)	    x
+  #define __CCWRAP_M_CAT_S3(x)      x
 #endif
 
 
@@ -19,32 +19,37 @@
 #define __CCWRAP_NO_THREAD_LOCAL
 
 //#if !defined(__has_include)
-//  #define __has_include(x)	    	0
+//  #define __has_include(x)            0
 //#endif
 //#if !defined(__has_feature)
-//  #define __has_feature(x)	    	0
+//  #define __has_feature(x)            0
 //#endif
 #if !defined(_Pragma)
   #define _Pragma(...)
 #endif
 
+#define __CCWRAP_LONG_BIT           32
+#define __CCWRAP_NATIVE_INT_BIT     32
 
 #if defined(__cplusplus)
   #define __CCWRAP_NO_CXX11_AUTO    1
-  #define __CCWRAP_NO_DECLTYPE	    1
+  #define __CCWRAP_NO_DECLTYPE      1
   #if !defined(noexcept)
-    #define noexcept	    	    throw()
+    #define noexcept                throw()
+  #endif
+  #if !defined(constexpr)
+    #define constexpr
   #endif
   #if !defined(alignof)
     namespace __ccwrap_detail {
-    	template<class T> class __alignof {
-    	    struct U { char a; T b; };
-    	    enum { nt = sizeof(T), nu = sizeof(U), d = nu - nt };
-    	public:
-    	    enum { value = (nt < d) ? nt : d };
-    	};
+        template<class T> class __alignof {
+            struct U { char a; T b; };
+            enum { nt = sizeof(T), nu = sizeof(U), d = nu - nt };
+        public:
+            enum { value = (nt < d) ? nt : d };
+        };
     }
-    #define alignof(a)	    	    (__ccwrap_detail::__alignof<a>::value)
+    #define alignof(a)              (__ccwrap_detail::__alignof<a>::value)
   #endif
   //#if !defined(alignas)
   //  #define alignas(a)
@@ -58,9 +63,9 @@
   //#if !defined(thread_local)
   //  #define thread_local
   //#endif
-#else	// for c
+#else   // for c
   #if !defined(_Alignof)
-    #define _Alignof(type)  	    ((size_t)((ptrdiff_t)(&((struct {char a_; type t_;}*)(0))->t_)))
+    #define _Alignof(type)          ((size_t)((ptrdiff_t)(&((struct {char a_; type t_;}*)(0))->t_)))
   #endif
   //#ifndef _Alignas
   //  #define _Alignas(a)

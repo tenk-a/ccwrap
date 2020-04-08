@@ -24,6 +24,7 @@
 #include <wctype.h>
 #endif
 
+#include <cstddef>
 #include <cstdio>
 #include <cstddef>
 #include <cstring>
@@ -47,6 +48,12 @@
 #ifdef getc
 //#error defined getc
 #endif
+
+#ifdef USE_STRING_TEST
+int string_view_test();
+int string_util_test();
+#endif
+
 
 static_assert( sizeof(std::int64_t) == 8, "FAILED: sizeof(std::int64_t) == 8");
 //static_assert( sizeof(int32_t) == 4 );
@@ -141,6 +148,11 @@ int main(int argc, char* argv[])
  #endif
 
     std::printf("\n");
+
+#ifdef USE_STRING_TEST
+	string_view_test();
+	string_util_test();
+#endif
 
     return 0;
 }

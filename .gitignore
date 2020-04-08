@@ -18,4 +18,9 @@ tmp
 *.db
 *.ods
 *.err
+.vs
+*.log
+*.tlog
+*.ilk
 err.txt
+*.user
