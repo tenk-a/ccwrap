@@ -8,6 +8,8 @@
 #error this header is for dmc
 #endif
 
+#define __CCWRAP__
+
 #ifndef __CCWRAP_M_CAT
   #define __CCWRAP_M_CAT(a,b)       __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)    __CCWRAP_M_CAT_S3(a##b)
@@ -63,6 +65,9 @@
   //#if !defined(thread_local)
   //  #define thread_local
   //#endif
+  #define __CCWRAP_NO_CXX11_STRING
+  #define __CCWRAP_NO_HEADER_STRING_VIEW    0
+  #define __CCWRAP_NO_HEADER_ARRAY          0
 #else   // for c
   #if !defined(_Alignof)
     #define _Alignof(type)          ((size_t)((ptrdiff_t)(&((struct {char a_; type t_;}*)(0))->t_)))

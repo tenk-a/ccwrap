@@ -10,6 +10,8 @@
 #error this header is for open watcom c/c++
 #endif
 
+#define __CCWRAP__
+
 #ifndef __CCWRAP_M_CAT
   #define __CCWRAP_M_CAT(a,b)       __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)    a##b
@@ -89,6 +91,10 @@
   //#if !defined(thread_local)
   //  #define thread_local      //__declspec(thread)
   //#endif
+  #define __CCWRAP_NO_WCHAR
+  #define __CCWRAP_NO_CXX11_STRING          0
+  #define __CCWRAP_NO_HEADER_STRING_VIEW    0
+  #define __CCWRAP_NO_HEADER_ARRAY          0
 #else
   #if !defined(_Alignof)
     #define _Alignof(T)             ((size_t)((ptrdiff_t)(&((struct {char a_; T t_;}*)(0))->t_)))

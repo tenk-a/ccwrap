@@ -16,16 +16,13 @@
 #include <cstring>
 #include <iterator>
 #include <algorithm>
-#include <vector>
 
-//#undef assert
-//#define assert(x)       TEST_CHECK(x)
-
-#include <iostream>
+#include <string_view>
 #include <string>
-#include <fstream>
 
-//#include "string_view.hpp"
+#include <vector>
+#include <iostream>
+#include <fstream>
 
 #ifdef UNICODE
 #define T(a)            L##a
@@ -91,9 +88,8 @@ public:
 
 private:
 
-    /// コンストラクタ, empty,size,capacity,max_size,length を使用
+    /// use constructor, empty,size,capacity,max_size,length
     void test_constructor() {
-        // デフォルト・コンストラクタ
         STRING_VIEW str0;
         TEST_CHECK (str0.empty());
         TEST_CHECK (str0.size() == 0);
@@ -186,7 +182,7 @@ private:
      #endif
     }
 
-    /// 比較
+    /// Compare
     void test_compare()
     {
         const STRING_VIEW   str0;
@@ -328,7 +324,7 @@ private:
     }
 
  #if 1
-    /// [], at, begin, end, rbegin, rend, を使用
+    /// Use [], at, begin, end, rbegin, rend
     void test_etc()
     {
         using namespace std;
@@ -356,7 +352,7 @@ private:
         TEST_CHECK( memcmp(buf, T("zyxwvutsrqponmlkjihgfedcba9876543210"), 36) == 0 );
         memset(buf, 0, sizeof buf);
 
-     #if __cplusplus > 202000 || defined CCWRAP_STRING_VIEW_HPP
+     #if __cplusplus > 202000 || defined CCWRAP_STRING_VIEW_HPP_INCLUDED
         STRING_VIEW s1 = s0;
         s1.remove_prefix(10);
         TEST_EQ(s1, T("abcdefghijklmnopqrstuvwxyz"));
@@ -526,7 +522,8 @@ private:
         const STRING_VIEW str0(T("abcdefghijklmnopqrstuvwxyz"));
         TEST_EQ(str0.size(), 26);
         STRING_VIEW str1;
-        str1 = str0.substr();           TEST_CHECK (str1 == T("abcdefghijklmnopqrstuvwxyz"));
+        //str1 = str0.substr();         TEST_CHECK (str1 == T("abcdefghijklmnopqrstuvwxyz"));
+        str1 = str0.substr(0,str0.size()); TEST_CHECK (str1 == T("abcdefghijklmnopqrstuvwxyz"));
         str1 = str0.substr(0, 5);       TEST_CHECK (str1 == T("abcde"));
         str1 = str0.substr(1,5);        TEST_CHECK (str1 == T("bcdef"));
         str1 = str0.substr(5);          TEST_CHECK (str1 == T("fghijklmnopqrstuvwxyz"));

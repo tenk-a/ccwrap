@@ -23,6 +23,8 @@
 #error for visual c/c++ header
 #endif
 
+#define __CCWRAP__
+
 #ifndef __CCWRAP_M_CAT
   #define __CCWRAP_M_CAT(a,b)       __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)    __CCWRAP_M_CAT_S3(a##b)
@@ -93,9 +95,6 @@
 #endif
 
 #if defined(__cplusplus)
-  #if _MSC_VER >= 1920
-    #define __CCWRAP_HAS_STRING_VIEW
-  #endif
   #if _MSC_VER < 1920
     #if _MSC_VER >= 1910
       #define __CCWRAP_CONSTEXPR14    constexpr
@@ -103,9 +102,9 @@
       #define __CCWRAP_CONSTEXPR14
     #endif
     #if _MSC_VER < 1910
-      #if _MSC_VER >= 1600
-       #define static_assert(c, ...)  static_assert((c), "" __VA_ARGS__)
-      #endif
+      //#if _MSC_VER >= 1600
+      // #define static_assert(c, ...)  static_assert((c), "" __VA_ARGS__)
+      //#endif
       #if _MSC_VER < 1900 // vc12 or less
         #if !defined(alignas)
           #define alignas(a)              __declspec(align(a))
@@ -165,6 +164,9 @@
           #endif
         #endif
       #endif
+    #endif
+    #ifndef _HAS_CXX17
+     #define __CCWRAP_NO_HEADER_STRING_VIEW               0
     #endif
     #if _MSC_VER < 1900   // vc12 or less
       #define __CCWRAP_NO_HEADER_CXX14_MEMORY             0

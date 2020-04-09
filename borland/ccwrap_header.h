@@ -9,6 +9,8 @@
 #error this header is for borland-c++ (ver.5.5.1 or ver.7.20)
 #endif
 
+#define __CCWRAP__
+
 #define __CODEGUARD__
 #undef _NO_INLINING
 
@@ -46,6 +48,10 @@
 #define __CCWRAP_NATIVE_INT_BIT     32
 
 #if __BORLANDC__ < 0x700
+  typedef __int64 __CCWRAP_LLONG;
+  typedef unsigned __int64 __CCWRAP_ULLONG;
+  #define __CCWRAP_LLONG    __CCWRAP_LLONG
+  #define __CCWRAP_ULLONG   __CCWRAP_ULLONG
   //#if !defined(__has_include)
   //    #define __has_include(x)        0
   //#endif
@@ -123,8 +129,12 @@
     #if !defined(static_assert)
      #define static_assert(c, m)    typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
     #endif
+    #define __CCWRAP_NO_WCHAR
    #endif
   #endif
+  #define __CCWRAP_NO_HEADER_ARRAY          0
+  #define __CCWRAP_NO_HEADER_STRING_VIEW    0
+  #define __CCWRAP_NO_CXX11_STRING          0
  #endif
 #else   // for c
  #if __BORLANDC__ < 0x700

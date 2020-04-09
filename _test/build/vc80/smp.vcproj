@@ -354,14 +354,6 @@
 				RelativePath="..\..\src\smp.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\..\cxx\detail\string_util_test.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\cxx\detail\string_view_test.cpp"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

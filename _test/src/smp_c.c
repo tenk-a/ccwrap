@@ -43,8 +43,8 @@ static_assert(_Alignof(uint64_t) ==  8, "");
 static_assert(alignof(double) >=  8, "");
 
 
-_Bool	b1 = false;
-bool	b2 = true;
+_Bool   b1 = false;
+bool    b2 = true;
 
 #ifndef __CCWRAP_NO_ALIGNAS
 _Alignas(8) int     aa1 = (int)_Alignof(bool);
@@ -53,7 +53,7 @@ alignas(8)  int     aa2 = (int)alignof(int);
 
 static noreturn void  noreturnFunc(void) {
     if (b1)
-    	noreturnFunc1();
+        noreturnFunc1();
     exit(0);
 }
 
@@ -61,7 +61,7 @@ static noreturn void  noreturnFunc(void) {
 int main(int argc, char* argv[])
 {
     char    buf[1024] = {0};
-    char*   p	      = strdup("hello");
+    char*   p         = strdup("hello");
     assert(p != NULL);
     assert(strlen(p) == 5);
     assert(strcmp(p, "hello") == 0);
@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
 
     assert(strtoll("-123456789",0,0) == -123456789);
     assert(strtoull("1234567890",0,0) == 1234567890);
+
+    printf("LDBL_MAX_10_EXP(%d) + LDBL_MANT_DIG(%d) = %d\n", LDBL_MAX_10_EXP, LDBL_MANT_DIG, LDBL_MAX_10_EXP+LDBL_MANT_DIG);
 
     printf("\n");
 

@@ -1,26 +1,26 @@
 /**
- *  @file   string_view.hpp
+ *  @file   string_view
  *  @author tenka@6809.net (Masashi Kitamura)
  *  @date   2020
  *  @note
- *      (base ya_string.hpp
- *      TODO: constexpr
+ *      (base: http://www.6809.net/tenk/html/sbr/ya_string.zip )
+ *      TODO: constexpr, operator<<
  */
-#ifndef CCWRAP_STRING_VIEW_HPP
-#define CCWRAP_STRING_VIEW_HPP
+#ifndef CCWRAP_STRING_VIEW_HPP_INCLUDED
+#define CCWRAP_STRING_VIEW_HPP_INCLUDED
 
 //#include <ccwrap_header.h>
-
 #include <cstddef>
+
 #include <cstring>
 #include <iterator>
 #include <algorithm>
 #include <stdexcept>
-#include <vector>
+#include <ostream>
+#include <string>
 #ifndef assert
 #include <cassert>
 #endif
-
 
 namespace std {
 
@@ -49,7 +49,7 @@ public:
 public:
     basic_string_view() noexcept : ptr_(nullptr), size_(0) {}
     //basic_string_view(const value_type* cstr) : ptr_(cstr), size_(T::length(cstr)) {}
-    basic_string_view(const value_type* cstr) { C* cs = cstr ? cstr : ""; ptr_ = cs; size_ = T::length(cs);}
+    basic_string_view(const value_type* cstr) { C const* cs = cstr ? cstr : ""; ptr_ = cs; size_ = T::length(cs);}
     basic_string_view(const value_type* cary, size_type n) : ptr_(cary), size_(n) {}
     basic_string_view(const basic_string_view& str) noexcept : ptr_(str.ptr_), size_(str.size_) {}
     template<typename A> basic_string_view(const std::basic_string<C, T, A>& str) noexcept
@@ -166,7 +166,7 @@ template< typename C, class T >
 basic_string_view<C,T> basic_string_view<C,T>::substr_ne(std::size_t pos, std::size_t n) const noexcept {
     std::size_t l = size_;
     if (pos > l) pos = l;
-    if (len > l - pos) len = l - pos;
+    if (n > l - pos) n = l - pos;
     return basic_string_view<C,T>(ptr_+pos,n);
 }
 
@@ -284,9 +284,9 @@ int basic_string_view<C,T>::compare(const C* cary2, std::size_t n2) const {
  #if 0
     return compare(basic_string_view<C,T>(cary2, n2));
  #else
-    if (!cstr2) {
+    if (!cary2) {
         throw_out_of_range();
-        cstr2 = "";
+        cary2 = "";
     }
     std::size_t n1 = size_;
     difference_type d  = difference_type(n1 - n2);
@@ -1015,7 +1015,7 @@ basic_string_view<C,T>::copy(C* ary, std::size_t n, std::size_t pos) const {
 template< typename C, class T > basic_string_view<C,T>
 basic_string_view<C,T>::substr(std::size_t pos, std::size_t n) const {
     check_pos_len(pos, n);
-    return basic_string_view( ptr_ + pos, n );
+    return basic_string_view<C,T>( ptr_ + pos, n );
 }
 
 /// 位置情報が範囲外なら例外を投げる. また、長さが長すぎれば調整する.
@@ -1075,13 +1075,12 @@ __CCWRAP_STRING_VIEW_OP(>=,<=);
 
 // ostream << basic_string_view
 template<typename C, class T>
-std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>& os, const basic_string_view<C,T>& str) {
+basic_ostream<C,T>& operator<<(basic_ostream<C,T>& os, const basic_string_view<C,T>& str) {
     //TODO: remake
-    os << std::string(str.data(), str.size());
+    os << string(str.data(), str.size());
     return os;
 }
 
 }   // std
 
-
-#endif      // V_STRING_H
+#endif      //  CCWRAP_STRING_VIEW_HPP_INCLUDED

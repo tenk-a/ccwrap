@@ -3,6 +3,8 @@
 
 #define __CCWRAP_HAS_INCLUDE_NEXT
 
+#define __CCWRAP__
+
 #if defined _WIN32
 #define __CCWRAP_LONG_BIT           32
 #endif
@@ -12,7 +14,17 @@
 #define __CCWRAP_NATIVE_INT_BIT     32
 #endif
 
+#ifndef __CCWRAP_M_CAT
+ #define __CCWRAP_M_CAT(a,b)      __CCWRAP_M_CAT_S2(a,b)
+ #define __CCWRAP_M_CAT_S2(a,b)   __CCWRAP_M_CAT_S3(a##b)
+ #define __CCWRAP_M_CAT_S3(x)     x
+#endif
+
 #if defined(__cplusplus)
+ #if __cplusplus < 201703
+  #define __CCWRAP_NO_HEADER_STRING_VIEW    0
+ #endif
+ #if __cplusplus < 201100
   #ifndef nullptr
    #define nullptr                  0
   #endif
@@ -34,13 +46,10 @@
   #if !defined(constexpr)
     #define constexpr
   #endif
-  #ifndef __CCWRAP_M_CAT
-   #define __CCWRAP_M_CAT(a,b)      __CCWRAP_M_CAT_S2(a,b)
-   #define __CCWRAP_M_CAT_S2(a,b)   __CCWRAP_M_CAT_S3(a##b)
-   #define __CCWRAP_M_CAT_S3(x)     x
-  #endif
+  #define __CCWRAP_NO_CXX11_STRING
   #define __CCWRAP_NO_CXX11_AUTO    1
   #define __CCWRAP_NO_DECLTYPE      1
+  #define __CCWRAP_NO_HEADER_ARRAY  0
   #if !defined(alignof)
     namespace __ccwrap_detail {
         template<class T> class __align_of {
@@ -58,6 +67,7 @@
     template <> struct __static_assert_FAILED_<true> { enum { value = 1 }; };
     #define static_assert(c, ...) typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
   #endif
+ #endif
 #endif
 
 #endif

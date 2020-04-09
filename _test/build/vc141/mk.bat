@@ -3,20 +3,33 @@ setlocal
 
 set SRCDIR=..\..\src
 set INCDIR=..\..\..\..\ccwrap\vc
-set CCOPTS=-EHsc
+set INCDIRXX=..\..\..\..\ccwrap\cxx
+rem set CCOPTS=-EHsc -std:c++14 -Zc:__cplusplus -utf-8
+set CCOPTS=-EHsc -std:c++14 -Zc:__cplusplus
 
 if exist smp.exe del smp.exe
 if exist smp_c.exe del smp_c.exe
+if exist smp_cxx.exe del smp_cxx.exe
 if exist smp_stl.exe del smp_stl.exe
+if exist smp_math.exe del smp_math.exe
 
-cl -EHsc -DCOMPILING_FOR_ERROR -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
-cl -EHsc -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
+@echo [c++ core]
+cl %CCOPTS% -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
+@echo [c core]
 cl -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp_c.c
-cl -EHsc -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp_stl.cpp
-cl -EHsc -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp_math.cpp
+@echo [c++ with cxx-folder]
+cl %CCOPTS% -I%INCDIR% -I%INCDIRXX% -I%SRCDIR% %SRCDIR%\smp_cxx.cpp
+@echo [c++ stl with cxx-folder]
+cl %CCOPTS% -I%INCDIR% -I%INCDIRXX% -I%SRCDIR% %SRCDIR%\smp_stl.cpp
+@echo [math]
+cl %CCOPTS% -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp_math.cpp
+
+@echo [Compiling for error]
+cl %CCOPTS% -DCOMPILING_FOR_ERROR -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
 
 if exist smp.exe smp.exe
 if exist smp_c.exe smp_c.exe
+if exist smp_cxx.exe smp_cxx.exe
 if exist smp_stl.exe smp_stl.exe
 if exist smp_math.exe smp_math.exe
 

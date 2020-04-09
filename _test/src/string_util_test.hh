@@ -4,6 +4,11 @@
 #include <cfloat>
 #include <cmath>
 
+#ifndef __CCWRAP_LLONG
+#define __CCWRAP_LLONG  long long
+#define __CCWRAP_ULLONG unsigned long long
+#endif
+
 #ifndef TEST_CHECK
 #define  TEST_CHECK(cc) do {                                                            \
         try {                                                                           \
@@ -41,7 +46,7 @@
 
 
 
-static int to_string_test()
+static int to_string_smp()
 {
     using namespace std;
 
@@ -60,9 +65,10 @@ static int to_string_test()
     cout << "uint\t" << to_string(0U) << "," << to_string(1U) << "," << to_string(UINT_MAX) << endl;
     cout << "long\t" << to_string(0L) << "," << to_string(-1L) << "," << to_string(1L) << "," << to_string(LONG_MIN) << "," << to_string(LONG_MAX) << endl;
     cout << "ulong\t" << to_string(0UL) << "," << to_string(1UL) << "," << to_string(ULONG_MAX) << endl;
-    cout << "llong\t" << to_string(0LL) << "," << to_string(-1LL) << "," << to_string(1LL) << "," << to_string(LLONG_MIN) << "," << to_string(LLONG_MAX) << endl;
-    cout << "ullong\t" << to_string(0ULL) << "," << to_string(1ULL) << "," << to_string(ULLONG_MAX) << endl;
-
+    typedef __CCWRAP_LLONG  llong;
+    typedef __CCWRAP_ULLONG ullong;
+    cout << "llong\t" << to_string(llong(0)) << "," << to_string(llong(-1)) << "," << to_string(llong(1)) << "," << to_string(LLONG_MIN) << "," << to_string(LLONG_MAX) << endl;
+    cout << "ullong\t" << to_string(ullong(0)) << "," << to_string(ullong(1)) << "," << to_string(ULLONG_MAX) << endl;
     cout << "float\t" << to_string(0.0f) << "," << to_string(-1.0f) << "," << to_string(1.0f) << "," << to_string(-FLT_MAX) << "," << to_string(FLT_MAX) << endl;
 
     cout << "double\t" << to_string(0.0) << "," << to_string(-1.0) << "," << to_string(1.0) << "," << to_string(-DBL_MAX) << "," << to_string(DBL_MAX) << endl;
@@ -71,6 +77,71 @@ static int to_string_test()
 
     return 0;
 }
+
+
+static int to_string_test()
+{
+    using namespace std;
+
+    TEST_EQ(to_string('0'), "48");
+
+    typedef signed char schar;
+    typedef unsigned char uchar;
+    TEST_EQ(to_string(schar( 0)), "0");
+    TEST_EQ(to_string(schar(-1)), "-1");
+    TEST_EQ(to_string(schar( 1)), "1");
+    TEST_EQ(to_string(schar(SCHAR_MIN)), "-128");
+    TEST_EQ(to_string(schar(SCHAR_MAX)), "127");
+    TEST_EQ(to_string(uchar( 0)), "0");
+    TEST_EQ(to_string(uchar(-1)), "255");
+    TEST_EQ(to_string(uchar( 1)), "1");
+    TEST_EQ(to_string(uchar(UCHAR_MAX)), "255");
+
+    typedef unsigned short ushort;
+    TEST_EQ(to_string(short( 0)), "0");
+    TEST_EQ(to_string(short(-1)), "-1");
+    TEST_EQ(to_string(short( 1)), "1");
+    TEST_EQ(to_string(short(SHRT_MIN)), "-32768");
+    TEST_EQ(to_string(short(SHRT_MAX)), "32767");
+    TEST_EQ(to_string(ushort( 0)), "0");
+    TEST_EQ(to_string(ushort(-1)), "65535");
+    TEST_EQ(to_string(ushort( 1)), "1");
+    TEST_EQ(to_string(ushort(USHRT_MAX)), "65535");
+
+    typedef unsigned int uint;
+    TEST_EQ(to_string(int( 0)), "0");
+    TEST_EQ(to_string(int(-1)), "-1");
+    TEST_EQ(to_string(int( 1)), "1");
+    TEST_EQ(to_string(int(INT_MIN)), "-2147483648");
+    TEST_EQ(to_string(int(INT_MAX)), "2147483647");
+    TEST_EQ(to_string(uint( 0)), "0");
+    TEST_EQ(to_string(uint(-1)), "4294967295");
+    TEST_EQ(to_string(uint( 1)), "1");
+    TEST_EQ(to_string(uint(UINT_MAX)), "4294967295");
+
+    typedef unsigned long ulong;
+    TEST_EQ(to_string(long( 0)), "0");
+    TEST_EQ(to_string(long(-1)), "-1");
+    TEST_EQ(to_string(long( 1)), "1");
+    TEST_EQ(to_string(long(INT_MIN)), "-2147483648");
+    TEST_EQ(to_string(long(INT_MAX)), "2147483647");
+    TEST_EQ(to_string(ulong( 0)), "0");
+    TEST_EQ(to_string(ulong( 1)), "1");
+    TEST_EQ(to_string(ulong(UINT_MAX)), "4294967295");
+
+    typedef __CCWRAP_LLONG  llong;
+    typedef __CCWRAP_ULLONG ullong;
+    TEST_EQ(to_string(llong( 0)), "0");
+    TEST_EQ(to_string(llong(-1)), "-1");
+    TEST_EQ(to_string(llong( 1)), "1");
+    TEST_EQ(to_string(llong(INT_MIN)), "-2147483648");
+    TEST_EQ(to_string(llong(INT_MAX)), "2147483647");
+    TEST_EQ(to_string(ullong( 0)), "0");
+    TEST_EQ(to_string(ullong( 1)), "1");
+    TEST_EQ(to_string(ullong(UINT_MAX)), "4294967295");
+    return 0;
+}
+
 
 static int stol_test()
 {
@@ -88,7 +159,8 @@ static int stol_test()
     TEST_EQ(stof("100.0f"), 100.0f);
     TEST_EQ(stod("100.0"), 100.0);
     TEST_EQ(stold("100.0"), 100.0);
-#if 1
+
+ #ifndef __CCWRAP_NO_WCHAR
     TEST_EQ(stoi(L"100"), 100);
     TEST_EQ(stoi(L"-100"), -100);
     TEST_EQ(stol(L"100"), 100);
@@ -100,13 +172,14 @@ static int stol_test()
     TEST_EQ(stof(L"100.0f"), 100.0f);
     TEST_EQ(stod(L"100.0"), 100.0);
     TEST_EQ(stold(L"100.0"), 100.0);
-#endif
+ #endif
     return 0;
 }
 
 int string_util_test()
 {
+    //to_string_smp();
     to_string_test();
     stol_test();
-	return 0;
+    return 0;
 }

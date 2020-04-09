@@ -10,6 +10,8 @@
 #error this header is for orange c/c++
 #endif
 
+#define __CCWRAP__
+
 #ifndef __CCWRAP_M_CAT
   #define __CCWRAP_M_CAT(a,b)               __CCWRAP_M_CAT_S2(a,b)
   #define __CCWRAP_M_CAT_S2(a,b)            a##b

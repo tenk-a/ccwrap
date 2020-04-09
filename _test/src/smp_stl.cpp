@@ -132,31 +132,31 @@
 
 
 struct Containers {
-    std::string     	    	    string_;
-    std::vector<int>	    	    vector_;
-    std::list<int>  	    	    list_;
-    std::deque<int> 	    	    deque_;
-    std::map<int,int>	    	    map_;
-    std::multimap<int,int>  	    multimap_;
-    std::set<int>   	    	    set_;
-    std::multiset<int>	    	    multiset_;
+    std::string                     string_;
+    std::vector<int>                vector_;
+    std::list<int>                  list_;
+    std::deque<int>                 deque_;
+    std::map<int,int>               map_;
+    std::multimap<int,int>          multimap_;
+    std::set<int>                   set_;
+    std::multiset<int>              multiset_;
     std::unordered_map<int,int>     unordered_map_;
     std::unordered_multimap<int,int> unordered_multimap_;
-    std::unordered_set<int> 	    unordered_set_;
+    std::unordered_set<int>         unordered_set_;
     std::unordered_multiset<int>    unordered_multiset_;
 
-    std::forward_list<int>  	    forward_list_;
-    std::array<char,9>	    	    array_;
-    std::queue<int> 	    	    queue_;
-    std::stack<int> 	    	    stack_;
+    std::forward_list<int>          forward_list_;
+    std::array<char,9>              array_;
+    std::queue<int>                 queue_;
+    std::stack<int>                 stack_;
 };
 
 template<class T>
 void Container1_test_lite(T& t) {
-    T	t0;
-    T	t1 = T();
-    T	t2(t1);
-    T	t3 = t;
+    T   t0;
+    T   t1 = T();
+    T   t2(t1);
+    T   t3 = t;
     bool    b = t1.empty();
     //assert(b == true);
     //std::size_t   l = t1.size();
@@ -167,8 +167,8 @@ void Container1_test_lite(T& t) {
     vtype v1 = vtype();
  #if 0
     for (typename T::iterator it = t.begin(); it != t.end(); ++it) {
-    	typename T::value_type	v2 = *it;
-    	std::swap(v1, v2);
+        typename T::value_type  v2 = *it;
+        std::swap(v1, v2);
     }
     for (typename T::const_iterator it = t1.begin(); it != t1.end(); ++it) {
     }
@@ -177,9 +177,9 @@ void Container1_test_lite(T& t) {
 
 template<class T>
 void Container1_test_lite2(T& t) {
-    T	t1 = T();
-    T	t2(t1);
-    T	t3 = t;
+    T   t1 = T();
+    T   t2(t1);
+    T   t3 = t;
     bool    b = t1.empty();
     assert(b == true);
     std::size_t l = t1.size();
@@ -191,14 +191,14 @@ void Container1_test_lite2(T& t) {
     typedef typename T::value_type  vtype;
     vtype v1 = vtype();
     for (typename T::iterator it = t.begin(); it != t.end(); ++it) {
-    	typename T::value_type	v2 = *it;
+        typename T::value_type  v2 = *it;
     }
     for (typename T::const_iterator it = t1.begin(); it != t1.end(); ++it) {
-    	typename T::value_type const v2 = *it;
+        typename T::value_type const v2 = *it;
     }
 }
 
-void	Containers_test() {
+void    Containers_test() {
     Containers c;
 
     c.string_ = "1";
@@ -255,7 +255,7 @@ void	Containers_test() {
 template<int N> struct less_n { bool operator()(int n) { return n < N; } };
 
 void algorithm_test() {
-    std::vector<int>	v;
+    std::vector<int>    v;
     v.push_back(3);
     v.push_back(1);
     v.push_back(8);
@@ -266,7 +266,7 @@ void algorithm_test() {
     assert( std::any_of(v.begin(), v.end(), less_n<5>()) );
     assert( std::any_of(v.begin(), v.end(), less_n<0>()) == false );
 
-    std::vector<int>	v2(3);
+    std::vector<int>    v2(3);
     std::copy_if(v.begin(), v.end(), v2.begin(), less_n<5>());
     assert(v2[0] == 3 && v2[1] == 1 && v2[2] == 0);
 
@@ -281,7 +281,7 @@ void algorithm_test() {
     std::partition_copy(v.begin(), v.end(), std::back_inserter(v2), std::back_inserter(v3), less_n<5>());
     assert(v2.size() == 2 && v2[0] == 3 && v2[1] == 1 && v3.size() == 1 && v3[0] == 8);
 
-    std::vector<int>::iterator	it = std::partition_point(v.begin(), v.end(), less_n<5>());
+    std::vector<int>::iterator  it = std::partition_point(v.begin(), v.end(), less_n<5>());
     assert(it != v.end() && *it == 8);
     it = std::partition_point(v.begin(), v.end(), less_n<10>());
     assert(it == v.end());
@@ -289,7 +289,7 @@ void algorithm_test() {
     v3 = std::move(v2);
     assert(v3.size() == 2 && v3[0] == 3 && v3[1] == 1);
 
-    std::vector<std::string>	sv;
+    std::vector<std::string>    sv;
     sv.push_back("zero");
     sv.push_back("one");
     sv.push_back("two");
@@ -306,44 +306,44 @@ void algorithm_test() {
 
 class ChronoTimeDisp {
 public:
-    //typedef std::chrono::high_system_clock	clock;
-    typedef std::chrono::high_resolution_clock	clock;
+    //typedef std::chrono::high_system_clock    clock;
+    typedef std::chrono::high_resolution_clock  clock;
 
     ChronoTimeDisp() : start_(clock::now()) {}
     ~ChronoTimeDisp() {
-    	using namespace std::chrono;
-    	//std::time_t	    b = clock::to_time_t(start_);
-    	//std::time_t	    e = clock::to_time_t(clock::now());
-    	clock::time_point   e = clock::now();
-    	microseconds	    d = duration_cast<microseconds>(e - start_);
-    	std::cout << "time: " << d.count() << " usec" << std::endl;
+        using namespace std::chrono;
+        //std::time_t       b = clock::to_time_t(start_);
+        //std::time_t       e = clock::to_time_t(clock::now());
+        clock::time_point   e = clock::now();
+        microseconds        d = duration_cast<microseconds>(e - start_);
+        std::cout << "time: " << d.count() << " usec" << std::endl;
     }
 
 private:
-    clock::time_point	    start_;
+    clock::time_point       start_;
 };
 
 
 void chrono_test() {
     using namespace std::chrono;
-    system_clock::time_point	sys_tp = system_clock::now();
-    system_clock::rep	    	sys_rep = duration_values<system_clock::rep>::zero();
-    system_clock::rep	    	sys_rep2= duration_values<system_clock::rep>::min();
-    system_clock::rep	    	sys_rep3= duration_values<system_clock::rep>::max();
-    system_clock::period    	sys_period = system_clock::period();
-    system_clock::duration  	sys_duration = system_clock::duration();
-    std::time_t     	    	sys_time = system_clock::to_time_t(system_clock::now());
-    system_clock::time_point	ste_tp = system_clock::from_time_t(sys_time);
+    system_clock::time_point    sys_tp = system_clock::now();
+    system_clock::rep           sys_rep = duration_values<system_clock::rep>::zero();
+    system_clock::rep           sys_rep2= duration_values<system_clock::rep>::min();
+    system_clock::rep           sys_rep3= duration_values<system_clock::rep>::max();
+    system_clock::period        sys_period = system_clock::period();
+    system_clock::duration      sys_duration = system_clock::duration();
+    std::time_t                 sys_time = system_clock::to_time_t(system_clock::now());
+    system_clock::time_point    ste_tp = system_clock::from_time_t(sys_time);
     assert(system_clock::is_steady == 0);
 
  #ifndef NO_STEADY_CLOCK
-    steady_clock::time_point	ste_time = steady_clock::now();
+    steady_clock::time_point    ste_time = steady_clock::now();
     assert(steady_clock::is_steady);
  #endif
 
-    hours   	    hour1(24);
-    minutes 	    minute1(60);
-    seconds 	    second1(60);
+    hours           hour1(24);
+    minutes         minute1(60);
+    seconds         second1(60);
     milliseconds    millisecond1(1000);
     microseconds    microsecond1(1000);
     nanoseconds     nanosecond1(1000);
@@ -375,10 +375,10 @@ void functional_test() {
     assert(n == 4);
     fn = nullptr; //NULL;
     try {
-    	fn(1);
-    	assert(0);
+        fn(1);
+        assert(0);
     } catch (std::bad_function_call& e) {
-    	;
+        ;
     }
 
     //using namespace std::placeholders;
@@ -386,7 +386,7 @@ void functional_test() {
     n = fn2(3);
     assert(n == 1);
 
-    SubClass1	sc1;
+    SubClass1   sc1;
     assert(std::mem_fn(&SubClass1::mfn1)(sc1, 1) == 2);
     assert(std::mem_fn(&SubClass1::mfn2)(sc1, 1, 2) == 3);
 
@@ -431,7 +431,7 @@ void functional_test() {
 #if !__CCWRAP_NO_HEADER_ATOMIC
 template<typename T>
 void atomic_test1() {
-    std::atomic<T>  	ai(1);
+    std::atomic<T>      ai(1);
     T  before = ai.fetch_add(2);
     assert(before == 1);
     assert(ai.load() == 3);
@@ -465,8 +465,8 @@ void atomic_test1() {
 
 template<typename T>
 void atomic_test2() {
-    static T	buf[10];
-    std::atomic<T*> 	ap( buf );
+    static T    buf[10];
+    std::atomic<T*>     ap( buf );
     ap.fetch_add(2);
     ap.fetch_sub(1);
     ++ap;
@@ -476,56 +476,56 @@ void atomic_test2() {
 }
 
 void atomic_test() {
-    std::atomic_char	    	ac;
-    std::atomic_schar	    	asc;
-    std::atomic_uchar	    	auc;
-    std::atomic_short	    	ash;
-    std::atomic_ushort	    	aush;
-    std::atomic_int 	    	ai;
-    std::atomic_uint	    	aui;
-    std::atomic_long	    	al;
-    std::atomic_ulong	    	aul;
-    std::atomic_llong	    	all;
-    std::atomic_ullong	    	aull;
+    std::atomic_char            ac;
+    std::atomic_schar           asc;
+    std::atomic_uchar           auc;
+    std::atomic_short           ash;
+    std::atomic_ushort          aush;
+    std::atomic_int             ai;
+    std::atomic_uint            aui;
+    std::atomic_long            al;
+    std::atomic_ulong           aul;
+    std::atomic_llong           all;
+    std::atomic_ullong          aull;
 
-    std::atomic_bool	    	ab;
-    std::atomic_wchar_t     	awc;
+    std::atomic_bool            ab;
+    std::atomic_wchar_t         awc;
  #ifndef __CCWRAP_NO_CHAR1632_T
-    std::atomic_char16_t    	ac16;
-    std::atomic_char32_t    	ac32;
+    std::atomic_char16_t        ac16;
+    std::atomic_char32_t        ac32;
  #endif
-    std::atomic_size_t	    	asz;
-    std::atomic_ptrdiff_t   	apd;
-    std::atomic_intmax_t    	aim;
-    std::atomic_uintmax_t   	auim;
+    std::atomic_size_t          asz;
+    std::atomic_ptrdiff_t       apd;
+    std::atomic_intmax_t        aim;
+    std::atomic_uintmax_t       auim;
 
-    std::atomic_int8_t	    	ai8;
-    std::atomic_uint8_t     	aui8;
-    std::atomic_int16_t     	ai16;
-    std::atomic_uint16_t    	aui16;
-    std::atomic_int32_t     	ai32;
-    std::atomic_uint32_t    	aui32;
-    std::atomic_int64_t     	ai64;
-    std::atomic_uint64_t    	aui64;
-    std::atomic_intptr_t    	aip;
-    std::atomic_uintptr_t   	auip;
+    std::atomic_int8_t          ai8;
+    std::atomic_uint8_t         aui8;
+    std::atomic_int16_t         ai16;
+    std::atomic_uint16_t        aui16;
+    std::atomic_int32_t         ai32;
+    std::atomic_uint32_t        aui32;
+    std::atomic_int64_t         ai64;
+    std::atomic_uint64_t        aui64;
+    std::atomic_intptr_t        aip;
+    std::atomic_uintptr_t       auip;
 
-    std::atomic_int_least8_t	ail8;
-    std::atomic_uint_least8_t	auil8;
-    std::atomic_int_least16_t	ail16;
-    std::atomic_uint_least16_t	auil16;
-    std::atomic_int_least32_t	ail32;
-    std::atomic_uint_least32_t	auil32;
-    std::atomic_int_least64_t	ail64;
-    std::atomic_uint_least64_t	auil64;
-    std::atomic_int_fast8_t 	aif8;
-    std::atomic_uint_fast8_t	auif8;
-    std::atomic_int_fast16_t	aif16;
-    std::atomic_uint_fast16_t	auif16;
-    std::atomic_int_fast32_t	aif32;
-    std::atomic_uint_fast32_t	auif32;
-    std::atomic_int_fast64_t	aif64;
-    std::atomic_uint_fast64_t	auif64;
+    std::atomic_int_least8_t    ail8;
+    std::atomic_uint_least8_t   auil8;
+    std::atomic_int_least16_t   ail16;
+    std::atomic_uint_least16_t  auil16;
+    std::atomic_int_least32_t   ail32;
+    std::atomic_uint_least32_t  auil32;
+    std::atomic_int_least64_t   ail64;
+    std::atomic_uint_least64_t  auil64;
+    std::atomic_int_fast8_t     aif8;
+    std::atomic_uint_fast8_t    auif8;
+    std::atomic_int_fast16_t    aif16;
+    std::atomic_uint_fast16_t   auif16;
+    std::atomic_int_fast32_t    aif32;
+    std::atomic_uint_fast32_t   auif32;
+    std::atomic_int_fast64_t    aif64;
+    std::atomic_uint_fast64_t   auif64;
 
     atomic_test1<char>();
     atomic_test1<signed char>();
@@ -547,7 +547,9 @@ void atomic_test() {
 
 // ---------------------------
 
-
+#include "array_test.hh"
+#include "string_view_test.hh"
+#include "string_util_test.hh"
 
 
 int main(int argc, char* argv[])
@@ -555,6 +557,9 @@ int main(int argc, char* argv[])
     ChronoTimeDisp chronoTimeDisp;
     std::printf("%s\n", argv[0]);
     std::printf("\t__cplusplus=%ld\n", __cplusplus);
+    array_test();
+    string_view_test();
+    string_util_test();
     Containers_test();
     algorithm_test();
     chrono_test();

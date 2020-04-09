@@ -1,0 +1,29 @@
+/**
+ *  @file   string_view
+ *  @author tenka@6809.net (Masashi Kitamura)
+ *  @date   2020
+ *  @note
+ *      (base: http://www.6809.net/tenk/html/sbr/ya_string.zip )
+ *      TODO: constexpr, operator<<
+ */
+#ifndef CCWRAP_STRING_VIEW_INCLUDED
+#define CCWRAP_STRING_VIEW_INCLUDED
+
+//#include <ccwrap_header.h>
+#include <cstddef>
+
+#if defined __CCWRAP__ && !defined(__CCWRAP_NO_HEADER_STRING_VIEW)
+ #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(string_view)
+ #elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <string_view>
+ #else
+  #include <../include/string_view>
+ #endif
+#endif
+
+#if !defined __CCWRAP__ || defined __CCWRAP_NO_HEADER_STRING_VIEW
+#include "../cxx/detail/string_view.hpp"
+#endif  // __CCWRAP_NO_HEADER_STRING_VIEW
+
+#endif      //  CCWRAP_STRING_VIEW_INCLUDED

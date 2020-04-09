@@ -1,5 +1,5 @@
 #define __STDC_LIMIT_MACROS
-// mingw ‚Å stdio.h ‚æ‚èæ‚É stddef.h ‚ğinclude‚·‚é‚Æ
+// mingw ‚Å stdio.h ‚æ‚èæ‚É stddef.h ‚ğinclude‚·‚é‚Æ,
 // __need_NULL,__need_size_t,__need_wchar_t,__need_wint_t ‚ª–¢’è‹`‚Åwint_t‚ª‚È‚¢‚È‚Ç‚ÌƒGƒ‰[‚É‚Î‚¯‚Ä‚µ‚Ü‚¤...
 #if 0
 #include <stdio.h>
@@ -61,20 +61,20 @@ static_assert( sizeof(std::int64_t) == 8, "FAILED: sizeof(std::int64_t) == 8");
 static_assert(0, "static_assert(0)");
 #endif
 
-bool	    	    b1 = false;
-bool	    	    b2 = true;
+bool                b1 = false;
+bool                b2 = true;
 #ifndef __CCWRAP_NO_THREAD_LOCAL
 thread_local bool   b3 = false;
 #endif
 
-char	ao1 = alignof(bool);
-int 	ao2 = alignof(char);
-int 	ao3 = alignof(int);
+char    ao1 = alignof(bool);
+int     ao2 = alignof(char);
+int     ao3 = alignof(int);
 struct StHasOpAmp {
     bool operator&() const { return false; }
     void* amp;
 };
-int 	ao4 = alignof(StHasOpAmp);
+int     ao4 = alignof(StHasOpAmp);
 
 
 #ifndef __CCWRAP_NO_ALIGNAS
@@ -113,9 +113,9 @@ int main(int argc, char* argv[])
  #if 0 //ndef alignof
     static_assert(alignof(C_Base) == sizeof(void*), "");
  #endif
-    //static_assert(alignof(C1) >= sizeof(void*), "");	// maybe
+    //static_assert(alignof(C1) >= sizeof(void*), "");  // maybe
     std::printf("\n%s\n", argv[0]);
-    std::printf("%s (%d): %s -- __FILE__,__LINE__,__func__\n", __FILE__, __LINE__, __func__);
+    std::printf("%s (%d): %s -- __FILE__,__LINE__,__func__\n",__FILE__,__LINE__,__func__);
     std::printf("\t__cplusplus = %d\n", int(__cplusplus));
     std::printf("\tsizeof(bool) = %d\n", int(sizeof(bool)));
     std::printf("\tsizeof(wchar_t) = %d\n", int(sizeof(wchar_t)));
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     assert(alignof(std::uint64_t) == 8);
 
     char    buf[1024] = {0};
-    char*   p	      = new char[10];
+    char*   p         = new char[10];
     assert(p != nullptr);
     std::strcpy(p, "hello");
     std::snprintf(buf, sizeof buf, "%s world! (%d)", p, int(std::strlen(p)));
@@ -150,8 +150,8 @@ int main(int argc, char* argv[])
     std::printf("\n");
 
 #ifdef USE_STRING_TEST
-	string_view_test();
-	string_util_test();
+    //string_view_test();
+    //string_util_test();
 #endif
 
     return 0;
