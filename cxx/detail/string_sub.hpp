@@ -1,3 +1,9 @@
+/**
+ *  @file   string_sub
+ *  @brief  c++11 <string>'s function for c++03
+ *  @author tenka@6809.net (Masashi Kitamura)
+ *  @date   2020
+ */
 #ifndef CCWRAP_STRING_SUB_HPP_INCLUDED
 #define CCWRAP_STRING_SUB_HPP_INCLUDED
 
@@ -226,10 +232,10 @@ namespace std {
         return __ccwrap_string_detail::stold_body(str, idx);
     }
     inline double stod(const std::wstring& str, std::size_t* idx = NULL) {
-        return (double)__ccwrap_string_detail::stold_body(str, idx);
+        return __ccwrap_string_detail::stod_body(str, idx);
     }
     inline float stof(const std::wstring& str, std::size_t* idx = NULL) {
-        return (float)__ccwrap_string_detail::stold_body(str, idx);
+        return __ccwrap_string_detail::stof_body(str, idx);
     }
  #endif
 }   // std
