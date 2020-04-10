@@ -136,6 +136,9 @@ public:
     size_type find_last_not_of(const value_type *cstr2, size_type pos1) const;
     size_type find_last_not_of(const value_type *cary2, size_type pos1, size_type n2) const noexcept;
 
+ #if 1
+    template<class A> operator std::basic_string<C,T,A>() const { return std::basic_string<C,T,A>(begin(), end()); }
+ #endif
 private:
     void        check_pos_len(std::size_t& pos, std::size_t& len) const;
     void        throw_out_of_range() const;

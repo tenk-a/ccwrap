@@ -7,27 +7,25 @@
 
 #if _MSC_VER < 1800
 
-#define FP_ZERO			_FPCLASS_PZ
-#define FP_NAN			_FPCLASS_QNAN
-#define FP_INFINITE		_FPCLASS_PINF
-#define FP_NORMAL		_FPCLASS_PN
-#define FP_SUBNORMAL	_FPCLASS_PD
+#define FP_ZERO         _FPCLASS_PZ
+#define FP_NAN          _FPCLASS_QNAN
+#define FP_INFINITE     _FPCLASS_PINF
+#define FP_NORMAL       _FPCLASS_PN
+#define FP_SUBNORMAL    _FPCLASS_PD
 
 static inline int __ccwrap_fpclassify_conv(int n) {
-	if (n > 0) {
-		if (n <= _FPCLASS_QNAN) return FP_NAN;
-		if (n == _FPCLASS_PZ || n == _FPCLASS_NZ) return FP_ZERO;
-		if (n == _FPCLASS_PINF || n == _FPCLASS_NINF) return FP_INFINITE;
-		if (n == _FPCLASS_PN || n == _FPCLASS_NN) return FP_NORMAL;
-		if (n == _FPCLASS_PD || n == _FPCLASS_ND) return FP_SUBNORMAL;
-	}
-	return 0;
+    if (n > 0) {
+        if (n <= _FPCLASS_QNAN) return FP_NAN;
+        if (n == _FPCLASS_PZ || n == _FPCLASS_NZ) return FP_ZERO;
+        if (n == _FPCLASS_PINF || n == _FPCLASS_NINF) return FP_INFINITE;
+        if (n == _FPCLASS_PN || n == _FPCLASS_NN) return FP_NORMAL;
+        if (n == _FPCLASS_PD || n == _FPCLASS_ND) return FP_SUBNORMAL;
+    }
+    return 0;
 }
 
 #ifdef __cplusplus
-
 extern "C" {
-
 __forceinline int  fpclassify(double v) { return __ccwrap_fpclassify_conv(_fpclass(v)); }
 __forceinline bool isnan(double v) { return _isnan(v) != 0; }
 __forceinline bool isfinite(double x) { return _finite(x) != 0; }
@@ -39,8 +37,10 @@ __forceinline bool isgreater(double x, double y) { return isunordered(x,y) ? fal
 __forceinline bool isgreaterequal(double x, double y) { return isunordered(x,y) ? false : x >= y; }
 __forceinline bool isless(double x, double y) { return isunordered(x,y) ? false : x < y; }
 __forceinline bool islessequal(double x, double y) { return isunordered(x,y) ? false : x <= y; }
-
 }
+#endif
+
+#ifdef __cplusplus
 
 __forceinline int  fpclassify(long double v) { return fpclassify((double)v); }
 __forceinline bool isnan(long double v) { return _isnan((double)v) != 0; }
@@ -75,29 +75,29 @@ __forceinline bool islessequal(float x, float y) { return isunordered(x,y) ? fal
 
 #if 0
 inline double __ccwrap_double_compare(double x, double y) {
-	if (isnan(x)) {
-		if (isnan(y))
-			return 0;
-		return -1;
-	} else if (isnan(y)) {
-		return 1;
-	} else if (isinf(x)) {
-		if (isinf(y))
-			return 0;
-		return 1;
-	} else {
-		return x - y;
-	}
+    if (isnan(x)) {
+        if (isnan(y))
+            return 0;
+        return -1;
+    } else if (isnan(y)) {
+        return 1;
+    } else if (isinf(x)) {
+        if (isinf(y))
+            return 0;
+        return 1;
+    } else {
+        return x - y;
+    }
 }
 #endif
 
 #include <limits>
-#define HUGE_VALL	(std::numeric_limits<double>::infinity())
-#define HUGE_VALF	(std::numeric_limits<float>::infinity())
-#define INFINITY	(std::numeric_limits<float>::infinity())
-#define NAN			(std::numeric_limits<float>::quiet_NaN())
+#define HUGE_VALL   (std::numeric_limits<double>::infinity())
+#define HUGE_VALF   (std::numeric_limits<float>::infinity())
+#define INFINITY    (std::numeric_limits<float>::infinity())
+#define NAN         (std::numeric_limits<float>::quiet_NaN())
 
-#else	//TODO:
+#else   //TODO:
 static __forceinline int  fpclassify(double v) { return __ccwrap_fpclassify_conv(_fpclass(v)); }
 static __forceinline int isnan(double v) { return _isnan(v) != 0; }
 static __forceinline int isinf(double v) { int c = _fpclass(v); return c == _FPCLASS_PINF || c == _FPCLASS_NINF; }
@@ -110,10 +110,10 @@ static __forceinline int isgreater(double x, double y) { return isunordered(x,y)
 static __forceinline int isgreaterequal(double x, double y) { return isunordered(x,y) ? 0 : x >= y; }
 static __forceinline int isless(double x, double y) { return isunordered(x,y) ? 0 : x < y; }
 static __forceinline int islessequal(double x, double y) { return isunordered(x,y) ? 0 : x <= y; }
-//#define HUGE_VALL		(long double)(HUGE_VAL)
-//#define HUGE_VALF		(float)(HUGE_VAL)
-//#define INFINITY		HUGE_VALF
-//#define NAN			(float)(NAN)
+//#define HUGE_VALL     (long double)(HUGE_VAL)
+//#define HUGE_VALF     (float)(HUGE_VAL)
+//#define INFINITY      HUGE_VALF
+//#define NAN           (float)(NAN)
 #endif
 
 

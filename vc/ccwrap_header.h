@@ -63,7 +63,6 @@
 
 #define __CCWRAP_HAS_PRAGMA_ONCE
 
-
 #if _MSC_VER < 1910
   //#if !defined(__has_include)
   // #define __has_include(x)       0
@@ -95,12 +94,18 @@
 #endif
 
 #if defined(__cplusplus)
+  #if __cplusplus >= 201703 || _MSVC_LANG > 201402 || _HAS_CXX17
+    #define __CCWRAP_CXX17  1
+  #endif
+  #ifndef __CCWRAP_CXX17
+   #define __CCWRAP_NO_HEADER_STRING_VIEW   0
+  #endif
+  #if _MSC_VER >= 1910
+    #define __CCWRAP_CONSTEXPR14    constexpr
+  #else
+    #define __CCWRAP_CONSTEXPR14
+  #endif
   #if _MSC_VER < 1920
-    #if _MSC_VER >= 1910
-      #define __CCWRAP_CONSTEXPR14    constexpr
-    #else
-      #define __CCWRAP_CONSTEXPR14
-    #endif
     #if _MSC_VER < 1910
       //#if _MSC_VER >= 1600
       // #define static_assert(c, ...)  static_assert((c), "" __VA_ARGS__)
@@ -164,9 +169,6 @@
           #endif
         #endif
       #endif
-    #endif
-    #ifndef _HAS_CXX17
-     #define __CCWRAP_NO_HEADER_STRING_VIEW               0
     #endif
     #if _MSC_VER < 1900   // vc12 or less
       #define __CCWRAP_NO_HEADER_CXX14_MEMORY             0
