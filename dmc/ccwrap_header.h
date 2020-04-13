@@ -1,6 +1,7 @@
 /**
  *  @file ccwrap_header.h
  *  @brief for digitalmars c/c++
+ *  @license Boost Software Lisence Version 1.0
  */
 #pragma once
 

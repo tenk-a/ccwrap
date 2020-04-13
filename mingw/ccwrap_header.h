@@ -1,3 +1,8 @@
+/**
+ *  @file ccwrap_header.h
+ *  @brief for mingw c/c++
+ *  @license Boost Software Lisence Version 1.0
+ */
 #ifndef __CCWRAP_HEADER_H
 #define __CCWRAP_HEADER_H
 

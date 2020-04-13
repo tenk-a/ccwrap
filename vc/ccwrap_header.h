@@ -1,7 +1,8 @@
 /**
  *  @file ccwrap_header.h
- *  @brief  c/c++ language
- *  @author Masashi Kitamura
+ *  @brief  for MS Visual C/C++
+ *  @author tenka@6809.net (Masashi Kitamura)
+ *  @license Boost Software Lisence Version 1.0
  */
 #pragma once
 
@@ -94,13 +95,16 @@
 #endif
 
 #if defined(__cplusplus)
-  #if __cplusplus >= 201703 || _MSVC_LANG > 201402 || _HAS_CXX17
+  #if __cplusplus >= 201402 || _MSVC_LANG >= 201402 || _HAS_CXX14
+    #define __CCWRAP_CXX14  1
+  #endif
+  #if __cplusplus >= 201703 || _MSVC_LANG >= 201703 || _HAS_CXX17
     #define __CCWRAP_CXX17  1
   #endif
   #ifndef __CCWRAP_CXX17
    #define __CCWRAP_NO_HEADER_STRING_VIEW   0
   #endif
-  #if _MSC_VER >= 1910
+  #ifdef  __CCWRAP_CXX14
     #define __CCWRAP_CONSTEXPR14    constexpr
   #else
     #define __CCWRAP_CONSTEXPR14

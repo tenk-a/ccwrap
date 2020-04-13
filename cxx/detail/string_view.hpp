@@ -2,6 +2,7 @@
  *  @file   string_view
  *  @author tenka@6809.net (Masashi Kitamura)
  *  @date   2020
+ *  @license Boost Software Lisence Version 1.0
  *  @note
  *      (base: http://www.6809.net/tenk/html/sbr/ya_string.zip )
  *      TODO: constexpr, operator<<

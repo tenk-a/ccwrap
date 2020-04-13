@@ -1,6 +1,7 @@
 /**
  *  @file ccwrap_header.h
  *  @brief for borland/Embarcadero free c/c++ compiler
+ *  @license Boost Software Lisence Version 1.0
  */
 #ifndef __CCWRAP_HEADER_H
 #define __CCWRAP_HEADER_H
