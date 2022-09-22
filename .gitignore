@@ -29,3 +29,4 @@ win32_Debug_*
 win32_Release_*
 x64_Debug_*
 x64_Release_*
+set_objs.bat

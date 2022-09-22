@@ -1,0 +1,39 @@
+#ifndef __CCWRAP_OPTIONAL_INCLUDED
+#define __CCWRAP_OPTIONAL_INCLUDED
+
+#include "../boost2std/boost2std_common.hpp"
+#include <cstddef>
+
+#if !defined(__CCWRAP_NO_HEADER_OPTIONAL)
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(optional)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <optional>
+#else
+#include <../include/optional>
+#endif
+
+#else   // defined(__CCWRAP_NO_HEADER_OPTIONAL)
+
+//#include <algorithm>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(push)
+# pragma warning(disable:4355)
+#endif
+
+#include <boost/optional.hpp>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(pop)
+#endif
+
+namespace std {
+    using ::boost::optional;
+}
+
+#endif  // __CCWRAP_NO_HEADER_OPTIONAL
+
+
+#endif  // __CCWRAP_OPTIONAL_INCLUDED

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ccwrap_header.h>
+#include "../vc2013_or_earlier/ccwrap_header.h"
 #include __CCWRAP_NATIVE_C_HEADER_PATH(cstddef)
 
 #if _MSC_VER < 1700
@@ -10,5 +10,14 @@ typedef double  max_align_t;
 #endif
 namespace std {
     using ::max_align_t;
+ #if 0
+    class nullptr_t {
+    public:
+        nullptr_t() {}
+        operator void*() { return 0; }
+    private:
+        void*   dmy_;
+    }
+ #endif
 }
 #endif

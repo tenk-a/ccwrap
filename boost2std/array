@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_ARRAY_INCLUDED
 #define __CCWRAP_ARRAY_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #if !defined(__CCWRAP_NO_HEADER_ARRAY)

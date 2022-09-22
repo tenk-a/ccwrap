@@ -1,6 +1,7 @@
 #ifndef CCWRAP_MEMORY_INCLUDED
 #define CCWRAP_MEMORY_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH

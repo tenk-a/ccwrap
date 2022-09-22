@@ -1,0 +1,14 @@
+#ifndef __CCWRAP_STRING_VIEW_INCLUDED
+#define __CCWRAP_STRING_VIEW_INCLUDED
+
+#include <cstddef>
+
+#include_next <string_view>
+
+#if defined(__cpp_char8_t) || defined(__CCWRAP_HAS_CHAR8_T)
+namespace std {
+ typedef basic_string_view<char8_t>  u8string_view;
+}
+#endif
+
+#endif  // __CCWRAP_STRING_INCLUDED

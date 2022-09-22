@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_STRING_INCLUDED
 #define __CCWRAP_STRING_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #include <algorithm>
@@ -19,14 +20,24 @@
 #include <../include/string>
 #endif
 
-#if 0 //__cplusplus < 201703L && !defined(__CCWRAP_HAS_STRING_VIEW)
-#include <boost/utility/string_view.hpp>
+#if (defined __CCWRAP_NO_CXX11_STRING)
 namespace std {
-    using boost::basic_string_view;
-    using boost::string_view;
-    using boost::wstring_view;
+    typedef basic_string<char16_t>  u16string;
+    typedef basic_string<char32_t>  u32string;
 }
 #endif
+#if !defined(CCWRAP_CXX20)
+namespace std {
+ #if 0
+    using boost::u8string;
+ #elif 0
+    using u8string = basic_string<char8_t>;
+ #else
+    typedef basic_string<char8_t>   u8string;
+ #endif
+}
+#endif
+
 
 #ifdef __CCWRAP_NO_CXX11_STRING
 
@@ -34,10 +45,11 @@ namespace std {
 #include <cstdlib>
 #include <cerrno>
 #include <cfloat>
+#include <stdexcept>
 
-#ifndef __CCWRAP_LLONG
-#define __CCWRAP_LLONG      long long
-#define __CCWRAP_ULLONG     unsigned long long
+#ifndef __ccwrap_llong
+#define __ccwrap_llong      long long
+#define __ccwrap_ullong     unsigned long long
 #endif
 #ifndef __CCWRAP_FMT_LL
 #define __CCWRAP_FMT_LL     "ll"
@@ -50,22 +62,22 @@ namespace std {
 #endif
 
 namespace std {
-    inline string to_string(__CCWRAP_LLONG  v) { char b[64]; snprintf(b,64, "%" __CCWRAP_FMT_LL "d", v); return b; }
-    inline string to_string(__CCWRAP_ULLONG v) { char b[64]; snprintf(b,64, "%" __CCWRAP_FMT_LL "u", v); return b; }
-    inline string to_string(int           v) { return to_string(__CCWRAP_LLONG( v)); }
-    inline string to_string(unsigned int  v) { return to_string(__CCWRAP_ULLONG(v)); }
-    inline string to_string(long          v) { return to_string(__CCWRAP_LLONG( v)); }
-    inline string to_string(unsigned long v) { return to_string(__CCWRAP_ULLONG(v)); }
+    inline string to_string(__ccwrap_llong  v) { char b[64]; snprintf(b,64, "%" __CCWRAP_FMT_LL "d", v); return b; }
+    inline string to_string(__ccwrap_ullong v) { char b[64]; snprintf(b,64, "%" __CCWRAP_FMT_LL "u", v); return b; }
+    inline string to_string(int           v) { return to_string(__ccwrap_llong( v)); }
+    inline string to_string(unsigned int  v) { return to_string(__ccwrap_ullong(v)); }
+    inline string to_string(long          v) { return to_string(__ccwrap_llong( v)); }
+    inline string to_string(unsigned long v) { return to_string(__ccwrap_ullong(v)); }
     inline string to_string(long double   v) { enum { N=LDBL_MAX_10_EXP + LDBL_MANT_DIG + 10 }; char b[N]; snprintf(b, N, "%Lf", v); return b; }
     inline string to_string(float         v) { return to_string((long double)(v)); }
     inline string to_string(double        v) { return to_string((long double)(v)); }
 
-    inline wstring to_wstring(__CCWRAP_LLONG  v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"d", v); return b; }
-    inline wstring to_wstring(__CCWRAP_ULLONG v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"u", v); return b; }
-    inline wstring to_wstring(int           v) { return to_wstring(__CCWRAP_LLONG( v)); }
-    inline wstring to_wstring(unsigned int  v) { return to_wstring(__CCWRAP_ULLONG(v)); }
-    inline wstring to_wstring(long          v) { return to_wstring(__CCWRAP_LLONG( v)); }
-    inline wstring to_wstring(unsigned long v) { return to_wstring(__CCWRAP_ULLONG(v)); }
+    inline wstring to_wstring(__ccwrap_llong  v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"d", v); return b; }
+    inline wstring to_wstring(__ccwrap_ullong v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"u", v); return b; }
+    inline wstring to_wstring(int           v) { return to_wstring(__ccwrap_llong( v)); }
+    inline wstring to_wstring(unsigned int  v) { return to_wstring(__ccwrap_ullong(v)); }
+    inline wstring to_wstring(long          v) { return to_wstring(__ccwrap_llong( v)); }
+    inline wstring to_wstring(unsigned long v) { return to_wstring(__ccwrap_ullong(v)); }
     inline wstring to_wstring(long double   v) { enum { N=LDBL_MAX_10_EXP + LDBL_MANT_DIG + 10 }; wchar_t b[N]; snwprintf(b, N, L"%Lf", v); return b; }
     inline wstring to_wstring(float         v) { return to_wstring((long double)(v)); }
     inline wstring to_wstring(double        v) { return to_wstring((long double)(v)); }
@@ -79,9 +91,9 @@ namespace std {
         inline unsigned long strtoul(wchar_t const* s, wchar_t** e, int radix) { return wcstoul(s, e, radix); }
      #endif
         using std::strtoll;
-        inline __CCWRAP_LLONG strtoll(wchar_t const* s, wchar_t** e, int radix) { return wcstoll(s, e, radix); }
+        inline __ccwrap_llong strtoll(wchar_t const* s, wchar_t** e, int radix) { return wcstoll(s, e, radix); }
         using std::strtoull;
-        inline __CCWRAP_LLONG strtoull(wchar_t const* s, wchar_t** e, int radix) { return wcstoull(s, e, radix); }
+        inline __ccwrap_llong strtoull(wchar_t const* s, wchar_t** e, int radix) { return wcstoull(s, e, radix); }
         using std::strtold;
         inline long double strtold(wchar_t const* s, wchar_t** e) { return wcstold(s, e); }
         using std::strtod;
@@ -117,26 +129,26 @@ namespace std {
         }
      #endif
         template<typename C>
-        __CCWRAP_LLONG stoll_body(const basic_string<C>& str, size_t* idx, int radix
-                                    , char const* name, __CCWRAP_LLONG mi, __CCWRAP_LLONG ma)
+        __ccwrap_llong stoll_body(const basic_string<C>& str, size_t* idx, int radix
+                                    , char const* name, __ccwrap_llong mi, __ccwrap_llong ma)
         {
             const C* s = str.c_str();
             C*       e = NULL;
             errno = 0;
-            __CCWRAP_LLONG d = __ccwrap_detail::strtoll(s, &e, radix);
+            __ccwrap_llong d = __ccwrap_detail::strtoll(s, &e, radix);
             if (s == e) throw std::invalid_argument(name);
             if (errno == ERANGE || d < mi || d > ma) throw std::out_of_range(name);
             if (idx) *idx = size_t(e - s);
             return int(d);
         }
         template<typename C>
-        __CCWRAP_LLONG stoull_body(const basic_string<C>& str, size_t* idx, int radix
-                                    , char const* name, __CCWRAP_ULLONG ma)
+        __ccwrap_llong stoull_body(const basic_string<C>& str, size_t* idx, int radix
+                                    , char const* name, __ccwrap_ullong ma)
         {
             const C* s = str.c_str();
             C*       e = NULL;
             errno = 0;
-            __CCWRAP_ULLONG d = __ccwrap_detail::strtoull(s, &e, radix);
+            __ccwrap_ullong d = __ccwrap_detail::strtoull(s, &e, radix);
             if (s == e) throw std::invalid_argument(name);
             if (errno == ERANGE || d > ma) throw std::out_of_range(name);
             if (idx) *idx = size_t(e - s);
@@ -178,10 +190,10 @@ namespace std {
         }
     }
 
-    inline __CCWRAP_LLONG stoll(const std::string& str, std::size_t* idx = NULL, int radix = 10) {
+    inline __ccwrap_llong stoll(const std::string& str, std::size_t* idx = NULL, int radix = 10) {
         return __ccwrap_detail::stoll_body(str, idx, radix, "stoll", LLONG_MIN,LLONG_MAX);
     }
-    inline __CCWRAP_ULLONG stoull(const std::string& str, std::size_t* idx = NULL, int radix = 10) {
+    inline __ccwrap_ullong stoull(const std::string& str, std::size_t* idx = NULL, int radix = 10) {
         return __ccwrap_detail::stoull_body(str, idx, radix, "stoull", ULLONG_MAX);
     }
   #if defined(__CCWRAP_NATIVE_INT_BIT) && __CCWRAP_NATIVE_INT_BIT == 32
@@ -215,10 +227,10 @@ namespace std {
         return __ccwrap_detail::stof_body(str, idx);
     }
 
-    inline __CCWRAP_LLONG stoll(const std::wstring& str, std::size_t* idx = NULL, int radix = 10) {
+    inline __ccwrap_llong stoll(const std::wstring& str, std::size_t* idx = NULL, int radix = 10) {
         return __ccwrap_detail::stoll_body(str, idx, radix, "stoll", LLONG_MIN,LLONG_MAX);
     }
-    inline __CCWRAP_ULLONG stoull(const std::wstring& str, std::size_t* idx = NULL, int radix = 10) {
+    inline __ccwrap_ullong stoull(const std::wstring& str, std::size_t* idx = NULL, int radix = 10) {
         return __ccwrap_detail::stoull_body(str, idx, radix, "stoull", ULLONG_MAX);
     }
   #if defined(__CCWRAP_NATIVE_INT_BIT) && __CCWRAP_NATIVE_INT_BIT == 32

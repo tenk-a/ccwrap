@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_ALGORITHM_INCLUDED
 #define __CCWRAP_ALGORITHM_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
@@ -11,41 +12,50 @@
 #include <../include/algorithm>
 #endif
 
-#ifdef __CCWRAP_NO_CXX11_ALGORITHM
+#if defined(__CCWRAP_NO_CXX11_ALGORITHM) || defined(__CCWRAP_NO_CXX17_ALGORITHM)
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(push)
 # pragma warning(disable:4355)
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER == 1600
-#else
-#include <boost/move/move.hpp>
+#if defined(__CCWRAP_NO_CXX11_ALGORITHM)
+ #if defined(_MSC_VER) && _MSC_VER == 1600
+ #else
+  #include <boost/move/move.hpp>
+ #endif
+ #include <boost/algorithm/minmax.hpp>
+ #include <boost/algorithm/minmax_element.hpp>
+ #include <boost/algorithm/cxx11/all_of.hpp>
+ #include <boost/algorithm/cxx11/any_of.hpp>
+ #include <boost/algorithm/cxx11/none_of.hpp>
+ #include <boost/algorithm/cxx11/find_if_not.hpp>
+ #include <boost/algorithm/cxx11/copy_n.hpp>
+ #include <boost/algorithm/cxx11/copy_if.hpp>
+ #include <boost/algorithm/cxx11/partition_copy.hpp>
+ #include <boost/algorithm/cxx11/partition_point.hpp>
+ #include <boost/algorithm/cxx14/is_permutation.hpp>
+ //#include <boost/algorithm/cxx14/equal.hpp>
+ //#include <boost/algorithm/cxx14/mismatch.hpp>
 #endif
-#include <boost/algorithm/minmax.hpp>
-#include <boost/algorithm/minmax_element.hpp>
-#include <boost/algorithm/cxx11/all_of.hpp>
-#include <boost/algorithm/cxx11/any_of.hpp>
-#include <boost/algorithm/cxx11/none_of.hpp>
-#include <boost/algorithm/cxx11/find_if_not.hpp>
-#include <boost/algorithm/cxx11/copy_n.hpp>
-#include <boost/algorithm/cxx11/copy_if.hpp>
-#include <boost/algorithm/cxx11/partition_copy.hpp>
-#include <boost/algorithm/cxx11/partition_point.hpp>
-#include <boost/algorithm/cxx14/is_permutation.hpp>
-//#include <boost/algorithm/cxx14/equal.hpp>
-//#include <boost/algorithm/cxx14/mismatch.hpp>
+
+#if defined(__CCWRAP_NO_CXX17_ALGORITHM)
+ #include <boost/algorithm/cxx17/for_each_n.hpp>
+ #include <boost/algorithm/clamp.hpp>
+ #include <boost/fusion/support/as_const.hpp>
+#endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # pragma warning(pop)
 #endif
 
 namespace std {
- #if defined(_MSC_VER) && _MSC_VER == 1600
- #else
+ #if defined(__CCWRAP_NO_CXX11_ALGORITHM)
+  #if defined(_MSC_VER) && _MSC_VER == 1600
+  #else
     using   ::boost::move;
     using   ::boost::move_backward;
- #endif
+  #endif
 
     using   ::boost::minmax;
     using   ::boost::minmax_element;
@@ -59,8 +69,16 @@ namespace std {
     using   ::boost::algorithm::partition_copy;
     using   ::boost::algorithm::partition_point;
     using   ::boost::algorithm::is_permutation;
-    //using boost::algorithm::equal;
-    //using boost::algorithm::mismatch;
+    //using   ::boost::algorithm::equal;
+    //using   ::boost::algorithm::mismatch;
+ #endif
+
+ #if defined(__CCWRAP_NO_CXX17_ALGORITHM)
+    // c++17
+    using   ::boost::algorithm::for_each_n;
+    using   ::boost::algorithm::clamp;
+    using   ::boost::fusion::extension::as_const;
+ #endif
 }
 #endif
 

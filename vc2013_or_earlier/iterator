@@ -1,0 +1,36 @@
+/**
+ *  @file   iterator
+ *  @brief  iterator for c++14 or earlier
+ *  @author tenka@6809.net (Masashi Kitamura)
+ *  @date   2020
+ *  @license Boost Software Lisence Version 1.0
+ */
+#ifndef __CCWRAP_ITERATOR_INCLUDED
+#define __CCWRAP_ITERATOR_INCLUDED
+
+#include <cstddef>
+
+#ifndef __CCWRAP_STD
+ #define __CCWRAP_STD    std
+#endif
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(iterator)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <iterator>
+#else
+#include <../include/iterator>
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(push)
+# pragma warning(disable:4355)
+#endif
+
+#include "../ccwrap/iterator_sub.hpp"
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(pop)
+#endif
+
+#endif  // __CCWRAP_ITERATOR_INCLUDED

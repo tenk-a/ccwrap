@@ -1,0 +1,43 @@
+#ifndef __CCWRAP_FILESYSTEM_INCLUDED
+#define __CCWRAP_FILESYSTEM_INCLUDED
+
+#include "../boost2std/boost2std_common.hpp"
+#include <cstddef>
+
+#if !defined(__CCWRAP_NO_HEADER_FILESYSTEM)
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(filesystem)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <filesystem>
+#else
+#include <../include/filesystem>
+#endif
+
+#else   // defined(__CCWRAP_NO_HEADER_FILESYSTEM)
+
+//#include <algorithm>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(push)
+# pragma warning(disable:4355)
+#endif
+
+#include <system_error>
+#include <boost/filesystem.hpp>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(pop)
+#endif
+
+namespace std {
+    namespace filesystem {
+        using namespace ::boost::filesystem;
+    }
+    using ::boost::filesystem::filesystem_error;
+}
+
+#endif  // __CCWRAP_NO_HEADER_FILESYSTEM
+
+
+#endif  // __CCWRAP_FILESYSTEM_INCLUDED

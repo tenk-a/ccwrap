@@ -1,0 +1,10 @@
+#ifndef __CCWRAP_CMATH_INCLUDED
+#define __CCWRAP_CMATH_INCLUDED
+
+#include <ccwrap_header.h>
+
+#include <stddef.h>
+
+#include_next <cmath>
+
+#endif

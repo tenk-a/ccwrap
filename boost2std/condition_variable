@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_CONDITION_VARIABLE_INCLUDED
 #define __CCWRAP_CONDITION_VARIABLE_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #ifndef __CCWRAP_NO_HEADER_CONDITION_VARIABLE

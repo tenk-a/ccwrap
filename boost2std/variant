@@ -1,0 +1,39 @@
+#ifndef __CCWRAP_VARIANT_INCLUDED
+#define __CCWRAP_VARIANT_INCLUDED
+
+#include "../boost2std/boost2std_common.hpp"
+#include <cstddef>
+
+#if !defined(__CCWRAP_NO_HEADER_VARIANT)
+
+#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(variant)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <variant>
+#else
+#include <../include/variant>
+#endif
+
+#else   // defined(__CCWRAP_NO_HEADER_VARIANT)
+
+//#include <algorithm>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(push)
+# pragma warning(disable:4355)
+#endif
+
+#include <boost/variant.hpp>
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# pragma warning(pop)
+#endif
+
+namespace std {
+    using ::boost::variant;
+}
+
+#endif  // __CCWRAP_NO_HEADER_VARIANT
+
+
+#endif  // __CCWRAP_VARIANT_INCLUDED

@@ -1,0 +1,18 @@
+#ifndef __CCWRAP_BOOST2STD_CSTDDEF_INCLUDED
+#define __CCWRAP_BOOST2STD_CSTDDEF_INCLUDED
+
+#include "../boost2std/boost2std_common.hpp"
+
+#if defined(__CCWRAP_CONFIG_PATH)
+ #include __CCWRAP_CONFIG_PATH(cstddef)
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+ #include __CCWRAP_NATIVE_C_HEADER_PATH(cstddef)
+#elif defined(__CCWRAP_NATIVE_UC_HEADER_PATH)
+ #include __CCWRAP_NATIVE_UC_HEADER_PATH(cstddef)
+#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+ #include_next <cstddef>
+#else
+ #include <../include/cstddef>
+#endif
+
+#endif

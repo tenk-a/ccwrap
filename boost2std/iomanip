@@ -1,7 +1,9 @@
 #ifndef __CCWRAP_IOMANIP_INCLUDED
 #define __CCWRAP_IOMANIP_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
+
 #include <algorithm>
 
 #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
@@ -26,6 +28,7 @@
 #endif
 
 namespace std {
+    // c++14
     using   ::boost::io::quoted;
 }
 #endif

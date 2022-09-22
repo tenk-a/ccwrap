@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_TYPE_TRAITS_INCLUDED
 #define __CCWRAP_TYPE_TRAITS_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 

@@ -1,7 +1,9 @@
 #ifndef __CCWRAP_RANDOM_INCLUDED
 #define __CCWRAP_RANDOM_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
+
 #include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_RANDOM

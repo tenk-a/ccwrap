@@ -1,6 +1,7 @@
 #ifndef __CCWRAP_STREAMBUF_INCLUDED
 #define __CCWRAP_STREAMBUF_INCLUDED
 
+#include "../boost2std/boost2std_common.hpp"
 #include <cstddef>
 
 #ifdef __CCWRAP_NATIVE_STL_HEADER_PATH

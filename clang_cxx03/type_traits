@@ -1,0 +1,21 @@
+/**
+ * @file   type_traits
+ * @brief  type_traits for c++03
+ * @date   2020
+ * @author Masashi Kitamura (tenka@6809.net)
+ * @note
+ *  public domain software
+ */
+#pragma once
+
+#include <ccwrap_header.h>
+
+#if !defined(__CCWRAP_HEADER_NO_TYPE_TRAITS)
+
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(type_traits)
+
+#else
+
+#include "../ccwrap/type_traits_cxx03.hpp"
+
+#endif

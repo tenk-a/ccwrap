@@ -1,7 +1,7 @@
 /**
  * @file   cstdint
  * @brief  stdint(typedef int??_t) for vc(<=15.??), borland-c(<=5.5?)
- * @date   2005-2017
+ * @date   2005-2020
  * @author Masashi Kitamura (tenka@6809.net)
  * @note
  *  public domain software
@@ -10,11 +10,11 @@
 
 #include <ccwrap_header.h>
 
-#if (_MSC_VER >= 1600)
+#if (_MSC_VER >= 1600)  // !defined(__CCWRAP_HEADER_NO_CSTDINT)
 
 #include __CCWRAP_NATIVE_STL_HEADER_PATH(cstdint)
 
-#else	// _MSC_VER
+#else   // _MSC_VER
 
 #include "stdint.h"
 
@@ -53,4 +53,4 @@ namespace std {
     using ::uint_fast64_t;
 }   // std
 
-#endif	// _MSC_VER
+#endif  // _MSC_VER

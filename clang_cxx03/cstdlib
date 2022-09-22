@@ -1,0 +1,9 @@
+#ifndef __CCWRAP_CSTDLIB_INCLUDED
+#define __CCWRAP_CSTDLIB_INCLUDED
+
+#include <ccwrap_header.h>
+#include <stddef.h>
+
+#include_next <cstdlib>
+
+#endif
