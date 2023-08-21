@@ -165,7 +165,7 @@ template<bool ErrCk>
 class CharCodeConvTraits<char8_t, ErrCk> {
 public:
     typedef char8_t                 value_type;
-    typedef ccwrap::wide_char_t      wide_char_type;
+    typedef ccwrap::wide_char_t     wide_char_type;
     typedef size_t                  size_type;
     typedef value_type*             pointer;
     typedef value_type const*       const_pointer;
