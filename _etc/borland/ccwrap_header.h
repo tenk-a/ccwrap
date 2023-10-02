@@ -60,7 +60,7 @@
   //  #define __has_feature(x)          0
   //#endif
   #if __BORLANDC__ < 0x610
-   #if BORLANDC__ < 0x561
+   #if __BORLANDC__ < 0x561
     #define __CCWRAP_NO_HEADER_STDBOOL
     #if !defined(__FUNCTION__)
      #define __FUNCTION__           ""
