@@ -1,8 +1,8 @@
-#include <ccwrap/ccwrap_test.hpp>
+#include <_ccwrap/ccwrap_test.hpp>
 #include <algorithm>
 #include <memory>
 #if __CCWRAP__ == 2
-#include <ccwrap/unique_ptr_cxx03.hpp>
+#include <_ccwrap/unique_ptr_cxx03.hpp>
 #endif
 
 CCWRAP_TEST_SUITE(unique_ptr_cxx03) {

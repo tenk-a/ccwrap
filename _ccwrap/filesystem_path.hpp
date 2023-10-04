@@ -26,7 +26,7 @@
 #if __CCWRAP__ != 2  //__CCWRAP_ID_CCWRAP_NS
  #include <string_view>
 #else
- #include <ccwrap/string_view.hpp>
+ #include <_ccwrap/string_view.hpp>
 #endif
 #ifndef __CCWRAP_STRINGVIEW_COPY
  #if __CCWRAP__ != 3  //__CCWRAP_ID_BOOST2STD
@@ -38,7 +38,7 @@
  #endif
 #endif
 
-#include <ccwrap/StringCodeConv.hpp>
+#include <_ccwrap/StringCodeConv.hpp>
 
 #ifndef __ccwrap_nodiscard
  #if __cplusplus >= 202000L || defined(__CCWRAP_CXX20)

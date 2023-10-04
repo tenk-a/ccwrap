@@ -1,6 +1,6 @@
 /**
  *  @file ccwrap_header.h
- *  @brief for msys2 clang++ /c++03
+ *  @brief for msys2 clang++/g++ (c++03)
  *  @license Boost Software Lisence Version 1.0
  */
 #ifndef __CCWRAP_HEADER_H
@@ -12,7 +12,11 @@
 #define __CCWRAP__  1
 #endif
 
-#define __CCWRAP_COMPILER                    "LLVM Clang Compiler"
+#if defined(__clang__)
+#define __CCWRAP_COMPILER       "LLVM Clang Compiler"
+#else
+#define __CCWRAP_COMPILER    	"GNU C/C++ Compiler (" __CCWRAP_M_STR(__GNUC__) "." __CCWRAP_M_STR(__GNUC_MINOR__) ")"
+#endif
 
 #ifndef __CCWRAP_LDOUBLE_BIT
  #if defined _WIN64 || defined _M_AMD64 || defined __amd64__ || defined __AMD64__ || defined __x86_64__ || defined __arm64__ || defined __ARM64__ || defined _M_ARM64
@@ -21,6 +25,8 @@
   #define __CCWRAP_LDOUBLE_BIT       96
  #endif
 #endif
+
+#define __CCWRAP_HAS_INCLUDE_NEXT
 
 #if __cplusplus < 201101L
  #define __ccwrap_noreturn       __attribute__((noreturn))
@@ -36,10 +42,15 @@
 #define __ccwrap_dllimport       __attribute__((dllimport))
 #define __ccwrap_dllexport       __attribute__((dllexport))
 #undef _MSC_VER
+
 #ifdef __clang__
 #undef __GUNUC__
-#undef __MINGW__
+//#undef __MINGW__
 #endif
+
+#define __CCWRAP_HAS_INT128
+typedef __int128            __ccwrap_int128;
+typedef unsigned __int128   __ccwrap_uint128;
 
 #if defined(__cplusplus)
  #if __cplusplus < 201100
@@ -98,5 +109,5 @@
 #endif
 
 
-#include "../ccwrap/ccwrap_header_sub.hh"
+#include "../_ccwrap/ccwrap_header_sub.hh"
 #endif

@@ -19,7 +19,7 @@
 #if __CCWRAP__ != 2  //__CCWRAP_ID_CCWRAP_NS
  #include <string_view>
 #else
- #include <ccwrap/string_view.hpp>
+ #include <_ccwrap/string_view.hpp>
 #endif
 
 #if defined(_WIN32) && !defined(CCWRAP_CHAR_IS_UTF8)
@@ -988,7 +988,7 @@ inline string   stringCodeConv<string>(char16_t const* src, size_t size) {
 // ============================================================================
 
 #if defined(USE_CCWRAP_JAPANESE_MBS)
- #include <ccwrap/StringCodeJapaneseMbs.hh>
+ #include <_ccwrap/StringCodeJapaneseMbs.hh>
 #endif
 
 namespace ccwrap {

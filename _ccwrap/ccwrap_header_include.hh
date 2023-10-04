@@ -14,9 +14,9 @@
   #endif
 #elif defined(__clang__) || defined(__GNUC__)   // msys-2
   #if __cplusplus >= 201101
-    #include "../clang/ccwrap_header.h"
+    #include "../mingw_cxx11_or_later/ccwrap_header.h"
   #else
-    #include "../clang_cxx03/ccwrap_header.h"
+    #include "../mingw_cxx03/ccwrap_header.h"
   #endif
 //#elif defined(__MINGW32__) || defined(__MINGW64__)
 //  #include "mingw/ccwrap_header.h"

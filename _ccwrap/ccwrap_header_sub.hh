@@ -552,6 +552,7 @@
 
 
 // ==================================== ======================================= =======================================
+#if 0
 #ifndef __CCWRAP_IS_MEM_ADDR
 #if defined _WIN64
 #define __CCWRAP_IS_MEM_ADDR(p)  ((char const*)(p) >= (char const*)std::size_t(0x10000) && (char const*)(p) <= (char const*)std::size_t(0xFFFF000000000000LL))
@@ -563,6 +564,7 @@
  #define __CCWRAP_IS_MEM_ADDR(p)  ((char const*)(p) >= (char const*)std::size_t(0x100)  && (char const*)(p) <= (char const*)std::size_t(0xFFFFff00))
 #endif
 #define __CCWRAP_IS_MEM_ADDR0(p) (!(p) || __CCWRAP_IS_MEM_ADDR(p))
+#endif
 #endif
 
 // ==================================== ======================================= =======================================

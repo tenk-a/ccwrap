@@ -821,23 +821,19 @@ struct decay {
 //TODO:
 // tiny...
 
-// is_literal_type
-template <class T> struct is_literal_type : public is_scalar<T> {};
-
 // is_pod
 #ifdef __CCWRAP_IS_POD
 template <class T> struct is_pod : public integral_constant<bool, __CCWRAP_IS_POD(T)> {};
-#elif !defined(__CCWRAP_USE_WATCOMC_BUG)
-template <class TB>
-struct is_pod : public integral_constant<bool
-                , !is_void<TB>::value && (is_scalar<typename remove_all_extents<TB>::type>::value) >
-{};
-#else // defined(__CCWRAP_USE_WATCOMC_BUG)
+#else
 template <class TB>
 struct is_pod : public integral_constant<bool
                 , !is_void<TB>::value && (is_scalar<typename remove_all_extents<TB>::type>::value) >
 {};
 #endif  // __CCWRAP_USE_WATCOMC_BUG
+
+#if 0
+// is_literal_type
+template <class T> struct is_literal_type : public is_scalar<T> {};
 
 // is_standard_layout
 template <class T> struct is_standard_layout : public is_pod<T> {};
@@ -922,6 +918,7 @@ template <class T> struct has_virtual_destructor : public false_type {};
 
 // common_type
 //
+#endif
 
 // --------------------------------------------------------------------------
 

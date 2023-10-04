@@ -142,7 +142,7 @@
         return 0;
     }
  }} // __ccwrap::__assert_ex
- #define __CCWRAP_ABORT_PRINTF(...)     __ccwrap::__assert_ex::abortPrintf<void>(__VA_ARGS__)
+ #define __CCWRAP_ABORT_PRINTF(...)     (__ccwrap::__assert_ex::abortPrintf<void>(__VA_ARGS__))
 #endif
 
 namespace __ccwrap { namespace __assert_ex {
@@ -297,31 +297,31 @@ bool __range_assert(X const* x, A const* a, B const* b, charp xstr, charp astr, 
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,#p, (p) ) )
 
 #define CCWRAP_RANGE_ASSERT(x,a,b)                                           \
-        ( ((a) <= (x) && (x) <= (b))                                        \
+        ( ((a) <= (x) && (x) <= (b))                                         \
          || __CCWRAP_ABORT_PRINTF("%s (%d): %s: %s, out of range[%s, %s].\n" \
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,#x, #a, #b) )
 
 #define CCWRAP_ARG_ASSERT(n,x)                                               \
         ((x) || __CCWRAP_ABORT_PRINTF(                                       \
-                "%s (%d): %s(arg %d): assert(%s) is failed.\n"              \
+                "%s (%d): %s(arg %d): assert(%s) is failed.\n"               \
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,(n),#x ) )
 
 #define CCWRAP_ARG_PTR_ASSERT(n,p)                                           \
         ( __CCWRAP_IS_MEM_ADDR(p)                                            \
             || __CCWRAP_ABORT_PRINTF(                                        \
-                "%s (%d): %s(arg %d): %s(0x%p) is bad pointer.\n"           \
+                "%s (%d): %s(arg %d): %s(0x%p) is bad pointer.\n"            \
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,(n), #p, (p) ) )
 
 #define CCWRAP_ARG_PTR0_ASSERT(n,p)                                          \
         (!(p) || __CCWRAP_IS_MEM_ADDR(p)                                     \
          || __CCWRAP_ABORT_PRINTF(                                           \
-                "%s (%d): %s(arg %d): %s(0x%p) is bad pointer.\n"           \
+                "%s (%d): %s(arg %d): %s(0x%p) is bad pointer.\n"            \
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,(n), #p, (p) ) )
 
 #define CCWRAP_ARG_RANGE_ASSERT(n,x,a,b)                                     \
-        ( ((a) <= (x) && (x) <= (b))                                        \
+        ( ((a) <= (x) && (x) <= (b))                                         \
          || __CCWRAP_ABORT_PRINTF(                                           \
-                "%s (%d): %s(arg %d): %s, out of range[%s, %s].\n"          \
+                "%s (%d): %s(arg %d): %s, out of range[%s, %s].\n"           \
                 ,__FILE__,__LINE__,__CCWRAP_M_FUNC,(n), #x, #a, #b ) )
 
 #endif  // __cplusplus

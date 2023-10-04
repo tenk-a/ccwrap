@@ -5,7 +5,7 @@
  */
 
 //#undef _DEBUG
-#include <ccwrap/ccwrap_test.hpp>
+#include <_ccwrap/ccwrap_test.hpp>
 
 #include <cstddef>
 #include <cassert>

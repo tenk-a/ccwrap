@@ -24,30 +24,25 @@ typedef struct imaxdiv_t {
     intmax_t	rem;
 } imaxdiv_t;
 
-static __forceinline intmax_t	imaxabs(intmax_t j) { return (j < 0) ? -j : j; }
-static __forceinline imaxdiv_t	imaxdiv(intmax_t number, intmax_t denom) { imaxdiv_t d = { number / denom, number % denom }; return d; }
+static __ccwrap_force_inline intmax_t	imaxabs(intmax_t j) { return (j < 0) ? -j : j; }
+static __ccwrap_force_inline imaxdiv_t	imaxdiv(intmax_t number, intmax_t denom) { imaxdiv_t d = { number / denom, number % denom }; return d; }
 
-static __forceinline intmax_t	strtoimax(const char * s, char** endp, int radix) { return (intmax_t)_strtoi64(s, endp, radix); }
-static __forceinline intmax_t	strtoumax(const char * s, char** endp, int radix) { return (uintmax_t)_strtoui64(s, endp, radix); }
+static __ccwrap_force_inline intmax_t	strtoimax(const char * s, char** endp, int radix) { return (intmax_t)_strtoi64(s, endp, radix); }
+static __ccwrap_force_inline intmax_t	strtoumax(const char * s, char** endp, int radix) { return (uintmax_t)_strtoui64(s, endp, radix); }
 
-static __forceinline intmax_t	wcstoimax(const wchar_t * s, wchar_t** endp, int radix) { return (intmax_t)_wcstoi64(s, endp, radix); }
-static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int radix) { return (uintmax_t)_wcstoui64(s, endp, radix); }
+static __ccwrap_force_inline intmax_t	wcstoimax(const wchar_t * s, wchar_t** endp, int radix) { return (intmax_t)_wcstoi64(s, endp, radix); }
+static __ccwrap_force_inline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int radix) { return (uintmax_t)_wcstoui64(s, endp, radix); }
 
 #ifdef __cplusplus
 }
 #endif
 
-// ==================================== ======================================= =======================================
 /* macros for printf */
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
     #define PRId8   	    "d"
     #define PRId16  	    "d"
     #define PRId32  	    "d"
-    #if _MSC_VER < 1600
-     #define PRId64 	    "I64d"
-    #else
-     #define PRId64 	    "lld"
-    #endif
+    #define PRId64 	    	__CCWRAP_PRIF_LL "d"
     #define PRIdLEAST8	    "d"
     #define PRIdLEAST16     "d"
     #define PRIdLEAST32     "d"
@@ -57,7 +52,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIdFAST32	    "d"
     #define PRIdFAST64	    PRId64
     #define PRIdMAX 	    PRId64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIdPTR	    PRId64
     #else
      #define PRIdPTR	    "d"
@@ -66,11 +61,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIi8   	    "i"
     #define PRIi16  	    "i"
     #define PRIi32  	    "i"
-    #if _MSC_VER < 1600
-     #define PRIi64 	    "I64i"
-    #else
-     #define PRIi64 	    "lli"
-    #endif
+    #define PRIi64 	    	__CCWRAP_PRIF_LL "i"
     #define PRIiLEAST8	    "i"
     #define PRIiLEAST16     "i"
     #define PRIiLEAST32     "i"
@@ -80,7 +71,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIiFAST32	    "i"
     #define PRIiFAST64	    PRIi64
     #define PRIiMAX 	    PRIi64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIiPTR	    PRIi64
     #else
      #define PRIiPTR	    "i"
@@ -89,11 +80,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIu8   	    "u"
     #define PRIu16  	    "u"
     #define PRIu32  	    "u"
-    #if _MSC_VER < 1600
-     #define PRIu64 	    "I64u"
-    #else
-     #define PRIu64 	    "llu"
-    #endif
+    #define PRIu64 	    	__CCWRAP_PRIF_LL "u"
     #define PRIuLEAST8	    "u"
     #define PRIuLEAST16     "u"
     #define PRIuLEAST32     "u"
@@ -103,7 +90,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIuFAST32	    "u"
     #define PRIuFAST64	    PRIu64
     #define PRIuMAX 	    PRIu64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIuPTR	    PRIu64
     #else
      #define PRIuPTR	    "u"
@@ -112,11 +99,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIo8   	    "o"
     #define PRIo16  	    "o"
     #define PRIo32  	    "o"
-    #if _MSC_VER < 1600
-     #define PRIo64 	    "I64o"
-    #else
-     #define PRIo64 	    "llo"
-    #endif
+    #define PRIo64 	    	__CCWRAP_PRIF_LL "o"
     #define PRIoLEAST8	    "o"
     #define PRIoLEAST16     "o"
     #define PRIoLEAST32     "o"
@@ -126,7 +109,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIoFAST32	    "o"
     #define PRIoFAST64	    PRIo64
     #define PRIoMAX 	    PRIo64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIoPTR	    PRIo64
     #else
      #define PRIoPTR	    "o"
@@ -135,11 +118,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIx8   	    "x"
     #define PRIx16  	    "x"
     #define PRIx32  	    "x"
-    #if _MSC_VER < 1600
-     #define PRIx64 	    "I64x"
-    #else
-     #define PRIx64 	    "llx"
-    #endif
+    #define PRIx64 	    	__CCWRAP_PRIF_LL "x"
     #define PRIxLEAST8	    "x"
     #define PRIxLEAST16     "x"
     #define PRIxLEAST32     "x"
@@ -149,7 +128,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIxFAST32	    "x"
     #define PRIxFAST64	    PRIx64
     #define PRIxMAX 	    PRIx64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIxPTR	    PRIx64
     #else
      #define PRIxPTR	    "x"
@@ -158,11 +137,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIX8   	    "X"
     #define PRIX16  	    "X"
     #define PRIX32  	    "X"
-    #if _MSC_VER < 1600
-     #define PRIX64 	    "I64X"
-    #else
-     #define PRIX64 	    "llX"
-    #endif
+    #define PRIX64 	    	__CCWRAP_PRIF_LL "X"
     #define PRIXLEAST8	    "X"
     #define PRIXLEAST16     "X"
     #define PRIXLEAST32     "X"
@@ -172,7 +147,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define PRIXFAST32	    "X"
     #define PRIXFAST64	    PRIX64
     #define PRIXMAX 	    PRIX64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define PRIXPTR	    PRIX64
     #else
      #define PRIXPTR	    "X"
@@ -185,11 +160,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNd8   	    "hhd"
     #define SCNd16  	    "hd"
     #define SCNd32  	    "d"
-    #if _MSC_VER < 1600
-     #define SCNd64 	    "I64d"
-    #else
-     #define SCNd64 	    "lld"
-    #endif
+    #define SCNd64 	    	__CCWRAP_PRIF_LL "d"
     #define SCNdLEAST8	    "hhd"
     #define SCNdLEAST16     "hd"
     #define SCNdLEAST32     "d"
@@ -199,7 +170,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNdFAST32	    "d"
     #define SCNdFAST64	    SCNd64
     #define SCNdMAX 	    SCNd64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define SCNdPTR	    SCNd64
     #else
      #define SCNdPTR	    "d"
@@ -208,11 +179,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNi8   	    "hhi"
     #define SCNi16  	    "hi"
     #define SCNi32  	    "i"
-    #if _MSC_VER < 1600
-     #define SCNi64 	    "I64i"
-    #else
-     #define SCNi64 	    "lli"
-    #endif
+    #define SCNi64 	    	__CCWRAP_PRIF_LL "i"
     #define SCNiLEAST8	    "hhi"
     #define SCNiLEAST16     "hi"
     #define SCNiLEAST32     "i"
@@ -222,7 +189,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNiFAST32	    "i"
     #define SCNiFAST64	    SCNi64
     #define SCNiMAX 	    SCNi64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define SCNiPTR	    SCNi64
     #else
      #define SCNiPTR	    "i"
@@ -231,11 +198,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNu8   	    "hhu"
     #define SCNu16  	    "hu"
     #define SCNu32  	    "u"
-    #if _MSC_VER < 1600
-     #define SCNu64 	    "I64u"
-    #else
-     #define SCNu64 	    "llu"
-    #endif
+    #define SCNu64 	    	__CCWRAP_PRIF_LL "u"
     #define SCNuLEAST8	    "hhu"
     #define SCNuLEAST16     "hu"
     #define SCNuLEAST32     "u"
@@ -245,7 +208,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNuFAST32	    "u"
     #define SCNuFAST64	    SCNu64
     #define SCNuMAX 	    SCNu64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define SCNuPTR	    SCNu64
     #else
      #define SCNuPTR	    "u"
@@ -254,11 +217,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNo8   	    "hho"
     #define SCNo16  	    "ho"
     #define SCNo32  	    "o"
-    #if _MSC_VER < 1600
-     #define SCNo64 	    "I64o"
-    #else
-     #define SCNo64 	    "llo"
-    #endif
+    #define SCNo64 	    	__CCWRAP_PRIF_LL "o"
     #define SCNoLEAST8	    "hho"
     #define SCNoLEAST16     "ho"
     #define SCNoLEAST32     "o"
@@ -268,7 +227,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNoFAST32	    "o"
     #define SCNoFAST64	    SCNo64
     #define SCNoMAX 	    SCNo64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define SCNoPTR	    SCNo64
     #else
      #define SCNoPTR	    "o"
@@ -277,11 +236,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNx8   	    "hhx"
     #define SCNx16  	    "hx"
     #define SCNx32  	    "x"
-    #if _MSC_VER < 1600
-     #define SCNx64 	    "I64x"
-    #else
-     #define SCNx64 	    "llx"
-    #endif
+    #define SCNx64 	    	__CCWRAP_PRIF_LL "x"
     #define SCNxLEAST8	    "hhx"
     #define SCNxLEAST16     "hx"
     #define SCNxLEAST32     "x"
@@ -291,7 +246,7 @@ static __forceinline intmax_t	wcstoumax(const wchar_t * s, wchar_t** endp, int r
     #define SCNxFAST32	    "x"
     #define SCNxFAST64	    SCNx64
     #define SCNxMAX 	    SCNx64
-    #if defined(_WIN64)
+    #if defined(__CCWRAP_CPU64)
      #define SCNxPTR	    SCNx64
     #else
      #define SCNxPTR	    "x"

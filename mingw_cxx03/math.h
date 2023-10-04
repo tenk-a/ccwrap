@@ -1,11 +1,12 @@
-#pragma once
+#ifndef __CCWRAP_MATH_H_INCLUDED
+#define __CCWRAP_MATH_H_INCLUDED
 
 #include <ccwrap_header.h>
 #include <stddef.h>
-#include __CCWRAP_NATIVE_UC_HEADER_PATH(math.h)
-#include __CCWRAP_NATIVE_UC_HEADER_PATH(float.h)
+#include_next <math.h>
+#include_next <float.h>
 
-#if _MSC_VER < 1800
+#if 0
 
 #define FP_ZERO         _FPCLASS_PZ
 #define FP_NAN          _FPCLASS_QNAN
@@ -98,7 +99,7 @@ inline double __ccwrap_double_compare(double x, double y) {
 #define NAN         (std::numeric_limits<float>::quiet_NaN())
 
 #else   //TODO:
-static __ccwrap_force_inline int fpclassify(double v) { return __ccwrap_fpclassify_conv(_fpclass(v)); }
+static __ccwrap_force_inline int  fpclassify(double v) { return __ccwrap_fpclassify_conv(_fpclass(v)); }
 static __ccwrap_force_inline int isnan(double v) { return _isnan(v) != 0; }
 static __ccwrap_force_inline int isinf(double v) { int c = _fpclass(v); return c == _FPCLASS_PINF || c == _FPCLASS_NINF; }
 static __ccwrap_force_inline int isfinite(double x) { return _finite(x) != 0; }
@@ -114,6 +115,7 @@ static __ccwrap_force_inline int islessequal(double x, double y) { return isunor
 //#define HUGE_VALF     (float)(HUGE_VAL)
 //#define INFINITY      HUGE_VALF
 //#define NAN           (float)(NAN)
+#endif
 #endif
 
 

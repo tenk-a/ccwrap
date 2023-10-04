@@ -79,7 +79,7 @@ public:
     const_reverse_iterator  rend()     const noexcept { return const_reverse_iterator(begin()); }
     const_reverse_iterator  crend()    const noexcept { return const_reverse_iterator(begin()); }
 
-    const_reference         operator[](size_type i) const { assert(i<size_); return ptr_[i]; }
+    const_reference         operator[](size_type i) const { /*assert(i<size_);*/ return ptr_[i]; }
     const_reference         at(size_type i) const {if(i>=size_){throw_out_of_range();} return ptr_[i];}
     void                    swap(basic_string_view& r) noexcept { std::swap(ptr_, r.ptr_); std::swap(size_, r.size_); }
     void                    remove_prefix(size_type n) { if (n > size_) n = size_; size_ -= n; ptr_ += n; }
@@ -147,9 +147,9 @@ public:
     template<class A> operator std::basic_string<C,T,A>() const { return std::basic_string<C,T,A>(begin(), end()); }
  #endif
 private:
-    void        check_pos_len(std::size_t& pos, std::size_t& len) const;
-    void        throw_out_of_range() const;
     basic_string_view substr_ne(std::size_t pos, std::size_t n) const noexcept;
+    static void         throw_out_of_range();
+    static void         check_pos_len(std::size_t size, std::size_t& pos, std::size_t& len);
     static const C*     find_1(const C* cary1, std::size_t n1, C c2) noexcept;
     static std::size_t  find_1(const C* cary1, std::size_t ofs1, std::size_t n1, C c2) noexcept;
     static std::size_t  find_str(const C* cary1, std::size_t ofs1, std::size_t n1, const C* cary2, std::size_t n2) noexcept;
@@ -873,7 +873,7 @@ basic_string_view<C,T>::fnd_last_not_of(const C* cary1, std::size_t n1, C c2) no
 
 template< typename C, class T > std::size_t
 basic_string_view<C,T>::copy(C* ary, std::size_t n, std::size_t pos) const {
-    check_pos_len(pos, n);
+    check_pos_len(size_, pos, n);
     if (n) {
         if (ary == 0)
             return 0;
@@ -884,14 +884,13 @@ basic_string_view<C,T>::copy(C* ary, std::size_t n, std::size_t pos) const {
 
 template< typename C, class T > basic_string_view<C,T>
 basic_string_view<C,T>::substr(std::size_t pos, std::size_t n) const {
-    check_pos_len(pos, n);
+    check_pos_len(size_, pos, n);
     return basic_string_view<C,T>( ptr_ + pos, n );
 }
 
 // [private]
 template< typename C, class T > inline
-void basic_string_view<C,T>::check_pos_len(std::size_t& pos, std::size_t& len) const {
-    std::size_t l = size_;
+void basic_string_view<C,T>::check_pos_len(std::size_t l, std::size_t& pos, std::size_t& len) {
     if (pos > l) {
         throw_out_of_range();
         pos = l;
@@ -902,13 +901,14 @@ void basic_string_view<C,T>::check_pos_len(std::size_t& pos, std::size_t& len) c
 
 // [private]
 template< typename C, class T > inline
-void basic_string_view<C,T>::throw_out_of_range() const {
+void basic_string_view<C,T>::throw_out_of_range() {
     throw std::out_of_range("std::basic_string_view");
 }
 
 
-//---------------------------------------------------------------------------------
-
+#undef  __CCWRAP_SV 
+#undef  __CCWRAP_CS 
+#undef  __CCWRAP_STRING_VIEW_OP 
 #define __CCWRAP_SV     const basic_string_view<C,T>&
 #define __CCWRAP_CS     const C*
 #define __CCWRAP_STRING_VIEW_OP(_op,_op2)                       \
@@ -939,7 +939,7 @@ __CCWRAP_STRING_VIEW_OP(>=,<=);
 
 }   // ccwrap
 
-//---------------------------------------------------------------------------------
+//	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
 
 // ostream << basic_string_view
 template<typename C, class T>
