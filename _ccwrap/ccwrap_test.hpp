@@ -47,6 +47,8 @@
 #include <list>
 #include <sstream>
 
+#include "utf_to_ostream.hpp"
+
 #if defined(USE_CCWRAP_TEST_MSW)
 #include <cstdarg>
 #include <windows.h>

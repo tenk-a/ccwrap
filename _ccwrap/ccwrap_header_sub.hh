@@ -80,8 +80,8 @@
 
 // ==================================== ======================================= =======================================
 // Compiler.
-//  ex) __GNUC__,_MSC_VER, __BORLANDC__, __WATCOMC__,__INTEL_COMPILER,
-//      __MWERKS__{Codewarrior}, __DMC__,__SC__{DigitalMars},
+//  ex) __GNUC__,__clung__, _MSC_VER,
+//      __BORLANDC__, __WATCOMC__,__INTEL_COMPILER,__MWERKS__{Codewarrior}, __DMC__,__SC__{DigitalMars},
 
 
 // ==================================== ======================================= =======================================
@@ -256,8 +256,8 @@
 // ==================================== ======================================= =======================================
 // decl. macro
 
-#ifndef __ccwrap_force_inline
- #define __ccwrap_force_inline               inline
+#ifndef __ccwrap_forceinline
+ #define __ccwrap_forceinline               inline
 #endif
 
 #ifndef __ccwrap_noinline

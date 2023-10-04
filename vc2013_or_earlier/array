@@ -24,7 +24,7 @@
 #endif
 
 #if (!defined __CCWRAP__ || defined __CCWRAP_NO_HEADER_ARRAY) && !defined(__CCWRAP_BOOST2STD)
- #include "../ccwrap/array.hpp"
+ #include "../_ccwrap/array.hpp"
 #endif
 
 #endif  // CCWRAP_ARRAY_INCLUDED

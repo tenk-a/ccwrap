@@ -36,7 +36,7 @@
  #define __ccwrap_stdcall        __stdcall
  #define __ccwrap_fastcall       __fastcall
 #endif
-#define __ccwrap_force_inline    __inline__ __attribute__((always_inline))
+#define __ccwrap_forceinline     __inline__ __attribute__((always_inline))
 #define __ccwrap_noinline        __attribute__((noinline))
 #define __ccwrap_selectany       __attribute__((weak))
 #define __ccwrap_dllimport       __attribute__((dllimport))

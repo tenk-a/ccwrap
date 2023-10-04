@@ -1,18 +1,18 @@
+// Boost Software Lisence Version 1.0
 #ifndef __CCWRAP_UNORDERED_MAP_INCLUDED
 #define __CCWRAP_UNORDERED_MAP_INCLUDED
 
-#include "../boost2std/boost2std_common.hpp"
-#include <cstddef>
+#include <boost2std_common.hpp>
 
 #include <algorithm>
 
 
 #ifndef __CCWRAP_NO_HEADER_UNORDERED_MAP
 
-#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
-#include __CCWRAP_NATIVE_STL_HEADER_PATH(unordered_map)
-#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
 #include_next <unordered_map>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(unordered_map)
 #else
 #include <../include/unordered_map>
 #endif

@@ -79,7 +79,7 @@
 #define __ccwrap_cdecl               __cdecl
 #define __ccwrap_stdcall             __stdcall
 #define __ccwrap_fastcall            __fastcall
-#define __ccwrap_force_inline        __forceinline
+#define __ccwrap_forceinline         __forceinline
 #define __ccwrap_noinline            __declspec(noinline)
 #define __ccwrap_selectany           __declspec(selectany)
 #define __ccwrap_dllimport           __declspec(dllimport)

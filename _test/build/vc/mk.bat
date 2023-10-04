@@ -60,8 +60,10 @@ set VcVer=
 @if /I not "%PATH:Microsoft Visual Studio 14.0=%"=="%PATH%" set VcVer=vc140
 @if /I not "%PATH:Microsoft Visual Studio\2017=%"=="%PATH%" set VcVer=vc141
 @if /I not "%PATH:Microsoft Visual Studio\2019=%"=="%PATH%" set VcVer=vc142
+@if /I not "%PATH:Microsoft Visual Studio\2022=%"=="%PATH%" set VcVer=vc143
 if "%VcVer%"=="" goto ERR
 set Arch=Win32
+@if "%VcVer%"=="vc143"    if /I not "%PATH:\bin\HostX64\x64=%"=="%PATH%" set Arch=x64
 @if "%VcVer%"=="vc142"    if /I not "%PATH:\bin\HostX64\x64=%"=="%PATH%" set Arch=x64
 @if "%VcVer%"=="vc141"    if /I not "%PATH:\bin\HostX64\x64=%"=="%PATH%" set Arch=x64
 @if /I not "%PATH:Microsoft Visual Studio 14.0\VC\BIN\amd64=%"=="%PATH%" set Arch=x64
@@ -102,6 +104,7 @@ set Vc2015orLater=
 if "%VcVer%"=="vc140" set Vc2015orLater=1
 if "%VcVer%"=="vc141" set Vc2015orLater=1
 if "%VcVer%"=="vc142" set Vc2015orLater=1
+if "%VcVer%"=="vc143" set Vc2015orLater=1
 
 if "%VcVer%"=="vc142" set BoostDir=
 
@@ -116,6 +119,7 @@ set LAST_OPTS=
 set BOOST2STD=
 if /I "%BoostDir%"=="" goto BOOST_SKIP
   set BOOST2STD=..\..\..\boost2std
+  set StdDir=%BOOST2STD%\detail\vc
   set BoostLibDir=%BoostDir%\stage\%VcVer%_%Arch%\lib
   set LAST_OPTS=%LAST_OPTS% -link /LIBPATH:%BoostLibDir%
   set INCS=-I%BOOST2STD% -I%StdDir% -I%BoostDir% %INCS%

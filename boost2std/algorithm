@@ -1,13 +1,14 @@
+// Boost Software Lisence Version 1.0
 #ifndef __CCWRAP_ALGORITHM_INCLUDED
 #define __CCWRAP_ALGORITHM_INCLUDED
 
-#include "../boost2std/boost2std_common.hpp"
-#include <cstddef>
+#include <boost2std_common.hpp>
+//#include <boost2std.hpp>
 
-#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
-#include __CCWRAP_NATIVE_STL_HEADER_PATH(algorithm)
-#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
 #include_next <algorithm>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(algorithm)
 #else
 #include <../include/algorithm>
 #endif
@@ -51,7 +52,7 @@
 
 namespace std {
  #if defined(__CCWRAP_NO_CXX11_ALGORITHM)
-  #if defined(_MSC_VER) && _MSC_VER == 1600
+  #if _MSC_VER && _MSC_VER == 1600
   #else
     using   ::boost::move;
     using   ::boost::move_backward;

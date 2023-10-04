@@ -1,11 +1,12 @@
 #include <_ccwrap/ccwrap_test.hpp>
+
 #if __CCWRAP__ == 0
 #include <filesystem>
 #else
 #include <_ccwrap/filesystem_path.hpp>
 #endif
 #include <vector>
-#include <_ccwrap/StringCodeConv.hpp>
+#include <_ccwrap/utfenc.hpp>
 
 
 #if defined(_WIN32) //&& defined(UNICODE)
@@ -29,11 +30,7 @@
 CCWRAP_TEST_SUITE(filesystem_path) {
     using namespace std;
     using namespace ccwrap;
- #if __CCWRAP__ == 0
     using namespace std::filesystem;
- #else
-    using namespace ccwrap::filesystem;
- #endif
 
     enum {
         rootname,
@@ -176,7 +173,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         path::iterator          ite0;
         path::format            formatN = path::native_format;
      #if __CCWRAP__
-        static_assert(path::preferred_separator == CCWRAP_FILESYSTEM_PATH_SEP, "");
+        static_assert(path::preferred_separator == ccwrap::strpath::preferred_separator, "");
      #endif
         path::const_iterator    icbbte0;
 
@@ -293,7 +290,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         paths.clear();
         paths.reserve(wchar_paths_size);
         for (size_t i = 0; i < wchar_paths_size; ++i) {
-            paths.push_back(stringCodeConv<S>(wchar_paths[i]));
+            paths.push_back(utfenc::to<S>(wchar_paths[i]));
         }
     }
 
@@ -341,26 +338,26 @@ CCWRAP_TEST_SUITE(filesystem_path) {
             ccwrap_test(paths[i].generic_u32string() == pathU32Strs[i]);
 
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].string() == stringCodeConv<string>(nates[i]));
+            ccwrap_test(paths[i].string() == utfenc::to<string>(nates[i]));
 
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].wstring() == stringCodeConv<wstring>(nates[i]));
+            ccwrap_test(paths[i].wstring() == utfenc::to<wstring>(nates[i]));
      #if HAS_U8STRING
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u8string() == stringCodeConv<u8string>(nates[i]));
+            ccwrap_test(paths[i].u8string() == utfenc::to<u8string>(nates[i]));
      #endif
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u16string() == stringCodeConv<u16string>(nates[i]));
+            ccwrap_test(paths[i].u16string() == utfenc::to<u16string>(nates[i]));
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u32string() == stringCodeConv<u32string>(nates[i]));
+            ccwrap_test(paths[i].u32string() == utfenc::to<u32string>(nates[i]));
 
         for (size_t i = 0; i < paths.size(); ++i) {
          #if __CCWRAP__ == 0
             ccwrap_test(paths[i] == u8path((string const&)pathU8Strs[i]));
             ccwrap_test(paths[i] == u8path((char const*)pathU8Strs[i].data(), (char const*)pathU8Strs[i].data() + pathU8Strs[i].size()));
          #else
-            ccwrap_test(paths[i] == u8path(pathU8Strs[i]));
-            ccwrap_test(paths[i] == u8path(pathU8Strs[i].begin(), pathU8Strs[i].end()));
+            ccwrap_test_eq(paths[i], u8path(pathU8Strs[i]));
+            ccwrap_test_eq(paths[i], u8path(pathU8Strs[i].begin(), pathU8Strs[i].end()));
          #endif
         }
     }

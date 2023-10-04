@@ -17,6 +17,6 @@
 
 #else   // _MSC_VER
 
-#include "../ccwrap/type_traits_cxx03.hpp"
+#include "../_ccwrap/type_traits_cxx03.hpp"
 
 #endif

@@ -7,8 +7,8 @@
  *  @note
  *      (base: http://www.6809.net/tenk/html/sbr/ya_array.h.html )
  */
-#ifndef __ccwrap_array_hpp_INCLUDED
-#define __ccwrap_array_hpp_INCLUDED
+#ifndef __CCWRAP_ARRAY_HPP_INCLUDED
+#define __CCWRAP_ARRAY_HPP_INCLUDED
 
 #include <cstddef>
 
@@ -31,15 +31,15 @@ struct array {
 
 public:
     static_assert(N > 0, "");
-    typedef std::size_t                           size_type;
-    typedef std::ptrdiff_t                        difference_type;
-    typedef T                                     value_type;
-    typedef T&                                    reference;
-    typedef const T&                              const_reference;
-    typedef T*                                    pointer;
-    typedef const T*                              const_pointer;
-    typedef T*                                    iterator;
-    typedef const T*                              const_iterator;
+    typedef std::size_t     size_type;
+    typedef std::ptrdiff_t  difference_type;
+    typedef T               value_type;
+    typedef T&              reference;
+    typedef const T&        const_reference;
+    typedef T*              pointer;
+    typedef const T*        const_pointer;
+    typedef T*              iterator;
+    typedef const T*        const_iterator;
     typedef std::reverse_iterator<iterator>       reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 

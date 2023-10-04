@@ -1,0 +1,31 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CSTDIO_INCLUDED
+#define __CCWRAP_CSTDIO_INCLUDED
+
+#include <boost2std_common.hpp>
+
+#include "../boost2std/stdio.h"
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cstdio>
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstdio)
+#else
+  #include <../include/cstdio>
+#endif
+
+#if _MSC_VER && _MSC_VER < 1900
+namespace std {
+	using ::vsnprintf;
+	using ::snprintf;
+	using ::vsnwprintf;
+	using ::snwprintf;
+ #if 0
+	using ::vfscanf;
+	using ::vscanf;
+ 	using ::vsscanf;
+ #endif
+}
+#endif
+
+#endif

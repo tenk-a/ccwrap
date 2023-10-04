@@ -1,6 +1,6 @@
 //#include <_ccwrap/ccwrap_common.h>
 #include <_ccwrap/ccwrap_test.hpp>
-#include <_ccwrap/StringCodeConv.hpp>
+#include <_ccwrap/utfenc.hpp>
 
 #if 0
 namespace __Fkstd_TestSuite_StringCodeConv {
@@ -80,42 +80,42 @@ CCWRAP_TEST_SUITE(StringCodeConv) {
         u32string   u32s1(strs[2].u32s);
         wstring     wcs1(strs[3].wcs);
 
-        ccwrap_test_assert(ascs1 == stringCodeConv<string>(strs[4].wcs));
-        ccwrap_test_assert(ascs1 == stringCodeConv<string>(strs[4].u8s));
-        ccwrap_test_assert(ascs1 == stringCodeConv<string>(strs[4].u16s));
-        ccwrap_test_assert(ascs1 == stringCodeConv<string>(strs[4].u32s));
-        ccwrap_test_assert(strs[4].wcs == stringCodeConv<wstring>(strs[4].mbs));
-        ccwrap_test_assert(strs[4].u8s == stringCodeConv<u8string>(strs[4].mbs));
-        ccwrap_test_assert(strs[4].u16s == stringCodeConv<u16string>(strs[4].mbs));
-        ccwrap_test_assert(strs[4].u32s == stringCodeConv<u32string>(strs[4].mbs));
+        ccwrap_test_assert(ascs1 == utfenc::to<string>(strs[4].wcs));
+        ccwrap_test_assert(ascs1 == utfenc::to<string>(strs[4].u8s));
+        ccwrap_test_assert(ascs1 == utfenc::to<string>(strs[4].u16s));
+        ccwrap_test_assert(ascs1 == utfenc::to<string>(strs[4].u32s));
+        ccwrap_test_assert(strs[4].wcs == utfenc::to<wstring>(strs[4].mbs));
+        ccwrap_test_assert(strs[4].u8s == utfenc::to<u8string>(strs[4].mbs));
+        ccwrap_test_assert(strs[4].u16s == utfenc::to<u16string>(strs[4].mbs));
+        ccwrap_test_assert(strs[4].u32s == utfenc::to<u32string>(strs[4].mbs));
 
      //#if !defined(CCWRAP_CHAR_IS_UTF8)
      #if defined(CCWRAP_CHAR_IS_SJIS)
         string      mbs1(strs[3].mbs);
-        ccwrap_test_assert(mbs1 == stringCodeConv<string>(strs[3].wcs));
-        ccwrap_test_assert(mbs1 == stringCodeConv<string>(strs[3].u8s));
-        ccwrap_test_assert(mbs1 == stringCodeConv<string>(strs[3].u16s));
-        ccwrap_test_assert(mbs1 == stringCodeConv<string>(strs[3].u32s));
-        ccwrap_test_assert(wcs1 == stringCodeConv<wstring>(strs[3].mbs));
-        ccwrap_test_assert(u8s1 == stringCodeConv<u8string>(strs[0].mbs));
-        ccwrap_test_assert(u16s1 == stringCodeConv<u16string>(strs[1].mbs));
-        ccwrap_test_assert(u32s1 == stringCodeConv<u32string>(strs[2].mbs));
+        ccwrap_test_assert(mbs1 == utfenc::to<string>(strs[3].wcs));
+        ccwrap_test_assert(mbs1 == utfenc::to<string>(strs[3].u8s));
+        ccwrap_test_assert(mbs1 == utfenc::to<string>(strs[3].u16s));
+        ccwrap_test_assert(mbs1 == utfenc::to<string>(strs[3].u32s));
+        ccwrap_test_assert(wcs1 == utfenc::to<wstring>(strs[3].mbs));
+        ccwrap_test_assert(u8s1 == utfenc::to<u8string>(strs[0].mbs));
+        ccwrap_test_assert(u16s1 == utfenc::to<u16string>(strs[1].mbs));
+        ccwrap_test_assert(u32s1 == utfenc::to<u32string>(strs[2].mbs));
      #endif
 
-        ccwrap_test_assert(wcs1 == stringCodeConv<wstring>(strs[3].u8s));
-        ccwrap_test_assert(wcs1 == stringCodeConv<wstring>(strs[3].u16s));
-        ccwrap_test_assert(wcs1 == stringCodeConv<wstring>(strs[3].u32s));
+        ccwrap_test_assert(wcs1 == utfenc::to<wstring>(strs[3].u8s));
+        ccwrap_test_assert(wcs1 == utfenc::to<wstring>(strs[3].u16s));
+        ccwrap_test_assert(wcs1 == utfenc::to<wstring>(strs[3].u32s));
 
-        ccwrap_test_assert(u8s1 == stringCodeConv<u8string>(strs[0].wcs));
-        ccwrap_test_assert(u8s1 == stringCodeConv<u8string>(strs[0].u16s));
-        ccwrap_test_assert(u8s1 == stringCodeConv<u8string>(strs[0].u32s));
+        ccwrap_test_assert(u8s1 == utfenc::to<u8string>(strs[0].wcs));
+        ccwrap_test_assert(u8s1 == utfenc::to<u8string>(strs[0].u16s));
+        ccwrap_test_assert(u8s1 == utfenc::to<u8string>(strs[0].u32s));
 
-        ccwrap_test_assert(u16s1 == stringCodeConv<u16string>(strs[1].wcs));
-        ccwrap_test_assert(u16s1 == stringCodeConv<u16string>(strs[1].u8s));
-        ccwrap_test_assert(u16s1 == stringCodeConv<u16string>(strs[1].u32s));
+        ccwrap_test_assert(u16s1 == utfenc::to<u16string>(strs[1].wcs));
+        ccwrap_test_assert(u16s1 == utfenc::to<u16string>(strs[1].u8s));
+        ccwrap_test_assert(u16s1 == utfenc::to<u16string>(strs[1].u32s));
 
-        ccwrap_test_assert(u32s1 == stringCodeConv<u32string>(strs[2].wcs));
-        ccwrap_test_assert(u32s1 == stringCodeConv<u32string>(strs[2].u8s));
-        ccwrap_test_assert(u32s1 == stringCodeConv<u32string>(strs[2].u16s));
+        ccwrap_test_assert(u32s1 == utfenc::to<u32string>(strs[2].wcs));
+        ccwrap_test_assert(u32s1 == utfenc::to<u32string>(strs[2].u8s));
+        ccwrap_test_assert(u32s1 == utfenc::to<u32string>(strs[2].u16s));
     }
 }

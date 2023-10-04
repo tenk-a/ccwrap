@@ -19,6 +19,10 @@
     2017    14.1    1910
     2019    14.2    1920
     2022    14.3    1930
+
+  
+  vc14.0 or later : C headers
+    C:\Program Files (x86)\Windows Kits\??\Include\??.?.?????.?\ucrt
 */
 
 // ----------------------------------------------------------------------------
@@ -36,12 +40,12 @@
 #define __CCWRAP_CONFIG_PATH(x)              <__CCWRAP_CONFIG_DIR/##x>
 
 #ifndef __CCWRAP_NATIVE_C_HEADER_DIR
-  #if _MSC_VER >= 1910
+  #if _MSC_VER >= 1900
     #define __CCWRAP_NATIVE_C_HEADER_DIR    ../include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
-  #elif _MSC_VER >= 1900
-    #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
-    #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
+  //#elif _MSC_VER >= 1900
+  //  #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
+  //  #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
   #elif _MSC_VER >= 1400
     #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../../VC/include
@@ -66,6 +70,10 @@
 
 // ----------------------------------------------------------------------------
 // c & c++
+
+#if _MSC_VER < 1400
+ #define __CCWRAP_NO_VA_ARGS
+#endif
 
 #define __CCWRAP_WCHAR_BIT          16
 #define __CCWRAP_LONG_BIT           32
@@ -114,7 +122,7 @@
 #define __ccwrap_cdecl              __cdecl
 #define __ccwrap_stdcall            __stdcall
 #define __ccwrap_fastcall           __fastcall
-#define __ccwrap_force_inline       __forceinline
+#define __ccwrap_forceinline        __forceinline
 #define __ccwrap_noinline           __declspec(noinline)
 #define __ccwrap_selectany          __declspec(selectany)
 #define __ccwrap_dllimport          __declspec(dllimport)
@@ -376,4 +384,4 @@
   #endif
 #endif
 
-#include "../_ccwrap/ccwrap_header_sub.hh"
+#include "../ccwrap_header_sub.hh"

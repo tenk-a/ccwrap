@@ -18,6 +18,6 @@
 
 #include <stddef.h>
 
-#include "../ccwrap/stdint_impl.h"
+#include "../_ccwrap/stdint_impl.h"
 
 #endif  // _MSC_VER

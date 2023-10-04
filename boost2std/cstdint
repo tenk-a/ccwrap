@@ -1,15 +1,15 @@
-#ifndef __CCWRAP_BOOST2STD_CSTDINT_INCLUDED
-#define __CCWRAP_BOOST2STD_CSTDINT_INCLUDED
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CSTDINT_INCLUDED
+#define __CCWRAP_CSTDINT_INCLUDED
 
-#include "../boost2std/boost2std_common.hpp"
-#include <cstddef>
+#include <boost2std_common.hpp>
 
-#if !defined(__CCWRAP_HEADER_NO_CSTDINT)
+#if !defined(__CCWRAP_NO_HEADER_CSTDINT)
 
- #ifdef __CCWRAP_NATIVE_C_HEADER_PATH
-  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstdint)
- #elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <cstdint>
+ #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstdint)
  #else
   #include <../include/cstdint>
  #endif
@@ -17,6 +17,39 @@
 #else   // __CCWRAP_HEADER_NO_CSTDINT
 
 #include <boost/cstdint.hpp>
+
+using boost::int8_t;
+using boost::uint8_t;
+using boost::int16_t;
+using boost::uint16_t;
+using boost::int32_t;
+using boost::uint32_t;
+using boost::int64_t;
+using boost::uint64_t;
+
+using boost::intmax_t;
+using boost::uintmax_t;
+
+using boost::intptr_t;
+using boost::uintptr_t;
+
+using boost::int_least8_t;
+using boost::uint_least8_t;
+using boost::int_least16_t;
+using boost::uint_least16_t;
+using boost::int_least32_t;
+using boost::uint_least32_t;
+using boost::int_least64_t;
+using boost::uint_least64_t;
+
+using boost::int_fast8_t;
+using boost::uint_fast8_t;
+using boost::int_fast16_t;
+using boost::uint_fast16_t;
+using boost::int_fast32_t;
+using boost::uint_fast32_t;
+using boost::int_fast64_t;
+using boost::uint_fast64_t;
 
 namespace std {
     using boost::int8_t;
@@ -55,4 +88,4 @@ namespace std {
 
 #endif  // __CCWRAP_HEADER_NO_CSTDINT
 
-#endif  // __CCWRAP_BOOST2STD_CSTDDEF_INCLUDED
+#endif  // __CCWRAP_CSTDDEF_INCLUDED

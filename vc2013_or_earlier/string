@@ -26,7 +26,7 @@ namespace std {
     typedef basic_string<char16_t>  u16string;
     typedef basic_string<char32_t>  u32string;
 }
-#include "../ccwrap/string_sub.hpp"
+#include "../_ccwrap/string_sub.hpp"
 #endif  // __CCWRAP_NO_CXX11_STRING
 
 #endif  // __CCWRAP_STRING_INCLUDED

@@ -11,7 +11,7 @@
 #pragma warning(push)
 #pragma warning(disable:4996)
 
-__ccwrap_force_inline int vsnprintf(char buf[], size_t bufsz, char const* fmt, va_list a) {
+__ccwrap_forceinline int vsnprintf(char buf[], size_t bufsz, char const* fmt, va_list a) {
  #if _MSC_VER >= 1400
     return vsprintf_s(buf, bufsz, fmt, a);
  #else  // Note! Sloppy handling without buffer checking.
@@ -28,7 +28,7 @@ inline int   snprintf(char buf[], size_t bufsz, char const* fmt, ...) {
     return n;
 }
 
-__ccwrap_force_inline int vsnwprintf(wchar_t buf[], size_t bufsz, wchar_t const* fmt, va_list a) {
+__ccwrap_forceinline int vsnwprintf(wchar_t buf[], size_t bufsz, wchar_t const* fmt, va_list a) {
  #if _MSC_VER >= 1400
     return vswprintf_s(buf, bufsz, fmt, a);
  #else  // Note! Sloppy handling without buffer checking.

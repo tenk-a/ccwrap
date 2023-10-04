@@ -36,12 +36,13 @@
  #define __ccwrap_stdcall        __stdcall
  #define __ccwrap_fastcall       __fastcall
 #endif
-#define __ccwrap_force_inline    __inline__ __attribute__((always_inline))
+#define __ccwrap_forceinline     __inline__ __attribute__((always_inline))
 #define __ccwrap_noinline        __attribute__((noinline))
 #define __ccwrap_selectany       __attribute__((weak))
 #define __ccwrap_dllimport       __attribute__((dllimport))
 #define __ccwrap_dllexport       __attribute__((dllexport))
 #undef _MSC_VER
+#define __ccwrap_restrict        __restrict
 
 #ifdef __clang__
 #undef __GUNUC__
@@ -53,7 +54,7 @@ typedef __int128            __ccwrap_int128;
 typedef unsigned __int128   __ccwrap_uint128;
 
 #if defined(__cplusplus)
- #if __cplusplus < 201100
+ #if __cplusplus < 201100L
   typedef unsigned char             char8_t;
   typedef unsigned                  char32_t;
   typedef unsigned short            char16_t;
@@ -96,15 +97,18 @@ typedef unsigned __int128   __ccwrap_uint128;
     template <> struct __static_assert_FAILED_<true> { enum { value = 1 }; };
     #define static_assert(c, ...) typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
   #endif
-
-  #define __CCWRAP_NO_CXX11_AUTO    		1
-  #define __CCWRAP_NO_DECLTYPE      		1
+  #ifndef __CCWRAP_NO_CXX11_AUTO
+   #define __CCWRAP_NO_CXX11_AUTO    		1
+  #endif
+  #ifndef __CCWRAP_NO_DECLTYPE
+   #define __CCWRAP_NO_DECLTYPE      		1
+  #endif
   #define __CCWRAP_HEADER_NO_TYPE_TRAITS	1
   #define __CCWRAP_NO_CXX11_ITERATOR		1
   #define __CCWRAP_NO_HEADER_CXX14_ITERATOR	1
- #endif
- #if !defined(nullptr)
-  #define nullptr                   (0)
+  #if !defined(nullptr)
+   #define nullptr                   (0)
+  #endif
  #endif
 #endif
 

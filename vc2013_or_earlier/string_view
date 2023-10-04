@@ -43,7 +43,7 @@
   #include "../boost2std/string_view"
   #define __CCWRAP_STRING_VIEW_DEFINED
  #elif (!defined __CCWRAP__ || defined __CCWRAP_NO_HEADER_STRING_VIEW)
-  #include "../ccwrap/string_view.hpp"
+  #include "../_ccwrap/string_view.hpp"
   #define __CCWRAP_STRING_VIEW_DEFINED
  #endif
 #endif

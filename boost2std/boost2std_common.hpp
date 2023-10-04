@@ -1,12 +1,13 @@
-#ifndef __CCWRAP_BOOST2STD_HPP_INCLUDED
-#define __CCWRAP_BOOST2STD_HPP_INCLUDED
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_BOOST2STD_COMMON_HPP_INCLUDED
+#define __CCWRAP_BOOST2STD_COMMON_HPP_INCLUDED
 
-#ifndef __CCWRAP_BOOST2STD
-#define __CCWRAP_BOOST2STD
+#include "boost2std.hpp"
+
+#include <stddef.h>
+#ifdef __cplusplus
+ #include <cstddef>
+ //#include <algorithm>
 #endif
 
-#ifndef __BOOST2STD_H_INCLUDED
- #include "../_ccwrap/boost2std.h"
-#endif
-
-#endif
+#endif	// __CCWRAP_BOOST2STD_HPP_INCLUDED

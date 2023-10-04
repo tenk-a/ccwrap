@@ -1,0 +1,32 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CINTTYPES_INCLUDED
+#define __CCWRAP_CINTTYPES_INCLUDED
+
+#include <boost2std_common.hpp>
+
+#include <inttypes.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cinttypes>
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cinttypes)
+#else
+  #include <../include/cinttypes>
+#endif
+
+
+#if  _MSC_VER && _MSC_VER < 1800
+
+namespace std {
+    using   ::imaxdiv_t;
+    using   ::imaxabs;
+    using   ::imaxdiv;
+    using   ::strtoimax;
+    using   ::strtoumax;
+    using   ::wcstoimax;
+    using   ::wcstoumax;
+}
+
+#endif	// _MSC_VER
+
+#endif

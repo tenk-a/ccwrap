@@ -1,13 +1,13 @@
+// Boost Software Lisence Version 1.0
 #ifndef __CCWRAP_STREAMBUF_INCLUDED
 #define __CCWRAP_STREAMBUF_INCLUDED
 
-#include "../boost2std/boost2std_common.hpp"
-#include <cstddef>
+#include <boost2std_common.hpp>
 
-#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
-#include __CCWRAP_NATIVE_STL_HEADER_PATH(streambuf)
-#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
 #include_next <streambuf>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(streambuf)
 #else
 #include <../include/streambuf>
 #endif

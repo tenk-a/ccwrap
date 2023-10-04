@@ -13,17 +13,16 @@
 #ifndef __CCWRAP_FORWARD_LIST_INCLUDED
 #define __CCWRAP_FORWARD_LIST_INCLUDED
 
-#include "../boost2std/boost2std_common.hpp"
-#include <cstddef>
+#include <boost2std_common.hpp>
 
 #include <algorithm>
 
 #ifndef __CCWRAP_NO_HEADER_FORWARD_LIST
 
-#ifdef __CCWRAP_NATIVE_STL_HEADER_PATH
-#include __CCWRAP_NATIVE_STL_HEADER_PATH(forward_list)
-#elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
 #include_next <forward_list>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(forward_list)
 #else
 #include <../include/forward_list>
 #endif
@@ -32,9 +31,9 @@
 
 
 #if BOOST_VERSION < 107000
-#include "forward_list_boost_1_6x.hpp"
+#include "detail/forward_list_boost_1_6x.hpp"
 #else
-#include "forward_list_boost_1_72.hpp"
+#include "detail/forward_list_boost_1_72.hpp"
 #endif
 
 namespace std {
