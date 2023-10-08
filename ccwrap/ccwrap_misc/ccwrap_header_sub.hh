@@ -198,6 +198,10 @@
  #define __CCWRAP_DOUBLE_BIT                 64
 #endif
 
+#ifndef __CCWRAP_LDOUBLE_BIT
+ #define __CCWRAP_LDOUBLE_BIT                64
+#endif
+
 
 // ==================================== ======================================= =======================================
 // type define & macro

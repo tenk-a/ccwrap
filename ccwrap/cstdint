@@ -4,11 +4,13 @@
 
 #include <ccwrap_common.h>
 
-#if __CCWRAP_CXX >= 201103L
+#if __CCWRAP_CXX >= 201103L || __CCWRAP_HAS_STDINT
  #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <cstdint>
  #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
   #include __CCWRAP_NATIVE_STL_HEADER_PATH(cstdint)
+ #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstdint)
  #else
   #include <../include/cstdint>
  #endif

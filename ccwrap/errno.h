@@ -9,7 +9,7 @@
 #elif defined(__CCWRAP_NATIVE_UC_HEADER_PATH)
  #include __CCWRAP_NATIVE_UC_HEADER_PATH(errno.h)
 #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
-  #include __CCWRAP_NATIVE_C_HEADER_PATH(errno.h)
+ #include __CCWRAP_NATIVE_C_HEADER_PATH(errno.h)
 #else
   #include <../include/errno.h>
 #endif

@@ -1,6 +1,6 @@
 #include <cstdio>
 #include <cstdint>
-#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
+#include <ccwrap_misc/ccwrap_test.hpp>
 
 #ifndef __ccwrap_llong
 #define __ccwrap_llong   long long

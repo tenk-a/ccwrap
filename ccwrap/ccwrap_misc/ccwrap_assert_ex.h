@@ -180,7 +180,7 @@ bool __bool_assert(bool b, charp bstr, charp fname, int line, charp fnc, int n) 
 }
 
 template<class DMY>
-bool __ptr_assert(void const* p, charp pstr, charp fname, int line, charp fnc, int n) {
+bool __ptr_assert_i(void const* p, charp pstr, charp fname, int line, charp fnc, int n) {
     bool rc = __CCWRAP_IS_MEM_ADDR(p);
     if (!rc)
         __CCWRAP_ABORT_PRINTF("%s (%d): %s%s: `%s'(0x%p) is bad pointer.\n"
@@ -188,12 +188,12 @@ bool __ptr_assert(void const* p, charp pstr, charp fname, int line, charp fnc, i
     return rc;
 }
 template<class DMY, typename T>
-bool __ptr_assert(T* p, charp pstr, charp fname, int line, charp fnc, int n) {
-    return __ptr_assert<DMY>((void const*)p, pstr, fname, line, fnc, n);
+bool __ptr_assert(T const& p, charp pstr, charp fname, int line, charp fnc, int n) {
+    return __ptr_assert_i<DMY>((void const*)p, pstr, fname, line, fnc, n);
 }
 
 template<class DMY>
-bool __ptr0_assert(void const* p, charp pstr, charp fname, int line, charp fnc, int n) {
+bool __ptr0_assert_i(void const* p, charp pstr, charp fname, int line, charp fnc, int n) {
     bool rc = __CCWRAP_IS_MEM_ADDR0(p);
     if (!rc)
         __CCWRAP_ABORT_PRINTF("%s (%d): %s%s: `%s'(0x%p) is bad pointer.\n"
@@ -202,8 +202,8 @@ bool __ptr0_assert(void const* p, charp pstr, charp fname, int line, charp fnc, 
 }
 
 template<class DMY, typename T>
-bool __ptr0_assert(T* p, charp pstr, charp fname, int line, charp fnc, int n) {
-    return __ptr0_assert<DMY>((void const*)p, pstr, fname, line, fnc, n);
+bool __ptr0_assert(T const& p, charp pstr, charp fname, int line, charp fnc, int n) {
+    return __ptr0_assert_i<DMY>((void const*)p, pstr, fname, line, fnc, n);
 }
 
 template<class DMY, typename X, typename A, typename B>
@@ -225,6 +225,7 @@ bool __range_assert(X const& x, A const& a, B const& b, charp xstr, charp astr, 
     return rc;
 }
 
+#if 0
 template<class DMY>
 bool __range_assert(void const* x, void const* a, void const* b, charp xstr, charp astr, charp bstr
                             , charp fname, int line, charp fnc, int n)
@@ -242,6 +243,7 @@ bool __range_assert(X const* x, A const* a, B const* b, charp xstr, charp astr, 
 {
     return __range_assert<DMY>((void const*)x, (void const*)a, (void const*)b, xstr, astr, bstr, fname, line , fnc, n);
 }
+#endif
 
 }}  // __ccwrap::__assert_ex
 

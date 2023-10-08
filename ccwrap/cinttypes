@@ -22,8 +22,10 @@
     using   ::imaxdiv;
     using   ::strtoimax;
     using   ::strtoumax;
+   #if !defined(__CCWRAP_NO_WCHAR)
     using   ::wcstoimax;
     using   ::wcstoumax;
+   #endif
   }
  #endif
 #endif

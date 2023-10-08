@@ -4,4 +4,14 @@
 
 #include <ccwrap_common.h>
 
+#if __cplusplus
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cstddef>
+ #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstddef)
+ #else
+  #include <../include/cstddef>
+ #endif
+#endif
+
 #endif	// __CCWRAP_CSTDDEF_INCLUDED

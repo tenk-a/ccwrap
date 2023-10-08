@@ -12,28 +12,7 @@
  #error Unkown compiler.
 #endif
 
-
 #if 1 // stddef.h and cstddef
-
-#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
-  #include_next <stddef.h>
-#elif defined(__CCWRAP_NATIVE_UC_HEADER_PATH)
-  #include __CCWRAP_NATIVE_UC_HEADER_PATH(stddef.h)
-#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
-  #include __CCWRAP_NATIVE_C_HEADER_PATH(stddef.h)
-#else
-  #include <../include/stddef.h>
-#endif
-
-#if __cplusplus
- #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
-  #include_next <cstddef>
- #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
-  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstddef)
- #else
-  #include <../include/cstddef>
- #endif
-#endif
 
 #if (__CCWRAP_CXX && __CCWRAP_CXX < 201103L) || (__CCWRAP_C_VER && __CCWRAP_C_VER < 201100L)
  #ifndef __CCWRAP_MAX_ALIGN_T_DEFINED
@@ -55,6 +34,27 @@
   }
  #endif
 #endif
+
+#if __cplusplus
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cstddef>
+ #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstddef)
+ #else
+  #include <../include/cstddef>
+ #endif
+#endif
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <stddef.h>
+#elif defined(__CCWRAP_NATIVE_UC_HEADER_PATH)
+  #include __CCWRAP_NATIVE_UC_HEADER_PATH(stddef.h)
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(stddef.h)
+#else
+  #include <../include/stddef.h>
+#endif
+
 
 #endif	//
 

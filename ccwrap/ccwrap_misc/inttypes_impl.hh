@@ -21,8 +21,18 @@ typedef struct imaxdiv_t {
     intmax_t	rem;
 } imaxdiv_t;
 
-static inline intmax_t	imaxabs(intmax_t j) { return (j < 0) ? -j : j; }
-static inline imaxdiv_t	imaxdiv(intmax_t number, intmax_t denom) { imaxdiv_t d = { number / denom, number % denom }; return d; }
+static inline intmax_t	imaxabs(intmax_t j) {
+	return (j < 0) ? -j : j;
+}
+static inline imaxdiv_t	imaxdiv(intmax_t number, intmax_t denom) {
+ #if 1
+	imaxdiv_t d;
+	d.quot = number / denom, d.rem = number % denom;
+ #else
+	imaxdiv_t d = { number / denom, number % denom };
+ #endif
+	return d;
+}
 
 static inline intmax_t	strtoimax(const char* s, char** endp, int radix) { return (intmax_t)strtoll(s, endp, radix); }
 static inline intmax_t	strtoumax(const char* s, char** endp, int radix) { return (uintmax_t)strtoull(s, endp, radix); }

@@ -10,6 +10,7 @@
 #include <ccwrap_common.h>
 
 #include <cstddef>
+#include <cstdio>
 #include <cfloat>
 #include <cerrno>
 #include <climits>
