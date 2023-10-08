@@ -14,4 +14,12 @@
  #include <../include/cstddef>
 #endif
 
+#if __CCWRAP_CXX && __CCWRAP_CXX < 201103L
+
+namespace std {
+    using ::max_align_t;
+}
+
+#endif
+
 #endif

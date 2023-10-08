@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_SCOPED_ALLOCATOR_INCLUDED
+#define __CCWRAP_SCOPED_ALLOCATOR_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <scoped_allocator>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(scoped_allocator)
+ #else
+  #include <../include/scoped_allocator>
+ #endif
+#else
+ #include <ccwrap_misc/scoped_allocator.hpp>
+#endif
+
+#include <_ccwrap_detail/scoped_allocator.hxx>
+
+#endif  // __CCWRAP_SCOPED_ALLOCATOR_INCLUDED

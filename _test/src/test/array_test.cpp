@@ -1,4 +1,4 @@
-#include <_ccwrap/ccwrap_test.hpp>
+#include <ccwrap_misc/ccwrap_test.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -15,7 +15,7 @@ CCWRAP_TEST_SUITE(array) {
 	    value_t vtype = 0;
 	    size_t  idx = 0;
 	    for (typename T::iterator it = t0.begin(); it != t0.end(); ++it) {
-	        *it = *(value_t*)idx;
+	        *it = value_t(idx);
 	        ++idx;
 	    }
 	    ccwrap_test_eq(t0[0], vtype);

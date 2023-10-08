@@ -35,25 +35,30 @@ if "%VcVer%"=="vc141" set Vc2015orLater=1
 if "%VcVer%"=="vc142" set Vc2015orLater=1
 if "%VcVer%"=="vc143" set Vc2015orLater=1
 
-set INCDIR=..\..\..\vc2013_or_earlier
-if "%Vc2015orLater%"=="1" set INCDIR=..\..\..\vc2015_or_later
+set INCDIR=..\..\..\vc
+set INCDIR2=..\..\..\ccwrap
 
 
 if exist smp.exe del smp.exe
 if exist smp_c.exe del smp_c.exe
 
 @echo [c++ core]
-cl %CCOPTS% -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
+cl %CCOPTS% -I%INCDIR% -I%INCDIR2% -I%SRCDIR% %SRCDIR%\smp.cpp
 @echo [c core]
-cl -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp_c.c
+cl -I%INCDIR% -I%INCDIR2% -I%SRCDIR% %SRCDIR%\smp_c.c
 
 @echo -
 @echo === [Compiling for error] Begin ===============================================
-cl %CCOPTS% -DCOMPILING_FOR_ERROR -I%INCDIR% -I%SRCDIR% %SRCDIR%\smp.cpp
+cl %CCOPTS% -DCOMPILING_FOR_ERROR -I%INCDIR% -I%INCDIR2% -I%SRCDIR% %SRCDIR%\smp.cpp
 @echo === [Compiling for error] End =================================================
 
 if exist smp.exe smp.exe
 if exist smp_c.exe smp_c.exe
 del *.obj
+goto END
 
+:ERR
+@echo No compiler.
+
+:END
 endlocal

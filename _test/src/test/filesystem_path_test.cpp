@@ -1,12 +1,20 @@
-#include <_ccwrap/ccwrap_test.hpp>
+#include <ccwrap_misc/ccwrap_test.hpp>
 
-#if __CCWRAP__ == 0
 #include <filesystem>
+#include <string_view>
+
+#ifdef __CCWRAP_BOOST2STD
+#define USE_BOOST_PATH
 #else
-#include <_ccwrap/filesystem_path.hpp>
+//#include <ccwrap/ccwrap_misc/filesystem_path.hpp>
 #endif
+
+#if __CCWRAP_CXX >= 201103L || __cplusplus >= 201103L || _MSVC_LANG >= 201103L
+ #define ENABLE_CXX11
+#endif
+
 #include <vector>
-#include <_ccwrap/utfenc.hpp>
+#include <ccwrap_misc/utfenc.hpp>
 
 
 #if defined(_WIN32) //&& defined(UNICODE)
@@ -29,8 +37,8 @@
 
 CCWRAP_TEST_SUITE(filesystem_path) {
     using namespace std;
-    using namespace ccwrap;
     using namespace std::filesystem;
+    using std::filesystem::path;
 
     enum {
         rootname,
@@ -171,9 +179,11 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         path::string_type       str1(T("test"));
         path::value_type        cc1(T('!'));
         path::iterator          ite0;
+     #if !defined(USE_BOOST_PATH)
         path::format            formatN = path::native_format;
-     #if __CCWRAP__
+      #if __CCWRAP__
         static_assert(path::preferred_separator == ccwrap::strpath::preferred_separator, "");
+      #endif
      #endif
         path::const_iterator    icbbte0;
 
@@ -242,7 +252,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         ccwrap_test(path5.make_preferred() == T("xxx") DS T("yyy") DS T("hello world.bin"));
         ccwrap_test(path5.native() == T("xxx") DS T("yyy") DS T("hello world.bin"));
 
-     #ifndef __CCWRAP_LESS_CXX11
+     #if __CCWRAP >= 201103L
         path   path6(std::move(path5));
         path1 = path2;
         path5 = std::move(path2);
@@ -257,7 +267,11 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         path5.clear();
         ccwrap_test(path5.native().empty());
         ccwrap_test(path5.empty());
+     #if !defined(USE_BOOST_PATH)
         path5.assign(path1);
+     #else
+        path5 = path1;
+     #endif
         ccwrap_test(path5 == path1);
         path5.assign(sss.begin(), sss.end());
         ccwrap_test(path5 == path4);
@@ -265,12 +279,16 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         //ccwrap_test(path5.native() == T("xxx") DS T("yyy") DS T("hello world.bin"));
         ccwrap_test(path5.native() == T("xxx/yyy/hello world.bin"));
 
+     #if !defined(USE_BOOST_PATH)
         path path7(sss, path::native_format);
         ccwrap_test(path7 == path4);
         path path7b(sss, path::generic_format);
         ccwrap_test(path7b == path4);
         path path7c(sss, path::auto_format);
         ccwrap_test(path7c == path4);
+	 #else
+        path path7(sss);
+	 #endif
         path5.clear();
         swap(path7, path5);
         ccwrap_test(path5 == path4);
@@ -290,7 +308,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         paths.clear();
         paths.reserve(wchar_paths_size);
         for (size_t i = 0; i < wchar_paths_size; ++i) {
-            paths.push_back(utfenc::to<S>(wchar_paths[i]));
+            paths.push_back(ccwrap::utfenc::to<S>(wchar_paths[i]));
         }
     }
 
@@ -328,6 +346,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
             ccwrap_test_eq(paths[i].generic_string(), pathStrs[i]);
         for (size_t i = 0; i < paths.size(); ++i)
             ccwrap_test(paths[i].generic_wstring() == pathWStrs[i]);
+    #if !defined(USE_BOOST_PATH)
      #if HAS_U8STRING
         for (size_t i = 0; i < paths.size(); ++i)
             ccwrap_test(paths[i].generic_u8string() == pathU8Strs[i]);
@@ -336,23 +355,24 @@ CCWRAP_TEST_SUITE(filesystem_path) {
             ccwrap_test(paths[i].generic_u16string() == pathU16Strs[i]);
         for (size_t i = 0; i < paths.size(); ++i)
             ccwrap_test(paths[i].generic_u32string() == pathU32Strs[i]);
+	#endif
+        for (size_t i = 0; i < paths.size(); ++i)
+            ccwrap_test(paths[i].string() == ccwrap::utfenc::to<string>(nates[i]));
 
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].string() == utfenc::to<string>(nates[i]));
-
-        for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].wstring() == utfenc::to<wstring>(nates[i]));
+            ccwrap_test(paths[i].wstring() == ccwrap::utfenc::to<wstring>(nates[i]));
+    #if !defined(USE_BOOST_PATH)
      #if HAS_U8STRING
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u8string() == utfenc::to<u8string>(nates[i]));
+            ccwrap_test(paths[i].u8string() == ccwrap::utfenc::to<u8string>(nates[i]));
      #endif
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u16string() == utfenc::to<u16string>(nates[i]));
+            ccwrap_test(paths[i].u16string() == ccwrap::utfenc::to<u16string>(nates[i]));
         for (size_t i = 0; i < paths.size(); ++i)
-            ccwrap_test(paths[i].u32string() == utfenc::to<u32string>(nates[i]));
+            ccwrap_test(paths[i].u32string() == ccwrap::utfenc::to<u32string>(nates[i]));
 
         for (size_t i = 0; i < paths.size(); ++i) {
-         #if __CCWRAP__ == 0
+         #if __CCWRAP_CXX >= 201103L
             ccwrap_test(paths[i] == u8path((string const&)pathU8Strs[i]));
             ccwrap_test(paths[i] == u8path((char const*)pathU8Strs[i].data(), (char const*)pathU8Strs[i].data() + pathU8Strs[i].size()));
          #else
@@ -360,6 +380,7 @@ CCWRAP_TEST_SUITE(filesystem_path) {
             ccwrap_test_eq(paths[i], u8path(pathU8Strs[i].begin(), pathU8Strs[i].end()));
          #endif
         }
+    #endif
     }
 
     CCWRAP_TEST(check2) {
@@ -454,8 +475,10 @@ CCWRAP_TEST_SUITE(filesystem_path) {
         t_path.replace_extension(nates[dot_test]);
         ccwrap_test(t_path == nates[rootpath_foo_bar_baz_test_test]);
 
+    #if !defined(USE_BOOST_PATH)
         t_path.replace_filename(nates[dot_test]);
         ccwrap_test(t_path == nates[rootpath_foo_bar_baz_dot_test]);
+    #endif
         t_path2 = t_path.extension();
         ccwrap_test(t_path2 == nates[none]);
         t_path.replace_extension(nates[txt]);

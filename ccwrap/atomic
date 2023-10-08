@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_ATOMIC_INCLUDED
+#define __CCWRAP_ATOMIC_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <atomic>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(atomic)
+ #else
+  #include <../include/atomic>
+ #endif
+//#else
+// #include <ccwrap_misc/atomic.hxx>
+#endif
+
+#include <_ccwrap_detail/atomic.hxx>
+
+#endif  // __CCWRAP_ATOMIC_INCLUDED

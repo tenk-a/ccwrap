@@ -1,4 +1,4 @@
-#include <_ccwrap/ccwrap_test.hpp>
+#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
 
 #define __STDC_LIMIT_MACROS
 #include <cstdio>

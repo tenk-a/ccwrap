@@ -1,0 +1,17 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_UTILITY_INCLUDED
+#define __CCWRAP_UTILITY_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <utility>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(utility)
+#else
+#include <../include/utility>
+#endif
+
+#include <_ccwrap_detail/utility.hxx>
+
+#endif	// __CCWRAP_UTILITY_INCLUDED

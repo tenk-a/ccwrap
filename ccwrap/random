@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_RANDOM_INCLUDED
+#define __CCWRAP_RANDOM_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <random>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(random)
+ #else
+  #include <../include/random>
+ #endif
+#else
+ #include <ccwrap_misc/random.hpp>
+#endif
+
+#include <_ccwrap_detail/random.hxx>
+
+#endif  // __CCWRAP_RANDOM_INCLUDED

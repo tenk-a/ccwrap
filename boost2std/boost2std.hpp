@@ -1,6 +1,6 @@
 // Boost Software Lisence Version 1.0
-#ifndef __BOOST2STD_HPP_INCLUDED
-#define __BOOST2STD_HPP_INCLUDED
+#ifndef __CCWRAP_BOOST2STD
+#define __CCWRAP_BOOST2STD
 
 #if defined(_MSC_VER)
   #include "../boost2std/detail/vc/ccwrap_header.h"
@@ -15,4 +15,4 @@ namespace __ccwrap {}
 namespace ccwrap {}
 #endif
 
-#endif  // __FAKE_STD_INCLUDE_HPP_INCLUDED
+#endif  // __CCWRAP_BOOST2STD

@@ -6,6 +6,8 @@
 
 #include <inttypes.h>
 
+#if __CCWRAP_CXX >= 201103L
+
 #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <cinttypes>
 #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
@@ -14,8 +16,9 @@
   #include <../include/cinttypes>
 #endif
 
+#else
 
-#if  _MSC_VER && _MSC_VER < 1800
+#if _MSC_VER == 0 || _MSC_VER < 1800
 
 namespace std {
     using   ::imaxdiv_t;
@@ -30,3 +33,5 @@ namespace std {
 #endif	// _MSC_VER
 
 #endif
+
+#endif	// __CCWRAP_CINTTYPES_INCLUDED

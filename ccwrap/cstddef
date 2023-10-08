@@ -1,0 +1,7 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CSTDDEF_INCLUDED
+#define __CCWRAP_CSTDDEF_INCLUDED
+
+#include <ccwrap_common.h>
+
+#endif	// __CCWRAP_CSTDDEF_INCLUDED

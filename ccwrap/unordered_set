@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_UNORDERED_SET_INCLUDED
+#define __CCWRAP_UNORDERED_SET_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <unordered_set>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(unordered_set)
+ #else
+  #include <../include/unordered_set>
+ #endif
+//#else
+// #include <ccwrap_misc/unordered_set.hxx>
+#endif
+
+#include <_ccwrap_detail/unordered_set.hxx>
+
+#endif  // __CCWRAP_UNORDERED_SET_INCLUDED

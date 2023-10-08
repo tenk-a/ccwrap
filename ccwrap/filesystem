@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_FILESYSTEM_INCLUDED
+#define __CCWRAP_FILESYSTEM_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201703L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <filesystem>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(filesystem)
+ #else
+  #include <../include/filesystem>
+ #endif
+//#else
+// #include <ccwrap_misc/filesystem.hpp>
+#endif
+
+#include <_ccwrap_detail/filesystem.hxx>
+
+#endif	// __CCWRAP_FILESYSTEM_INCLUDED

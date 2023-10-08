@@ -1,5 +1,5 @@
 #define __STDC_LIMIT_MACROS
-#include <_ccwrap/ccwrap_test.hpp>
+#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
 #include <stdint.h>
 #include <cstdint>
 #include <iostream>

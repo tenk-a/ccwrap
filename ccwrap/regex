@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_REGEX_INCLUDED
+#define __CCWRAP_REGEX_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <regex>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(regex)
+ #else
+  #include <../include/regex>
+ #endif
+//#else
+// #include <ccwrap_misc/regex.hpp>
+#endif
+
+#include <_ccwrap_detail/regex.hxx>
+
+#endif  // __CCWRAP_REGEX_INCLUDED

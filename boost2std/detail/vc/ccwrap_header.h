@@ -41,9 +41,9 @@
   #if _MSC_VER >= 1900
     #define __CCWRAP_NATIVE_C_HEADER_DIR    ../include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
-  //#elif _MSC_VER >= 1900
-  //  #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
-  //  #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
+  #elif _MSC_VER >= 1900
+    #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
+    #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../ucrt
   #elif _MSC_VER >= 1400
     #define __CCWRAP_NATIVE_C_HEADER_DIR    ../../VC/include
     #define __CCWRAP_NATIVE_UC_HEADER_DIR   ../../VC/include
@@ -68,6 +68,10 @@
 
 // ----------------------------------------------------------------------------
 // c & c++
+
+#if _MSC_VER < 1400
+ #define __CCWRAP_NO_VA_ARGS
+#endif
 
 #define __CCWRAP_WCHAR_BIT          16
 #define __CCWRAP_LONG_BIT           32
@@ -113,10 +117,11 @@
   #define _XKEYCHECK_H
 #endif
 
-#define __ccwrap_cdecl              __cdecl
-#define __ccwrap_stdcall            __stdcall
-#define __ccwrap_fastcall           __fastcall
-#define __ccwrap_forceinline        __forceinline
+//#define __cdecl                   __cdecl
+//#define __stdcall                 __stdcall
+//#define __fastcall                __fastcall
+//#define __forceinline        	    __forceinline
+
 #define __ccwrap_noinline           __declspec(noinline)
 #define __ccwrap_selectany          __declspec(selectany)
 #define __ccwrap_dllimport          __declspec(dllimport)
@@ -183,6 +188,8 @@
     #define static_assert(c, m)   typedef __ccwrap::static_assert_check<sizeof(__static_assert_FAILED_<(c) != 0>)> __CCWRAP_M_CAT(__ccwrap_static_assert_L_, __LINE__)
   #endif
  #endif
+#else
+ #define __CCWRAP_HAS_STDINT         1
 #endif
 
 #if _MSC_VER < 1700   // vc10 or earlier

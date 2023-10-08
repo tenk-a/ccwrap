@@ -1,0 +1,17 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_QUEUE_INCLUDED
+#define __CCWRAP_QUEUE_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <queue>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(queue)
+#else
+#include <../include/queue>
+#endif
+
+#include <_ccwrap_detail/queue.hxx>
+
+#endif  // __CCWRAP_QUEUE_INCLUDED

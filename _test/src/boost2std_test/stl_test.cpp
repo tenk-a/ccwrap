@@ -21,7 +21,7 @@
 #include <cwchar>
 #include <cuchar>
 #include <clocale>
-#include <iso646.h>
+//#include <iso646.h>
 #include <clocale>
 
 
@@ -156,7 +156,7 @@
 #endif
 
 
-#include <_ccwrap/ccwrap_test.hpp>
+#include <ccwrap/ccwrap_misc/ccwrap_test.hpp>
 
 
 

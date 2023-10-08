@@ -30,8 +30,8 @@
  #define __ccwrap_noreturn       __attribute__((noreturn))
 #endif
 #ifdef _WIN32
- #define __ccwrap_cdecl          __cdecl
- #define __ccwrap_stdcall        __stdcall
+ #define __cdecl          __cdecl
+ #define __stdcall        __stdcall
  #define __ccwrap_fastcall       __fastcall
 #endif
 #define __ccwrap_forceinline     __inline__ __attribute__((always_inline))

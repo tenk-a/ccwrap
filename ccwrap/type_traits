@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_TYPE_TRAITS_INCLUDED
+#define __CCWRAP_TYPE_TRAITS_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L || _MSC_VER >= 1700
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <type_traits>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(type_traits)
+ #else
+  #include <../include/type_traits>
+ #endif
+//#else
+// #include <ccwrap_misc/type_traits.hxx>
+#endif
+
+#include <_ccwrap_detail/type_traits.hxx>
+
+#endif  // __CCWRAP_TYPE_TRAITS_INCLUDED

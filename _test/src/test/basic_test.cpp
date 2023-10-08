@@ -52,7 +52,7 @@
 //#error defined getc
 #endif
 
-#include <_ccwrap/ccwrap_test.hpp>
+#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
 
 
 CCWRAP_TEST_SUITE(basic) {

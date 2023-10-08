@@ -1,9 +1,0 @@
-#ifndef __CCWRAP_CSTDIO_INCLUDED
-#define __CCWRAP_CSTDIO_INCLUDED
-
-#include <ccwrap_header.h>
-#include <stddef.h>
-
-#include_next <cstdio>
-
-#endif

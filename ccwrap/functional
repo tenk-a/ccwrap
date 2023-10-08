@@ -1,0 +1,17 @@
+// Boost Software Lisence Version 1.0
+#ifndef CCWRAP_FUNCTIONAL_INCLUDED
+#define CCWRAP_FUNCTIONAL_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <functional>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(functional)
+#else
+#include <../include/functional>
+#endif
+
+#include <_ccwrap_detail/functional.hxx>
+
+#endif  // CCWRAP_ALGORITHM_INCLUDED

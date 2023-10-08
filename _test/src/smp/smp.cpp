@@ -24,15 +24,14 @@
 #include <wctype.h>
 #endif
 
-#include <cstddef>
 #include <cstdio>
 #include <cstddef>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <cstdint>
-#include <cinttypes>
-#include <cassert>
 #include <cctype>
+#include <cassert>
+#include <cinttypes>
 #include <cerrno>
 #include <cfloat>
 #include <climits>

@@ -1,0 +1,94 @@
+goto :END
+
+call :gen1	assert.hh
+call :gen1	ctype.hh
+call :gen1	errno.hh
+call :gen1	inttypes.hh
+call :gen1	iso646.hh
+call :gen1	limits.hh
+call :gen1	math.hh
+call :gen1	stdalign.hh
+call :gen1	stdbool.hh
+call :gen1	stddef.hh
+call :gen1	stdint.hh
+call :gen1	stdio.hh
+call :gen1	stdlib.hh
+call :gen1	stdnoreturn.hh
+call :gen1	string.hh
+call :gen1	wchar.hh
+call :gen1	wctype.hh
+call :gen1	algorithm.hxx
+call :gen1	any.hxx
+call :gen1	array.hxx
+call :gen1	atomic.hxx
+call :gen1	bitset.hxx
+call :gen1	cassert.hxx
+call :gen1	cctype.hxx
+call :gen1	cerrno.hxx
+call :gen1	chrono.hxx
+call :gen1	cinttypes.hxx
+call :gen1	climits.hxx
+call :gen1	cmath.hxx
+call :gen1	complex.hxx
+call :gen1	condition_variable.hxx
+call :gen1	cstddef.hxx
+call :gen1	cstdint.hxx
+call :gen1	cstdio.hxx
+call :gen1	cstdlib.hxx
+call :gen1	cstring.hxx
+call :gen1	cuchar.hxx
+call :gen1	cuctype.hxx
+call :gen1	cwchar.hxx
+call :gen1	cwctype.hxx
+call :gen1	filesystem.hxx
+call :gen1	forward_list.hxx
+call :gen1	fstream.hxx
+call :gen1	functional.hxx
+call :gen1	future.hxx
+call :gen1	iomanip.hxx
+call :gen1	ios.hxx
+call :gen1	iostream.hxx
+call :gen1	istream.hxx
+call :gen1	iterator.hxx
+call :gen1	limits.hxx
+call :gen1	list.hxx
+call :gen1	locale.hxx
+call :gen1	map.hxx
+call :gen1	memory.hxx
+call :gen1	mutex.hxx
+call :gen1	numeric.hxx
+call :gen1	optional.hxx
+call :gen1	ostream.hxx
+call :gen1	queue.hxx
+call :gen1	random.hxx
+call :gen1	ratio.hxx
+call :gen1	regex.hxx
+call :gen1	scoped_allocator.hxx
+call :gen1	set.hxx
+call :gen1	shared_mutex.hxx
+call :gen1	sstream.hxx
+call :gen1	stack.hxx
+call :gen1	streambuf.hxx
+call :gen1	string.hxx
+call :gen1	string_view.hxx
+call :gen1	system_error.hxx
+call :gen1	thread.hxx
+call :gen1	tuple.hxx
+call :gen1	type_traits.hxx
+call :gen1	typeindex.hxx
+call :gen1	ucchar.h.hxx
+call :gen1	uctype.h.hxx
+call :gen1	unordered_map.hxx
+call :gen1	unordered_set.hxx
+call :gen1	utility.hxx
+call :gen1	valarray.hxx
+call :gen1	variant.hxx
+call :gen1	vector.hxx
+
+goto END
+
+:gen1
+echo // Dummy %1 >%1
+exit /b 0
+
+:END

@@ -1,6 +1,6 @@
-//#include <_ccwrap/ccwrap_common.h>
-#include <_ccwrap/ccwrap_test.hpp>
-#include <_ccwrap/utfenc.hpp>
+//#include <ccwrap/ccwrap_misc/ccwrap_common.h>
+#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
+#include <../ccwrap/ccwrap_misc/utfenc.hpp>
 
 #if 0
 namespace __Fkstd_TestSuite_StringCodeConv {

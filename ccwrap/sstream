@@ -1,0 +1,19 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_SSTREAM_INCLUDED
+#define __CCWRAP_SSTREAM_INCLUDED
+
+#include <ccwrap_common.h>
+
+#include <string>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <sstream>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(sstream)
+#else
+#include <../include/sstream>
+#endif
+
+#include <_ccwrap_detail/sstream.hxx>
+
+#endif  // __CCWRAP_SSTREAM_INCLUDED

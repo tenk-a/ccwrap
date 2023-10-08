@@ -1,0 +1,19 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CSTRING_INCLUDED
+#define __CCWRAP_CSTRING_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cstring>
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cstring)
+#else
+  #include <../include/cstring>
+#endif
+
+#include <string.h>
+
+#include <_ccwrap_detail/cstring.hxx>
+
+#endif	// __CCWRAP_CSTRING_INCLUDED

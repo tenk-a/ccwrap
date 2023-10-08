@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_SHARED_MUTEX_INCLUDED
+#define __CCWRAP_SHARED_MUTEX_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201402L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <shared_mutex>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(shared_mutex)
+ #else
+  #include <../include/shared_mutex>
+ #endif
+#else
+ #include <ccwrap_misc/shared_mutex.hpp>
+#endif
+
+#include <_ccwrap_detail/shared_mutex.hxx>
+
+#endif  // __CCWRAP_SHARED_MUTEX_INCLUDED

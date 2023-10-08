@@ -1,6 +1,6 @@
 //#include <algorithm>
 //#include <_ccwrap/ccwrap_common.h>
-#include <_ccwrap/ccwrap_test.hpp>
+#include <ccwrap/ccwrap_misc/ccwrap_test.hpp>
 
 int main()
 {

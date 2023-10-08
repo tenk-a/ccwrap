@@ -1,0 +1,264 @@
+
+D:\proj_github\ccwrap_dev\_test\build\vc>call mk.bat test  
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem @echo off 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>setlocal
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set TestName=test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>shift
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "" == "NOFIRSTINC" (
+set NOFIRSTINC=NOFIRSTINC  
+ shift
+) 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCXX=cl 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCOPTS_REL=-O2 -Oy -GS- -MT -DNDEBUG 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCOPTS_DBG=-Od -Ob0 -Zi -MTd -D_DEBUG 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCWARN= -W4 -wd4067 -wd4996 -wd4828 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem set CCWARN= -W4 -wd4067 -wd4996 -wd4828 -wd4067 -wd4996 -wd4828 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set FIRSTINC=-FIccwrap_header.h 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set LOPTS= -EHac -GF 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "test" == "" set TestName=test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set SRCDIR=..\..\src\test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set INCS= -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set LIBS= kernel32.lib user32.lib shell32.lib shlwapi.lib 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set SRCS=..\..\src\test\*.cpp 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set Conf=debug 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set cxx= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set BoostDir= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set IsClean= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "test" == "cleanAll" goto CLEAN_ALL 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "test" == "clean" goto ERR 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set A= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "" == "" goto ARG_LOOP_EXIT 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set VcVer= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "" goto ERR 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set Arch=Win32 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem echo vc90 Win32 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set OBJDIR= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set ABXOPTS= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set Conf= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "" == "release" (
+set Conf=release  
+ set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -O2 -Oy -GS- -MT -DNDEBUG  
+ set LOPTS= -EHac -GF -O2 -Oy -GS- -MT -DNDEBUG  
+ set ABXOPTS= -xm  
+ if exist test.pdb del test.pdb  
+ if exist test.ilk del test.ilk 
+)  else (
+set Conf=debug  
+ set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG  
+ set LOPTS= -EHac -GF -Od -Ob0 -Zi -MTd -D_DEBUG  
+ set ABXOPTS= 
+) 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set EXENAME=test_vc90_Win32_debug.exe 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set OBJDIR=obj\test\vc90_Win32_debug 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I not "debug" == "release" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem if not ""=="" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb  -DCCWRAP_CHAR_IS_UTF8 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if not "" == "" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb  
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "" == "" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set Vc2015orLater=  
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc140" set Vc2015orLater=1 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc141" set Vc2015orLater=1 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc142" set Vc2015orLater=1 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc143" set Vc2015orLater=1 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc142" set BoostDir= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc143" set BoostDir= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set StdDir=..\..\..\vc 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc140" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS  
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc141" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS   
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc142" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS   
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if "vc90" == "vc143" set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS   
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set LAST_OPTS= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set BOOST2STD= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "" == "" goto BOOST_SKIP 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set INCS=-I..\..\..\vc  -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if not "" == "" set FIRSTINC= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set CCOPTS=-DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS  -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc  -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "" == "clean" goto CLEAN 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if /I "" == "cleanAll" goto CLEAN_ALL 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if not exist obj\test\vc90_Win32_debug mkdir obj\test\vc90_Win32_debug 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>abx  -s -x -cuobj\test\vc90_Win32_debug\@x.obj ..\..\src\test\*.cpp =cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS  -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc  -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\@x.obj @Rbf 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\array_test.obj ../../src/test/array_test.cpp 
+array_test.cpp
+../../src/test/array_test.cpp(28) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+        ../../src/test/array_test.cpp(92) : コンパイルされたクラスの テンプレート のインスタンス化 'void __Fkstd_TestSuite_array::array_test_1<std::array<T,N>>(std::array<T,N> &)' の参照を確認してください
+        with
+        [
+            T=char,
+            N=127
+        ]
+../../src/test/array_test.cpp(29) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+../../src/test/array_test.cpp(35) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+../../src/test/array_test.cpp(36) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+../../src/test/array_test.cpp(28) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+        ../../src/test/array_test.cpp(93) : コンパイルされたクラスの テンプレート のインスタンス化 'void __Fkstd_TestSuite_array::array_test_1<std::array<T,N>>(std::array<T,N> &)' の参照を確認してください
+        with
+        [
+            T=int,
+            N=1000
+        ]
+../../src/test/array_test.cpp(29) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+../../src/test/array_test.cpp(35) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+../../src/test/array_test.cpp(36) : warning C4389: '==' : signed と unsigned の数値を比較しようとしました。
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\basic_test.obj ../../src/test/basic_test.cpp 
+basic_test.cpp
+../../src/test/basic_test.cpp : warning C4819: ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
+../../src/test/basic_test.cpp(91) : warning C4481: 非標準の拡張機能が使用されています: 指定子 'override' をオーバーライドします
+../../src/test/basic_test.cpp(92) : warning C4481: 非標準の拡張機能が使用されています: 指定子 'sealed' をオーバーライドします
+../../src/test/basic_test.cpp(96) : warning C4481: 非標準の拡張機能が使用されています: 指定子 'override' をオーバーライドします
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\iterator_sub_test.obj ../../src/test/iterator_sub_test.cpp 
+iterator_sub_test.cpp
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\math_test.obj ../../src/test/math_test.cpp 
+math_test.cpp
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\string_sub_test.obj ../../src/test/string_sub_test.cpp 
+string_sub_test.cpp
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\string_view_test.obj ../../src/test/string_view_test.cpp 
+string_view_test.cpp
+../../src/test/string_view_test.cpp(307) : warning C4127: 条件式が定数です。
+        ../../src/test/string_view_test.cpp(298): クラス テンプレート のメンバ関数 'void __Fkstd_TestSuite_string_view::StringView_Test<STRING_VIEW>::test_etc(void)' のコンパイル中
+        with
+        [
+            STRING_VIEW=std::string_view
+        ]
+        ../../src/test/string_view_test.cpp(1296) : コンパイルされたクラスの テンプレート のインスタンス化 '__Fkstd_TestSuite_string_view::StringView_Test<STRING_VIEW>' の参照を確認してください
+        with
+        [
+            STRING_VIEW=std::string_view
+        ]
+../../src/test/string_view_test.cpp(464) : warning C4127: 条件式が定数です。
+        ../../src/test/string_view_test.cpp(454): クラス テンプレート のメンバ関数 'void __Fkstd_TestSuite_string_view::StringView_Test<STRING_VIEW>::test_copy(void)' のコンパイル中
+        with
+        [
+            STRING_VIEW=std::string_view
+        ]
+../../src/test/string_view_test.cpp(467) : warning C4127: 条件式が定数です。
+../../src/test/string_view_test.cpp(468) : warning C4127: 条件式が定数です。
+../../src/test/string_view_test.cpp(469) : warning C4127: 条件式が定数です。
+../../src/test/string_view_test.cpp(470) : warning C4127: 条件式が定数です。
+../../src/test/string_view_test.cpp(506) : warning C4127: 条件式が定数です。
+        ../../src/test/string_view_test.cpp(490): クラス テンプレート のメンバ関数 'void __Fkstd_TestSuite_string_view::StringView_Test<STRING_VIEW>::test_substr(void)' のコンパイル中
+        with
+        [
+            STRING_VIEW=std::string_view
+        ]
+../../src/test/string_view_test.cpp(507) : warning C4127: 条件式が定数です。
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\StringCodeConv_test.obj ../../src/test/StringCodeConv_test.cpp 
+StringCodeConv_test.cpp
+../../src/test/StringCodeConv_test.cpp : warning C4819: ファイルは、現在のコード ページ (932) で表示できない文字を含んでいます。データの損失を防ぐために、ファイルを Unicode 形式で保存してください。
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\test.obj ../../src/test/test.cpp 
+test.cpp
+../../src/test/test.cpp(9) : warning C4100: 'argc' : 引数は関数の本体部で 1 度も参照されません。
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -c -DCCWRAP_ASSERT_NO_ABORT -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST -Od -Ob0 -Zi -MTd -D_DEBUG -Fdobj\test\vc90_Win32_debug\test.pdb -DUSE_SJIS -W4 -wd4067 -wd4996 -wd4828 -FIccwrap_header.h -I. -I..\..\..\vc -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I..\..\src\test -Foobj\test\vc90_Win32_debug\unique_ptr_cxx03_test.obj ../../src/test/unique_ptr_cxx03_test.cpp 
+unique_ptr_cxx03_test.cpp
+
+D:\proj_github\ccwrap_dev\_test\build\vc>set OBJS= 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>echo rem  1>obj\test\vc90_Win32_debug\set_objs.bat 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>abx -s -k$ obj\test\vc90_Win32_debug\*.obj "=@set OBJS=%OBJS% obj\test\vc90_Win32_debug\$c"  1>>obj\test\vc90_Win32_debug\set_objs.bat 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>call obj\test\vc90_Win32_debug\set_objs.bat 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem  
+
+D:\proj_github\ccwrap_dev\_test\build\vc>if exist test_vc90_Win32_debug.exe del test_vc90_Win32_debug.exe 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>cl -Fetest_vc90_Win32_debug.exe  -EHac -GF -Od -Ob0 -Zi -MTd -D_DEBUG  obj\test\vc90_Win32_debug\array_test.obj obj\test\vc90_Win32_debug\basic_test.obj obj\test\vc90_Win32_debug\iterator_sub_test.obj obj\test\vc90_Win32_debug\math_test.obj obj\test\vc90_Win32_debug\string_sub_test.obj obj\test\vc90_Win32_debug\string_view_test.obj obj\test\vc90_Win32_debug\StringCodeConv_test.obj obj\test\vc90_Win32_debug\test.obj obj\test\vc90_Win32_debug\unique_ptr_cxx03_test.obj  kernel32.lib user32.lib shell32.lib shlwapi.lib  
+Microsoft (R) Incremental Linker Version 9.00.30729.01
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:test_vc90_Win32_debug.exe 
+/debug 
+obj\test\vc90_Win32_debug\array_test.obj 
+obj\test\vc90_Win32_debug\basic_test.obj 
+obj\test\vc90_Win32_debug\iterator_sub_test.obj 
+obj\test\vc90_Win32_debug\math_test.obj 
+obj\test\vc90_Win32_debug\string_sub_test.obj 
+obj\test\vc90_Win32_debug\string_view_test.obj 
+obj\test\vc90_Win32_debug\StringCodeConv_test.obj 
+obj\test\vc90_Win32_debug\test.obj 
+obj\test\vc90_Win32_debug\unique_ptr_cxx03_test.obj 
+kernel32.lib 
+user32.lib 
+shell32.lib 
+shlwapi.lib 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>rem @del obj\test\vc90_Win32_debug\set_objs.bat 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>goto END 
+
+D:\proj_github\ccwrap_dev\_test\build\vc>endlocal

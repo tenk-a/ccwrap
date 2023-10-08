@@ -1,0 +1,17 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_MEMORY_INCLUDED
+#define __CCWRAP_MEMORY_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+#include_next <memory>
+#elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+#include __CCWRAP_NATIVE_STL_HEADER_PATH(memory)
+#else
+#include <../include/memory>
+#endif
+
+#include <_ccwrap_detail/memory.hxx>
+
+#endif  // CCWRAP_MEMORY_INCLUDED

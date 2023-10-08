@@ -1,0 +1,19 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_CWCTYPE_INCLUDED
+#define __CCWRAP_CWCTYPE_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <cwctype>
+#elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)
+  #include __CCWRAP_NATIVE_C_HEADER_PATH(cwctype)
+#else
+  #include <../include/cwctype>
+#endif
+
+#include <wctype.h>
+
+#include <_ccwrap_detail/cwctype.hxx>
+
+#endif	//__CCWRAP_CWCTYPE_INCLUDED

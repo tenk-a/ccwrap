@@ -2,6 +2,12 @@ rem @echo off
 setlocal
 set TestName=%1
 shift
+
+if /i "%1"=="NOFIRSTINC" (
+  set NOFIRSTINC=NOFIRSTINC
+  shift
+)
+
 set CCXX=cl
 set CCOPTS_REL=-O2 -Oy -GS- -MT -DNDEBUG
 set CCOPTS_DBG=-Od -Ob0 -Zi -MTd -D_DEBUG
@@ -12,7 +18,7 @@ set FIRSTINC=-FIccwrap_header.h
 set LOPTS=%LOPTS% -EHac -GF
 if "%TestName%"=="" set TestName=test
 set SRCDIR=..\..\src\%TestName%
-set INCS=%INCS% -I..\..\.. -I..\.. -I%SRCDIR%
+set INCS=%INCS% -I..\..\.. -I..\.. -I..\..\..\vc -I..\..\..\ccwrap -I%SRCDIR%
 set LIBS=%LIBS% kernel32.lib user32.lib shell32.lib shlwapi.lib
 set SRCS=%SRCDIR%\*.cpp
 
@@ -107,13 +113,14 @@ if "%VcVer%"=="vc142" set Vc2015orLater=1
 if "%VcVer%"=="vc143" set Vc2015orLater=1
 
 if "%VcVer%"=="vc142" set BoostDir=
+if "%VcVer%"=="vc143" set BoostDir=
 
-set StdDir=..\..\..\vc2013_or_earlier
-if "%Vc2015orLater%"=="1" set StdDir=..\..\..\vc2015_or_later
+set StdDir=..\..\..\vc
 
 if "%VcVer%"=="vc140" set CCOPTS=%CCOPTS% %utf8%
 if "%VcVer%"=="vc141" set CCOPTS=%CCOPTS% %cxx% %utf8%
 if "%VcVer%"=="vc142" set CCOPTS=%CCOPTS% %cxx% %utf8%
+if "%VcVer%"=="vc143" set CCOPTS=%CCOPTS% %cxx% %utf8%
 
 set LAST_OPTS=
 set BOOST2STD=
@@ -122,13 +129,15 @@ if /I "%BoostDir%"=="" goto BOOST_SKIP
   set StdDir=%BOOST2STD%\detail\vc
   set BoostLibDir=%BoostDir%\stage\%VcVer%_%Arch%\lib
   set LAST_OPTS=%LAST_OPTS% -link /LIBPATH:%BoostLibDir%
-  set INCS=-I%BOOST2STD% -I%StdDir% -I%BoostDir% %INCS%
+  set INCS=-I%BOOST2STD% -I%BoostDir% -I..\..\.. -I..\..
   set FIRSTINC=-FIboost2std.hpp
   set EXENAME=%TestName%_%VcVer%_%Arch%_%Conf%_b2s.exe
   goto BOOST_SKIP_2
 :BOOST_SKIP
   set INCS=-I%StdDir% %INCS%
 :BOOST_SKIP_2
+
+if not "%NOFIRSTINC%"=="" set FIRSTINC=
 
 set CCOPTS=%CCOPTS% %CCWARN% %FIRSTINC% -I. %INCS%
 

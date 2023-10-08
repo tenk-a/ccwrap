@@ -1,13 +1,9 @@
-#include <_ccwrap/ccwrap_test.hpp>
+#include <../ccwrap/ccwrap_misc/ccwrap_test.hpp>
 #include <vector>
 #include <string>
 #include <list>
 #include <map>
 #include <iterator>
-#if __CCWRAP__ == 0
-#define __CCWRAP_STD std
-#include <_ccwrap/iterator_sub.hpp>
-#endif
 #include <cassert>
 
 
@@ -27,9 +23,11 @@ CCWRAP_TEST_SUITE(iterator_sub) {
         C   conta;
         Chk() {
             ccwrap_test(begin(conta) == end(conta));
-            ccwrap_test(cbegin(conta) == cend(conta));
             ccwrap_test(rbegin(conta) == rend(conta));
+          #if __CCWRAP_CXX >= 201402L
+            ccwrap_test(cbegin(conta) == cend(conta));
             ccwrap_test(crbegin(conta) == crend(conta));
+          #endif
             ccwrap_test(empty(conta));
             ccwrap_test(size(conta) == 0);
             ccwrap_test(ssize(conta) == 0);
@@ -45,15 +43,18 @@ CCWRAP_TEST_SUITE(iterator_sub) {
         typedef typename C::const_pointer   const_pointer;
         Chk2(const_pointer t, size_t n) : conta(t, t+n) {
             ccwrap_test(begin(conta) != end(conta));
-            ccwrap_test(cbegin(conta) != cend(conta));
             ccwrap_test(rbegin(conta) != rend(conta));
+          #if 1 //__CCWRAP_CXX >= 201402L	// #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
+            ccwrap_test(cbegin(conta) != cend(conta));
             ccwrap_test(crbegin(conta) != crend(conta));
+          #endif
             ccwrap_test(!empty(conta));
             ccwrap_test(size(conta) > 0);
             ccwrap_test(ssize(conta) > 0);
             ccwrap_test(data(conta) == &conta[0]);
             ccwrap_test(size(conta) == conta.size());
             ccwrap_test(ssize(conta) == ptrdiff_t(conta.size()));
+         #if 1 //__CCWRAP_CXX >= 201402L	// #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
             const_iterator  ite = cbegin(conta);
             ite = next(ite);
             ite = next(ite, n-1);
@@ -61,6 +62,7 @@ CCWRAP_TEST_SUITE(iterator_sub) {
             ite = prev(ite);
             ite = prev(ite, n-1);
             ccwrap_test(ite == cbegin(conta));
+         #endif
         }
         Chk2(Chk2 const&) { assert(0); }
         Chk2& operator=(Chk2 const&) { assert(0); return *this; }
@@ -71,9 +73,9 @@ CCWRAP_TEST_SUITE(iterator_sub) {
         A   conta[N];
         AryChk() {
             ccwrap_test(begin(conta) != end(conta));
-            ccwrap_test(cbegin(conta) != cend(conta));
-         #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
             ccwrap_test(rbegin(conta) != rend(conta));
+         #if __CCWRAP_CXX >= 201402L	// #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
+            ccwrap_test(cbegin(conta) != cend(conta));
             ccwrap_test(crbegin(conta) != crend(conta));
          #endif
             ccwrap_test(empty(conta) == 0);
@@ -89,9 +91,9 @@ CCWRAP_TEST_SUITE(iterator_sub) {
         AryChk2(A const* t, size_t n) {
             std::copy(t, t+n, conta);
             ccwrap_test(begin(conta) != end(conta));
-            ccwrap_test(cbegin(conta) != cend(conta));
-         #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
             ccwrap_test(rbegin(conta) != rend(conta));
+         #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
+            ccwrap_test(cbegin(conta) != cend(conta));
             ccwrap_test(crbegin(conta) != crend(conta));
          #endif
             ccwrap_test(!empty(conta));
@@ -100,6 +102,7 @@ CCWRAP_TEST_SUITE(iterator_sub) {
             ccwrap_test(data(conta) == &conta[0]);
             ccwrap_test(size(conta) == N);
             ccwrap_test(ssize(conta) == ptrdiff_t(N));
+         #if __CCWRAP_CXX >= 201402L	// #if !defined(__CCWRAP_NO_HEADER_CXX14_ITERATOR)
             A const* ite = cbegin(conta);
             ite = next(ite);
             ite = next(ite, n-1);
@@ -107,6 +110,7 @@ CCWRAP_TEST_SUITE(iterator_sub) {
             ite = prev(ite);
             ite = prev(ite, n-1);
             ccwrap_test(ite == cbegin(conta));
+         #endif
         }
         AryChk2(AryChk2 const&) { assert(0); }
         AryChk2& operator=(AryChk2 const&) { assert(0); return *this; }

@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_FORWARD_LIST_INCLUDED
+#define __CCWRAP_FORWARD_LIST_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201703L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <forward_list>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(forward_list)
+ #else
+  #include <../include/forward_list>
+ #endif
+//#else
+// #include <ccwrap_misc/forward_list.hxx>
+#endif
+
+#include <_ccwrap_detail/forward_list.hxx>
+
+#endif

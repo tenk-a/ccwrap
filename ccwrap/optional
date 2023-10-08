@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_OPTIONAL_INCLUDED
+#define __CCWRAP_OPTIONAL_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201103L
+ #if defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(optinal)
+  #elif defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <optinal>
+ #else
+  #include <../include/optinal>
+ #endif
+#else
+ #include <../ccwrap/detail/optinal.hxx>
+#endif
+
+#include <_ccwrap_detail/optinal.hxx>
+
+#endif  // __CCWRAP_OPTIONAL_INCLUDED

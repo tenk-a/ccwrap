@@ -1,0 +1,21 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_STRING_VIEW_INCLUDED
+#define __CCWRAP_STRING_VIEW_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 201703L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <string_view>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(string_view)
+ #else
+  #include <../include/string_view>
+ #endif
+#else
+ #include <ccwrap_misc/string_view.hpp>
+#endif
+
+#include <_ccwrap_detail/string_view.hxx>
+
+#endif  // __CCWRAP_STRING_INCLUDED
