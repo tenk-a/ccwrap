@@ -6,6 +6,8 @@
 
 #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <errno.h>
+#elif defined(__WATCOMC__)
+ #include <../h/errno.h>
 #elif defined(__CCWRAP_NATIVE_UC_HEADER_PATH)
  #include __CCWRAP_NATIVE_UC_HEADER_PATH(errno.h)
 #elif defined(__CCWRAP_NATIVE_C_HEADER_PATH)

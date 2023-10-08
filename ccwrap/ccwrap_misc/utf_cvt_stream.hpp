@@ -7,8 +7,8 @@
 
 
 #if 1 //def CCWRAP_UTF_CVT_STREAM_USE_UTFENC
-#include "utfenc.hpp"
-#define __CCWRAP_STRING_CODE_CONV	ccwrap::utfenc::to
+#include "str_enc.hpp"
+#define __CCWRAP_STRING_CODE_CONV	ccwrap::str_enc::to
 #else
 #include "StringCodeConv.hpp"
 #define __CCWRAP_STRING_CODE_CONV	ccwrap::stringCodeConv

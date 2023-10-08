@@ -8,6 +8,8 @@
  #include <../vc/ccwrap_header.h>
 #elif defined(__GNUC__) || defined(__clang__)
  #include <../gcc/ccwrap_header.h>
+#elif defined(__WATCOMC__)
+ #include <../watcom/ccwrap_header.h>
 #else
  #error Unkown compiler.
 #endif

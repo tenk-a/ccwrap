@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     //assert(strcasecmp(p, "HELLO") == 0);
     delete[] p;
 
- #ifdef PRId64
+ #if defined(PRId64) && defined(INT64_C)
     std::snprintf(buf, sizeof buf, "# %" PRId64 "  %" PRIx64 "\n", INT64_C(1234567890123456789), INT64_C(0x123456789abcdef0) );
     assert(std::strcmp(buf, "# 1234567890123456789  123456789abcdef0\n") == 0);
  #endif
