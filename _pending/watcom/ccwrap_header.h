@@ -68,6 +68,7 @@
 #define __CCWRAP_LDOUBLE_BIT        64
 
 #define __CCWRAP_HAS_STDINT         1
+#define __CCWRAP_HAS_TYPE_TRAITS    1
 
 #if defined(__cplusplus)
   #define __CCWRAP_NO_STATIC_CONST_INT_MEMBER_INITIALIZATION 1

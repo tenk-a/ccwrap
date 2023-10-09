@@ -402,7 +402,7 @@ C const* str_end(C const* s) {
 
 template<typename T> static inline //constexpr
 typename T::value_type const* str_end(T const& s) {
-	return s + std::char_traits<typename T::value_type>::length(s);
+	return s.data() + s.size();
 }
 
 template<typename C> inline constexpr

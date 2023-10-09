@@ -181,6 +181,8 @@ typedef unsigned __int64            __ccwrap_uint64;
  #else
   #define final
  #endif
+#else
+ #define __CCWRAP_HAS_TYPE_TRAITS   1
 #endif
 
 #if _MSC_VER < 1900 // vc12 or earlier

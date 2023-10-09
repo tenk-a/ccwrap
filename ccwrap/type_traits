@@ -4,7 +4,7 @@
 
 #include <ccwrap_common.h>
 
-#if __CCWRAP_CXX >= 201103L || _MSC_VER >= 1700
+#if __CCWRAP_CXX >= 201103L || __CCWRAP_HAS_TYPE_TRAITS || _MSC_VER >= 1700 
  #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <type_traits>
  #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)

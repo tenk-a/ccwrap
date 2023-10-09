@@ -13,7 +13,7 @@ set CCOPTS_REL=-O2 -Oy -GS- -MT -DNDEBUG
 set CCOPTS_DBG=-Od -Ob0 -Zi -MTd -D_DEBUG
 set CCWARN=%CCWARN% -W4 -wd4067 -wd4996 -wd4828
 rem set CCWARN=%CCWARN% -wd4067 -wd4996 -wd4828
-set CCOPTS=%CCOPTS% -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST
+set CCOPTS=%CCOPTS% -TP -EHac -GF -Zc:wchar_t -Zc:forScope -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_TEST
 set FIRSTINC=-FIccwrap_header.h
 set LOPTS=%LOPTS% -EHac -GF
 if "%TestName%"=="" set TestName=test

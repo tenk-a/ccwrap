@@ -1,9 +1,9 @@
 //#include <algorithm>
 //#include <_ccwrap/ccwrap_common.h>
-#include <ccwrap/ccwrap_misc/ccwrap_test.hpp>
+#include <ccwrap/ccwrap_misc/test.hpp>
 
 int main()
 {
-    CCWRAP_TEST_RUN();
+    TEST_SUITES_RUN();
     return 0;
 }

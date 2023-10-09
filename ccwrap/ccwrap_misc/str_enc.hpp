@@ -231,7 +231,7 @@ namespace __impl {
 		static bool conv(DST& dst, char const* src_b, char const* src_e, char32 altc=UTFENC_CVT_ALT_CH) {
 			std::wstring tmp;
 			bool rc = always_cvt<std::wstring,char>::conv(tmp, src_b, src_e, altc);
-			return utfenc::convert(dst, tmp.data(), str_end(tmp), altc);
+			return utfenc::convert(dst, tmp.data(), str_end(tmp), altc) && rc;
 		}
 	};
 }

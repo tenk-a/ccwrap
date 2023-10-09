@@ -11,7 +11,7 @@ set CCXX=wcl386
 set CCOPTS_REL=-O2 -DNDEBUG
 set CCOPTS_DBG=-D_DEBUG
 set CCWARN=%CCWARN%
-set CCOPTS=%CCOPTS% -cc++ -xs -xr -bcl=nt  -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST
+set CCOPTS=%CCOPTS% -cc++ -xs -xr -bcl=nt  -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_TEST -DCCWRAP_TEST_LOG_LITE
 set FIRSTINC=-fi=ccwrap_header.h
 set LOPTS=%LOPTS% -EHac -GF
 if "%TestName%"=="" set TestName=test
@@ -48,6 +48,7 @@ del %OBJDIR%\set_objs.bat
 set OBJS=
 abx -s -k$ %OBJDIR%\*.obj "=@set OBJS=%%OBJS%% %OBJDIR%\$c" >>%OBJDIR%\set_objs.bat
 call %OBJDIR%\set_objs.bat
+
 @echo [CMD] %CCXX% -fe=%EXENAME% %LOPTS% %OBJS% %LIBS% %LAST_OPTS%
 if exist %EXENAME% del %EXENAME%
 %CCXX% -fe=%EXENAME% %LOPTS% %OBJS% %LIBS% %LAST_OPTS%

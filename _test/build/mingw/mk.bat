@@ -9,7 +9,7 @@ set CCOPTS_REL=-O2 -DNDEBUG
 set CCOPTS_DBG=-O0 -D_DEBUG
 set CCWARN=%CCWARN% -Wall -Wno-misleading-indentation -Wno-unused-variable
 set CCWARN=%CCWARN% -Wno-unused-local-typedef -Wno-unnamed-type-template-args -Wno-local-type-template-args
-set CCOPTS=%CCOPTS% -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_CCWRAP_TEST
+set CCOPTS=%CCOPTS% -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_TEST
 set LOPTS=
 if "%TestName%"=="" set TestName=test
 set SRCDIR=../../src/%TestName%

@@ -1,6 +1,6 @@
 #include <cstdio>
 #include <cstdint>
-#include <ccwrap_misc/ccwrap_test.hpp>
+#include <ccwrap_misc/test.hpp>
 
 #ifndef __ccwrap_llong
 #define __ccwrap_llong   long long
@@ -22,6 +22,6 @@ int main(int argc, char* argv[])
     std::printf("\tsizeof(long double) = %2d  alignof(long double) = %2d\n", int(sizeof(long double)), int(alignof(long double)));
     std::printf("\talignof(std::max_align_t) = %d\n", int(alignof(std::max_align_t)));
 
-    CCWRAP_TEST_RUN();
+    TEST_SUITES_RUN();
     return 0;
 }

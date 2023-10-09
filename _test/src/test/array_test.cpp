@@ -1,11 +1,11 @@
-#include <ccwrap_misc/ccwrap_test.hpp>
+#include <ccwrap_misc/test.hpp>
 
 #include <algorithm>
 #include <iostream>
 #include <array>
 
 
-CCWRAP_TEST_SUITE(array) {
+TEST_SUITE(array) {
 
 	template<class T>
 	void array_test_1(T& t) {
@@ -18,50 +18,50 @@ CCWRAP_TEST_SUITE(array) {
 	        *it = value_t(idx);
 	        ++idx;
 	    }
-	    ccwrap_test_eq(t0[0], vtype);
-	    ccwrap_test_eq(t0.size(), idx);
-	    ccwrap_test_eq(t0.max_size(), t0.size());
-	    ccwrap_test_eq(t0.front(), 0);
-	    ccwrap_test_eq(t0.back(), value_t(idx-1));
+	    test_eq(t0[0], vtype);
+	    test_eq(t0.size(), idx);
+	    test_eq(t0.max_size(), t0.size());
+	    test_eq(t0.front(), 0);
+	    test_eq(t0.back(), value_t(idx-1));
 	    idx = 0;
 	    for (size_t i = 0; i < t0.size(); ++i) {
-	        ccwrap_test_eq(t0[i], i);
-	        ccwrap_test_eq(t0.at(i), i);
+	        test_eq(t0[i], i);
+	        test_eq(t0.at(i), i);
 	        t0[i] = value_t(i);
 	        t0.at(i) = value_t(i);
 	    }
 	    T const& ct0 = t0;
 	    for (size_t i = 0; i < ct0.size(); ++i) {
-	        ccwrap_test_eq(ct0[i], i);
-	        ccwrap_test_eq(ct0.at(i), i);
+	        test_eq(ct0[i], i);
+	        test_eq(ct0.at(i), i);
 	    }
 	    T   t1 = T();
 	    T   t2(t1);
 	    T   t3 = t0;
-	    ccwrap_test_eq(t1.empty(), false);
-	    ccwrap_test_assert(t1 == t2);
-	    ccwrap_test_assert(t0 == t3);
+	    test_eq(t1.empty(), false);
+	    test_true(t1 == t2);
+	    test_true(t0 == t3);
 
 	    t2 = t3;
-	    ccwrap_test_assert(t0 == t2);
-	    swap(t1, t0);
-	    ccwrap_test_assert(t1 == t3);
+	    test_true(t0 == t2);
+	    std::swap(t1, t0);
+	    test_true(t1 == t3);
 	    t2.fill(0);
-	    ccwrap_test_assert(t2 == t0);
+	    test_true(t2 == t0);
 
 	    idx = 0;
 	    for (typename T::iterator it = t2.begin(); it != t2.end(); ++it) {
 	        *it = value_t(idx);
 	        ++idx;
 	    }
-	    ccwrap_test_assert(t1 == t2);
+	    test_true(t1 == t2);
 	    idx = 0;
 	    for (typename T::const_iterator it = t1.begin(); it != t1.end(); ++it, ++idx) {
-	        ccwrap_test_eq(*it, t2[idx]);
+	        test_eq(*it, t2[idx]);
 	    }
 	    idx = 0;
 	    for (typename T::const_iterator it = t1.cbegin(); it != t1.cend(); ++it, ++idx) {
-	        ccwrap_test_eq(*it, t2[idx]);
+	        test_eq(*it, t2[idx]);
 	    }
 
 	    t3.fill(0);
@@ -71,10 +71,11 @@ CCWRAP_TEST_SUITE(array) {
 	        ++idx;
 	    }
 	    std::reverse(t2.begin(), t2.end());
-	    ccwrap_test_assert(t2 == t3);
+	    test_true(t2 == t3);
 	    idx = 0;
-	    for (typename T::const_reverse_iterator it = t2.rbegin(); it != t2.rend(); ++it, ++idx) {
-	        ccwrap_test_eq(t1[idx], *it);
+		T const& ct2 = t2;
+	    for (typename T::const_reverse_iterator it = ct2.rbegin(); it != ct2.rend(); ++it, ++idx) {
+	        test_eq(t1[idx], *it);
 	    }
 	    t = t3;
 	}
@@ -85,13 +86,10 @@ CCWRAP_TEST_SUITE(array) {
 	    std::array<float,100>   fltArray_;
 	};
 
-
-
-	CCWRAP_TEST(check) {
+	TEST_CASE(array, check) {
 	    smp_arrays c;
 	    array_test_1(c.charArray_);
 	    array_test_1(c.intArray_);
 	    array_test_1(c.fltArray_);
 	}
-
 }

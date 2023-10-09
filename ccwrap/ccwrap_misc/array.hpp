@@ -67,12 +67,16 @@ public:
     void swap(array& x) noexcept { for (size_type i = 0; i < N; i++) std::swap(elements_[i], x[i]); }
     void fill(const T& t) { std::fill_n(begin(), N, t); }
 
-    bool operator==(const array& r) const { return std::equal(begin(), end(), r.begin());}
+    bool operator==(const array& r) const { return std::equal(begin(), end(), r.begin()); }
     bool operator!=(const array& r) const { return !(*this == r); }
     bool operator< (const array& r) const { return std::lexicographical_compare(begin(),end(),r.begin(),r.end());}
     bool operator>=(const array& r) const { return  !(*this < r); }
     bool operator> (const array& r) const { return    r < *this ; }
     bool operator<=(const array& r) const { return ! (r < *this); }
+
+	friend void swap(array& l, array& r) {
+	    l.swap(r);
+	}
 
 private:
     void outOfRng() const {
@@ -84,10 +88,12 @@ private:
     }
 };
 
+#if 0
 template<class T, size_t N>
 void swap(array<T,N>& l, array<T,N>& r) {
     l.swap(r);
 }
+#endif
 
 #if 1
 template<class T, size_t N>
@@ -113,7 +119,7 @@ constexpr array<remove_cv_t<T>, N> to_array(T (&&a)[N]) {
 }
 #endif
 
-}   // ccwrap
+}   // std
 
 
 #endif  // CCWRAP_ARRAY_INCLUDED
