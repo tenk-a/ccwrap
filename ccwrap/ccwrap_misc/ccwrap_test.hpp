@@ -48,7 +48,9 @@
 #include <list>
 #include <sstream>
 
+#if !defined(CCWRAP_TEST_LOG_LITE)
 #include "utf_cvt_stream.hpp"
+#endif
 
 #if defined(USE_CCWRAP_TEST_MSW)
 #include <cstdarg>
@@ -378,6 +380,7 @@ void    __ccwrap_test_cc_body(bool cc, A const& a, B const &b, char const* astr,
     }
 }
 
+#if !defined(CCWRAP_TEST_LOG_LITE)
 template<class DMY, typename X, typename A, typename B>
 void    __ccwrap_test_range(X const& x, A const& a, B const& b, char const* xstr, char const* astr, char const* bstr
                             , TestMethod& method, char const* fname, int line)
@@ -390,7 +393,20 @@ void    __ccwrap_test_range(X const& x, A const& a, B const& b, char const* xstr
         CCWRAP_TEST_PRINTF("%s (%d): %s: %s\n", fname, line, method.lname(), ss.str().c_str());
     }
 }
+#else
+template<class DMY, typename X, typename A, typename B>
+void    __ccwrap_test_range(X const& x, A const& a, B const& b, char const* xstr, char const* astr, char const* bstr
+                            , TestMethod& method, char const* fname, int line)
+{
+    if (!(a <= x && x <= b)) {
+        method.addErr();
+        CCWRAP_TEST_PRINTF("%s (%d): %s: `%s` is out of range[%s, %s]\n"
+            , fname, line, method.lname(), xstr, astr, bstr);
+    }
+}
+#endif
 
+#if 0 //!defined(CCWRAP_TEST_LOG_LITE)
 template<class DMY, typename X, typename A, typename B>
 void    __ccwrap_test_range(X const* x, A const* a, B const* b, char const* xstr, char const* astr, char const* bstr
                             , TestMethod& method, char const* fname, int line)
@@ -401,6 +417,7 @@ void    __ccwrap_test_range(X const* x, A const* a, B const* b, char const* xstr
             , fname, line, method.lname(), xstr, x, a, b, astr, bstr);
     }
 }
+#endif
 
 template<class DMY>
 void    __ccwrap_test_throw_msg(char const* str, TestMethod& method, char const* fname, int line) {

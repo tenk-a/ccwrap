@@ -1,13 +1,13 @@
-# ccwrap _etc
+# ccwrap etc
 
 ccwrap  は c11/c++11以降の規格の極々一部を、古いコンパイラ向けに、
 簡易に補完するためのラッパー・ライブラリで、../readme.md 参照を参照のこと。
 
-_etc/ フォルダにあるのは
+etc/ フォルダにあるのは
 
    - borland c/c++ v5.5.1 (bc55) Embarcadero C++ 7.2 (bcc32c) 
-   - open watcom c/c++ v1.9                                  (ow)
-   - digital mars c/c++                                           (dmc)
+   - open watcom c/c++ v1.9                          (ow)
+   - digital mars c/c++                              (dmc)
 
 用。
 （だが、現状、手元の環境ではコンパイラをインストールしていないものもあるため
@@ -43,6 +43,6 @@ _etc/ フォルダにあるのは
 
 例えば X:\ccwrap があるとして、
 
-- wcl386 -cc++ -xs -xr -bcl=nt -I=X:\ccwrap\_etc\ow -fi=ccwrap_header.h smp.cpp
-- dmc -IX:\ccwrap\_etc\dmc -Hlccwrap_header.h smp.cpp kernel32.lib gdi32.lib
-- bcc32 -IX:\ccwrap\_etc\borland smp.cpp
+- wcl386 -cc++ -xs -xr -bcl=nt -I=X:\ccwrap\etc\ow -fi=ccwrap_header.h smp.cpp
+- dmc -IX:\ccwrap\etc\dmc -Hlccwrap_header.h smp.cpp kernel32.lib gdi32.lib
+- bcc32 -IX:\ccwrap\etc\borland smp.cpp

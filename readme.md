@@ -2,19 +2,20 @@
 
 ccwrap  は 古いコンパイラで、c11/c++11以降の規格の極々一部を
 簡易に真似てみるラッパー・ライブラリ。
+かなり、実験物。
 
 対象コンパイラは  Windows 用で
 - vc: MS Visual C/C++ (8～12(2005-2013)系、14.x(2015～2019)系) 
 - clang, mingw (c++11 対応以降での c++03 モード利用して確認)
 
-※ 以前 試していた open watcom, borland c5.5.1, dmc は _etc/ フォルダ下を参照。
+※ 以前 試していた open watcom, borland c5.5.1, dmc は etc/ フォルダ下を参照。
 
 
 ## やれること
 
 可能ならコンパイラ独自名 (__alignof等) を標準名 (alignof等) に #define し、
 実装可能なら代用品を用意(static_assert等)、機能無くとも大半を誤魔化
-せるならば空定義(constexpr等)を行う。
+せるならば空定義を行う。
 
 - c++用:  
     alignas, alignof, char8_t, char16_t, char32_t, constexpr, final,
@@ -49,13 +50,12 @@ vc++ では、boost を用いることで
 
 ccwrap は、本来の標準ライブラリより先に ccwrap の置換ファイルが
 読み込まれることで実現している。
-ので、各コンパイラ別のディレクトリをコンパイラ・オプションで指定する必要がある。  
+ので、各コンパイラ別のディレクトリと ccwrap/ccwrap/ を
+コンパイラ・オプションで指定する必要がある。  
 ( vc/clang/gcc では -I  )
 
-  ccwrap/vc2013_or_earlier/      vc2005～vc2013(vc8～vc12)   
-  ccwrap/vc2015_or_later/        vc2015以降(～vc2019)   
-  ccwrap/clang/                      msys2 clang++,g++ のc++11以降用  
-  ccwrap/clang_cxx03/             msys2 clang++,g++ のc++03用  
+  ccwrap/vc/      vc2005～vc2022(vc8～vc14.3)   
+  ccwrap/gcc/     msys2 clang++,g++ 用  
 
 また、 各コンパイラ別フォルダにある  
 
@@ -67,16 +67,16 @@ ccwrap は、本来の標準ライブラリより先に ccwrap の置換ファ�
 
 例えば X:\ccwrap だとして、  
 
-  cl -IX:\ccwrap\vc2013_or_earlier -Flccwrap_header.h example.c
+  cl -IX:\ccwrap\vc -IX:\ccwrap\ccwrap -Flccwrap_header.h example.c
 
 c++ の場合は
 
-  cl -IX:\ccwrap\vc2013_or_earlier -Flccwrap_header.h -EHsc -Zc:wchar_t -Zc:forScope example.cpp
+  cl -IX:\ccwrap\vc -IX:\ccwrap\ccwrap -Flccwrap_header.h -EHsc -Zc:wchar_t -Zc:forScope example.cpp
 
 (c++ 標準寄りの文法になるようにオプション設定しておく)
 
 
-### boost の利用.
+### vc での boost の利用.
 
 ※ 最近の boost は c++11 以前を切り捨てているので、対応している頃
 の boost を用いる必要がある。  作成時に用いていたのは 1.6.x ～ 1.7.2 
@@ -84,13 +84,10 @@ c++ の場合は
 boost を利用する場合は、include されるディレクトリとして
 
 - boost2std/
-- (ccwrap コンパイラ別のディレクトリ)
 - (boostのディレクトリ)
 
 をコンパイラオプション指定する。  
-
-'ccwrap/boost2std/'' が (ccwrapコンパイラ別ディレクトリ) より先に '
-検索される必要があるため、指定順序は注意のこと。
+※ コンパイラ別フォルダやccrwap/ccwrap フォルダは指定してはいけない。
 
 また、暗黙の include として、boost2std/ 下の
 
@@ -100,7 +97,7 @@ boost を利用する場合は、include されるディレクトリとして
 
 たとえば X:\ccwrap、 X:\boost_1_72_0 があるとして、
 
-  cl -lX:\ccwrap\boost2std  -IX:\boost_1_72_0 -IX:\ccwrap\vc2013_or_earlier -Flboost2std.hpp -EHsc -Zc:wchar_t -Zc:forScope example.cpp
+  cl -lX:\ccwrap\boost2std  -IX:\boost_1_72_0 -Flboost2std.hpp -EHsc -Zc:wchar_t -Zc:forScope example.cpp
 
 c++ 標準寄りの文法になるようにオプション設定しておく。
 
@@ -127,7 +124,7 @@ boost ライブラリをboostとして併用するのは厳しいかもしれな
 
 ccwrap 関係の名前は
 - プレフィックスに ccwrap_ CCWRAP_ __ccwrap_ __CCWRAP_ をつけるか
-- namespace ccwrap か namespace __ccwrap に格納
+- namespace ccwrap   _ccwrap  __ccwrap に格納
 
 している.
 
@@ -139,5 +136,6 @@ ccwrap 関係の名前は
 ##  おわりに
 
 やれそうだからやってみただけの代物なのでバギー。  
+実用性はないです。
 vc comunity edition や msys2 があるので、今どきの Windows 環境で使うことはなく。  
 古い環境向けに古いコンパイラしか使えない場合に、多少なりとも今風に近づける...かもしれない。  
