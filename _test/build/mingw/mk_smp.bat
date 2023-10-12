@@ -14,8 +14,8 @@ set CC=clang
 set CXXC=clang++
 goto SKIP_GCC
 :GCC
-set CC=clang
-set CXXC=clang++
+set CC=gcc
+set CXXC=g++ -Wno-c++20-compat
 :SKIP_GCC
 
 if exist *.exe del *.exe
