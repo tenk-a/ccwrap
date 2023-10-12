@@ -4,7 +4,7 @@
 
 #include <ccwrap_common.h>
 
-#if __STDC_VERSION__ >= 199901L
+#if __CCWRAP_C_VER >= 199901L
 
 #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
   #include_next <stdbool.h>
