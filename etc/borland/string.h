@@ -23,9 +23,9 @@
 
 #undef strcmp
 
-#if __BORLANDC__ < 0x700 /*?*/
-static inline char* stpcpy(char* d, char const* s) { return _stpcpy(d, s); }
-#endif
+//#if __BORLANDC__ < 0x700 /*?*/
+//static inline char* stpcpy(char* d, char const* s) { return _stpcpy(d, s); }
+//#endif
 
 static inline int   strcasecmp(char const* l, char const* r) { return stricmp(l, r); }
 static inline int   strncasecmp(char const* l, char const* r, unsigned/*size_t*/ n) { return strnicmp(l, r, n); }

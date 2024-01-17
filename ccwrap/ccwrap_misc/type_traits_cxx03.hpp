@@ -91,8 +91,6 @@ namespace __CCWRAP_STD {
 
 #if defined(__WATCOMC__)
 #define __CCWRAP_IS_SIZEOF_1(ty)         (integral_constant<bool, (sizeof(ty) == 1)>::value)
-#define __CCWRAP_HAS_PRAGMA_PACK
-#define __CCWRAP_USE_WATCOMC_BUG
 #else
 #define __CCWRAP_IS_SIZEOF_1(ty)         (sizeof(ty) == 1)
 #endif
@@ -450,7 +448,7 @@ template <class TB> struct remove_all_extents<TB[]> { typedef typename remove_al
 template <class TB2, int N> struct remove_all_extents<TB2[N]> { typedef typename remove_all_extents<TB2>::type type; };
 
 
-#if !defined(__CCWRAP_USE_WATCOMC_BUG)
+#if !defined(__WATCOMC__)
 
 // is_array
 template <class T> struct is_array : public false_type {};
@@ -460,7 +458,7 @@ template <class TB, int N> struct is_array<TB[N]> : public true_type {};
 // is_function
 namespace detail {
     template<class T>
-    class is_funcret_or_inarray {
+    class in_array {
         template<class U> static yes_t test(U(*)[1]);
         template<class U> static no_t  test(...);
     public:
@@ -472,12 +470,12 @@ struct is_function
     : public integral_constant<bool , !(  detail::is_union_or_class<T>::value
                                        || is_reference<T>::value
                                        || is_void<T>::value
-                                       || detail::is_funcret_or_inarray<T>::value
+                                       || detail::in_array<T>::value
                                        )>
 {};
 
 
-#else // defined(__CCWRAP_USE_WATCOMC_BUG)
+#else // __WATCOMC__ // use bugs
 
 namespace detail {
     // watcom-ng T[N]
@@ -828,7 +826,7 @@ template <class TB>
 struct is_pod : public integral_constant<bool
                 , !is_void<TB>::value && (is_scalar<typename remove_all_extents<TB>::type>::value) >
 {};
-#endif  // __CCWRAP_USE_WATCOMC_BUG
+#endif
 
 #if 0
 // is_literal_type

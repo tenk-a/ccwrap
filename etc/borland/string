@@ -13,8 +13,8 @@
 // #include "../cxx/string"
 
 namespace std {
-    inline string to_string(long          v) { char b[64]; sprintf(b, "%ld", v); return b; }
-    inline string to_string(unsigned long v) { char b[64]; sprintf(b, "%lu", v); return b; }
+    inline string to_string(long          v) { char b[64]; sprintf(b, "%ld", v); return string(b); }
+    inline string to_string(unsigned long v) { char b[64]; sprintf(b, "%lu", v); return string(b); }
     inline string to_string(int           v) { return to_string((long)( v)); }
     inline string to_string(unsigned int  v) { return to_string((unsigned long)(v)); }
     inline string to_string(__CCWRAP_LLONG  v) {
@@ -27,7 +27,7 @@ namespace std {
         } else {
             sprintf(b, "0x%08x%08x", (unsigned)(v>>32),(unsigned)v);
         }
-        return b;
+        return string(b);
     }
     inline string to_string(__CCWRAP_ULLONG  v) {
         char b[64];
@@ -35,11 +35,16 @@ namespace std {
             sprintf(b, "%u", (unsigned)v);
         else    // fake
             sprintf(b, "0x%08x%08x", (unsigned)(v>>32),(unsigned)v);
-        return b;
+        return string(b);
     }
-    inline string to_string(long double   v) { enum { N=5000/*LDBL_MAX_10_EXP + LDBL_MANT_DIG + 4*/ }; char b[N]; sprintf(b, "%Lf", v); return b; }
-    inline string to_string(float         v) { return to_string((long double)(v)); }
-    inline string to_string(double        v) { return to_string((long double)(v)); }
+    inline string to_string(long double v) {
+        enum { N=5000/*LDBL_MAX_10_EXP + LDBL_MANT_DIG + 4*/ };
+        char b[N];
+        sprintf(b, "%Lf", v);
+        return string(b);
+    }
+    inline string to_string(float  v) { return to_string((long double)(v)); }
+    inline string to_string(double v) { return to_string((long double)(v)); }
 
     ///
     namespace __ccwrap_string_detail {
