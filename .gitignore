@@ -32,3 +32,6 @@ x64_Release_*
 set_objs.bat
 *.exe
 obj
+tmp_*
+my_*
+sav_*

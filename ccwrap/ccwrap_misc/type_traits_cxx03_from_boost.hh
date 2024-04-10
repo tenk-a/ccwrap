@@ -15,6 +15,7 @@
 
 namespace std {
 
+#if 0
 // make_signed
 namespace detail {
     template <class T>
@@ -220,7 +221,7 @@ struct make_unsigned {
     typedef typename detail::make_unsigned_imp<T>::type type;
 };
 
-
+#endif
 
 // (boost/type_traits/alignment_of.hpp)
 //

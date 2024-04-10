@@ -124,12 +124,9 @@ struct integral_constant {
     static const T              value = V;
 };
 
-// true_type, false_type
-typedef integral_constant<bool, true>  true_type;
-typedef integral_constant<bool, false> false_type;
-
 #if 1
-template<bool V>    struct bool_constant : integral_constant<bool, V> {};
+template<bool V>
+struct bool_constant : integral_constant<bool, V> {};
 #else
 template<bool V>
 struct bool_constant {
@@ -138,6 +135,10 @@ struct bool_constant {
     static const bool       value = V;
 };
 #endif
+
+// true_type, false_type
+typedef bool_constant<true>  true_type;
+typedef bool_constant<false> false_type;
 
 #define __CCWRAP_TRAITS_SPEC0(S, V) template <> struct S : public integral_constant<bool, V> {}
 #define __CCWRAP_TRAITS_SPEC1(S, V) template <class T> struct S : public integral_constant<bool, V> {}
@@ -320,6 +321,39 @@ __CCWRAP_TRAITS_SPEC(0, is_unsigned, unsigned long long  , true);
 __CCWRAP_TRAITS_SPEC(0, is_unsigned, char                , true);
 #endif
 
+
+
+#define __CCWRAP_MAKE_ST_TYPE(F,S,T)	\
+	template <> struct F<S> {			\
+    	typedef T type;					\
+	}
+template <class T> struct make_signed { };
+__CCWRAP_MAKE_ST_TYPE(make_signed, char			, signed char);
+__CCWRAP_MAKE_ST_TYPE(make_signed, signed char	, signed char);
+__CCWRAP_MAKE_ST_TYPE(make_signed, unsigned char, signed char);
+__CCWRAP_MAKE_ST_TYPE(make_signed, short		, short);
+__CCWRAP_MAKE_ST_TYPE(make_signed, unsigned short,short);
+__CCWRAP_MAKE_ST_TYPE(make_signed, int			, int);
+__CCWRAP_MAKE_ST_TYPE(make_signed, unsigned int	, int);
+__CCWRAP_MAKE_ST_TYPE(make_signed, long			, long);
+__CCWRAP_MAKE_ST_TYPE(make_signed, unsigned long, long);
+__CCWRAP_MAKE_ST_TYPE(make_signed, __CCWRAP_LLONG , __CCWRAP_LLONG);
+__CCWRAP_MAKE_ST_TYPE(make_signed, __CCWRAP_ULLONG, __CCWRAP_LLONG);
+
+template <class T> struct make_unsigned { };
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, char			, unsigned char);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, signed char	, unsigned char);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned char	, unsigned char);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, short			, unsigned short);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned short	, unsigned short);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, int			, unsigned int);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned int	, unsigned int);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, long			, unsigned long);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned long	, unsigned long);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, __CCWRAP_LLONG	, __CCWRAP_ULLONG);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, __CCWRAP_ULLONG, __CCWRAP_ULLONG);
+#undef __CCWRAP_MAKE_ST_TYPE
+
 // is_arithmetic
 template <class T>
 struct is_arithmetic : public integral_constant<bool, (is_integral<T>::value || is_floating_point<T>::value)> {};
@@ -432,6 +466,8 @@ struct is_polymorphic : public integral_constant<bool, detail::is_polymorphic_he
 #endif
 
 
+#if !defined(__WATCOMC__)
+
 // rank
 template<class T> struct rank : integral_constant<unsigned, 0> {};
 template<class T> struct rank<T[]> : public integral_constant<unsigned, rank<T>::value + 1> {};
@@ -446,9 +482,6 @@ template<class TB, int N> struct remove_extent<TB[N]> { typedef TB type; };
 template <class T > struct remove_all_extents { typedef T type; };
 template <class TB> struct remove_all_extents<TB[]> { typedef typename remove_all_extents<TB>::type type; };
 template <class TB2, int N> struct remove_all_extents<TB2[N]> { typedef typename remove_all_extents<TB2>::type type; };
-
-
-#if !defined(__WATCOMC__)
 
 // is_array
 template <class T> struct is_array : public false_type {};
@@ -476,6 +509,21 @@ struct is_function
 
 
 #else // __WATCOMC__ // use bugs
+
+// rank
+template<class T> struct rank : integral_constant<unsigned, 0> {};
+template<class T> struct rank<T[]> : public integral_constant<unsigned, rank<T>::value + 1> {};
+//template<class TB, unsigned N> struct rank<TB[N]> : public integral_constant<unsigned, rank<TB>::value + 1> {};
+
+// remove_extent
+template<class T> struct remove_extent { typedef T type; };
+template<class T> struct remove_extent<T[]> { typedef T type; };
+//template<class TB, int N> struct remove_extent<TB[N]> { typedef TB type; };
+
+// remove_all_extents
+template <class T > struct remove_all_extents { typedef T type; };
+template <class TB> struct remove_all_extents<TB[]> { typedef typename remove_all_extents<TB>::type type; };
+//template <class TB2, int N> struct remove_all_extents<TB2[N]> { typedef typename remove_all_extents<TB2>::type type; };
 
 namespace detail {
     // watcom-ng T[N]
