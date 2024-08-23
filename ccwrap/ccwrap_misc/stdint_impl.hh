@@ -3,6 +3,7 @@
  *  @brief  stdint(typedef int??_t) for vc(<=15.??)
  *  @date   2000-2017,2023
  *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
  */
 #ifndef __CCWRAP_STDINT_IMPL_HH_DEFINED
 #define __CCWRAP_STDINT_IMPL_HH_DEFINED

@@ -3,7 +3,6 @@
  *  @brief  for open watcom c/c++ v1.9
  *  @license Boost Software Lisence Version 1.0
  *  @note
- *      mada tekikou
  */
 #pragma once
 

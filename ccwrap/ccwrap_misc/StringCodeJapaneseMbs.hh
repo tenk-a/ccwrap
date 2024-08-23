@@ -3,6 +3,7 @@
  *  @brief  Japanese multi-byte-char Stinrg encoding conversion
  *  @author Masashi Kitamura(tenka@6809.net)
  *  @date   2020
+ *  @license Boost Software Lisence Version 1.0
  */
 #ifndef __CCWRAP_StringCodeJapaneseMbs_hh_INCLUDED
 #define __CCWRAP_StringCodeJapaneseMbs_hh_INCLUDED

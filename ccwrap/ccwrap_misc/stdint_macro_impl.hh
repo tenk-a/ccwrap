@@ -1,3 +1,9 @@
+/**
+ *  @file stdint_macro_impl.hh
+ *  @brief stdint.h's macro
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
+ */
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
 #pragma once
 

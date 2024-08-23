@@ -3,6 +3,7 @@
  *  @brief  c++11 <string>'s function for c++03
  *  @author tenka@6809.net (Masashi Kitamura)
  *  @date   2020
+ *  @license Boost Software Lisence Version 1.0
  */
 #ifndef CCWRAP_STRING_SUB_HPP_INCLUDED
 #define CCWRAP_STRING_SUB_HPP_INCLUDED
@@ -155,7 +156,7 @@ namespace std {
     inline string to_string(float         v) { return to_string((long double)(v)); }
     inline string to_string(double        v) { return to_string((long double)(v)); }
 
- #if !defined(__CCWRAP_NO_WCHAR)
+  #if !defined(__CCWRAP_NO_WCHAR)
     inline wstring to_wstring(__ccwrap_llong  v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"d", v); return b; }
     inline wstring to_wstring(__ccwrap_ullong v) { wchar_t b[64]; snwprintf(b,64, L"%" __CCWRAP_WFMT_LL L"u", v); return b; }
     inline wstring to_wstring(int           v) { return to_wstring((__ccwrap_llong)( v)); }
@@ -165,7 +166,7 @@ namespace std {
     inline wstring to_wstring(long double   v) { enum { N=LDBL_MAX_10_EXP + LDBL_MANT_DIG + 10 }; wchar_t b[N]; snwprintf(b, N, L"%Lf", v); return b; }
     inline wstring to_wstring(float         v) { return to_wstring((long double)(v)); }
     inline wstring to_wstring(double        v) { return to_wstring((long double)(v)); }
- #endif
+  #endif
  #endif
 
     ///

@@ -3,6 +3,7 @@
  *  @brief  String encoding conversion
  *  @author Masashi Kitamura(tenka@6809.net)
  *  @date   2020
+ *  @license Boost Software Lisence Version 1.0
  *  note
  *      base https://github.com/tenk-a/abx/blob/master/src/fks/ccwrap_mbc.c
  */

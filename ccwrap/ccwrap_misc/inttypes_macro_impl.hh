@@ -1,6 +1,8 @@
 /**
  *  @file   cinttypes_macro_impl.hh
- *  @brief  Format conversion of integer types macro for old-vc
+ *  @brief  Format conversion of integer types macro for old-c++
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
  */
 #if __CCWRAP_C1990_OR_CXX1998
 

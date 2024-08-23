@@ -1,3 +1,9 @@
+/**
+ *  @file ccwrap_header.h
+ *  @brief  c++ header wrapper: default
+ *  @author Masashi Kitamura(tenka@6809.net)
+ *  @license Boost Software Lisence Version 1.0
+ */
 #ifndef __CCWRAP_HEADER_SUB_H_INCLUDED
 #define __CCWRAP_HEADER_SUB_H_INCLUDED
 

@@ -1,3 +1,9 @@
+/**
+ *  @file str_enc.hh
+ *  @brief Character encoding conversion of strings.
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
+ */
 #ifndef __CCWRAP_STR_ENC_CVT_HPP_INCLUDED
 #define __CCWRAP_STR_ENC_CVT_HPP_INCLUDED
 

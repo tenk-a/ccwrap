@@ -1,6 +1,8 @@
 /**
  *  @file   iterator_sub.hxx
  *  @brief  c++11 or later <iterator>'s function for c++03
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
  */
 #ifndef ITARATOR_SUB_HXX
 #define ITARATOR_SUB_HXX

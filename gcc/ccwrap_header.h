@@ -1,6 +1,7 @@
 /**
  *  @file ccwrap_header.h
  *  @brief for msys2 clang++/g++ (c++03)
+ *  @author Masashi Kitamura(tenka@6809.net)
  *  @license Boost Software Lisence Version 1.0
  */
 #ifndef __CCWRAP_HEADER_H

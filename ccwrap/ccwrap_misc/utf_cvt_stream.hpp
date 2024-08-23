@@ -1,3 +1,11 @@
+/**
+ *  @file   utf_cvt_stream.hpp
+ *  @brief  Allow ostream and istream to receive character/strings other than char and string.
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *	@date	2018-2023
+ *  @license Boost Software Lisence Version 1.0
+ *  @note
+ */
 #ifndef __CCWRAP_UTF_CVT_STREAM_HPP_INCLUDED
 #define __CCWRAP_UTF_CVT_STREAM_HPP_INCLUDED
 

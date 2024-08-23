@@ -1,6 +1,8 @@
 /**
  *  @file   cinttypes
  *  @brief  Format conversion of integer types for old-vc
+ *  @author Masashi Kitamura (tenka@6809.net)
+ *  @license Boost Software License Version 1.0
  */
 #if __CCWRAP_C1990_OR_CXX1998
 
