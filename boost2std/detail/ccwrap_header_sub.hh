@@ -102,7 +102,7 @@
 // ------------------------------------
 // endian & alignment
 #if defined _M_IX86 || defined _X86_ || defined __CCWRAP_CPU_X86 || defined _M_AMD64 || defined __amd64__ || defined __AMD64__ || defined __x86_64__
-  #define __CCWRAP_ENABLE_BYTE_ALIGN         1   // enable byte align access
+  #define __CCWRAP_MEM_ACCESS_SAFE_REINTERPRET         1   // enable byte align access
   #undef  __CCWRAP_BIG_ENDIAN
   #ifndef __CCWRAP_CPU_X86
    #define __CCWRAP_CPU_X86
@@ -114,7 +114,7 @@
    #define __CCWRAP_CPU_ARM
   #endif
 #elif defined _PPC_ || defined _POWERPC_ ||  || defined __CCWRAP_CPU_PPC
-  #define __CCWRAP_ENABLE_BYTE_ALIGN         1   // enable byte align access
+  #define __CCWRAP_MEM_ACCESS_SAFE_REINTERPRET         1   // enable byte align access
   #define __CCWRAP_BIG_ENDIAN                1
   #ifndef __CCWRAP_CPU_PPC
    #define __CCWRAP_CPU_PPC
