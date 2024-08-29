@@ -40,6 +40,21 @@
   #define __CCWRAP_NATIVE_STL_HEADER_PATH(x) <../h/##x>
 #endif
 
+#ifdef __CHAR_SIGNED__	// -j
+  #define __CCWRAP_CHAR_IS_UNSIGNED		0
+#else
+  #define __CCWRAP_CHAR_IS_UNSIGNED		1
+#endif
+
+#ifdef __SW_BD	// -bd
+  #define __CCWRAP_DLL		1
+#endif
+#ifdef __SW_BR	// -br
+  #define __CCWRAP_RTDLL	1
+#endif
+#ifdef __SW_BM	// -bm
+  #define __CCWRAP_MT		1
+#endif
 
 //#ifndef __CCWRAP_NATIVE_UC_HEADER_PATH
 //  #define __CCWRAP_NATIVE_UC_HEADER_PATH(x)   <__CCWRAP_NATIVE_C_HEADER_DIR/##x>
@@ -64,6 +79,10 @@
   #define _Pragma(...)          //__pragma(__VA_ARGS__)
 #endif
 
+#ifdef __INLINE_FUNCTIONS__
+  #define __CCWRAP_ENABLE_INLINE_FUNCTIONS	1
+#endif
+
 #define __CCWRAP_LONG_BIT           32
 #define __CCWRAP_LDOUBLE_BIT        64
 
@@ -71,6 +90,9 @@
 #define __CCWRAP_HAS_TYPE_TRAITS    1
 
 #if defined(__cplusplus)
+  #ifndef _CPPRTTI
+    #define _CCWRAP_NO_RTTI 		1
+  #endif
   #define __CCWRAP_NO_STATIC_CONST_INT_MEMBER_INITIALIZATION 1
   #if !defined(override)
     #define override

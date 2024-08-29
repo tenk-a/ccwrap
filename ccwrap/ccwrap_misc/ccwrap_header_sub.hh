@@ -331,6 +331,10 @@
  #define __forceinline               		inline
 #endif
 
+#ifndef __ccwrap_forceinline
+ #define __ccwrap_forceinline               inline
+#endif
+
 #ifndef __ccwrap_noinline
  #define __ccwrap_noinline
 #endif
