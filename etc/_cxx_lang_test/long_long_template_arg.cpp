@@ -1,9 +1,9 @@
 #include "cxx_lang_test.hpp"
 
-template<__CCWRAP_LLONG N>
+template<__ccwrap_llong N>
 struct ll_t {
 	enum { value = int(N) };
-    //static const __CCWRAP_LLONG value = N;
+    //static const __ccwrap_llong value = N;
 
 };
 

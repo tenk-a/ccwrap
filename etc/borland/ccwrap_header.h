@@ -49,10 +49,10 @@
 #define __CCWRAP_NATIVE_INT_BIT     32
 
 #if __BORLANDC__ < 0x700
-  typedef __int64 __CCWRAP_LLONG;
-  typedef unsigned __int64 __CCWRAP_ULLONG;
-  #define __CCWRAP_LLONG    __CCWRAP_LLONG
-  #define __CCWRAP_ULLONG   __CCWRAP_ULLONG
+  typedef __int64 __ccwrap_llong;
+  typedef unsigned __int64 __ccwrap_ullong;
+  #define __ccwrap_llong    __ccwrap_llong
+  #define __ccwrap_ullong   __ccwrap_ullong
   //#if !defined(__has_include)
   //    #define __has_include(x)        0
   //#endif

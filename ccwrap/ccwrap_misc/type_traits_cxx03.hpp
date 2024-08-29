@@ -95,9 +95,6 @@ namespace __CCWRAP_STD {
 #define __CCWRAP_IS_SIZEOF_1(ty)         (sizeof(ty) == 1)
 #endif
 
-//#define __CCWRAP_LLONG                 long long
-//#define __CCWRAP_ULLONG                unsigned long long
-
 #define __CCWRAP_TRAITS_M_CAT(a,b)       __CCWRAP_TRAITS_M_CAT_B(a,b)
 #define __CCWRAP_TRAITS_M_CAT_B(a,b)     __CCWRAP_TRAITS_M_CAT_C(a##b)
 #define __CCWRAP_TRAITS_M_CAT_C(x)       x
@@ -337,8 +334,8 @@ __CCWRAP_MAKE_ST_TYPE(make_signed, int			, int);
 __CCWRAP_MAKE_ST_TYPE(make_signed, unsigned int	, int);
 __CCWRAP_MAKE_ST_TYPE(make_signed, long			, long);
 __CCWRAP_MAKE_ST_TYPE(make_signed, unsigned long, long);
-__CCWRAP_MAKE_ST_TYPE(make_signed, __CCWRAP_LLONG , __CCWRAP_LLONG);
-__CCWRAP_MAKE_ST_TYPE(make_signed, __CCWRAP_ULLONG, __CCWRAP_LLONG);
+__CCWRAP_MAKE_ST_TYPE(make_signed, __ccwrap_llong , __ccwrap_llong);
+__CCWRAP_MAKE_ST_TYPE(make_signed, __ccwrap_ullong, __ccwrap_llong);
 
 template <class T> struct make_unsigned { };
 __CCWRAP_MAKE_ST_TYPE(make_unsigned, char			, unsigned char);
@@ -350,8 +347,8 @@ __CCWRAP_MAKE_ST_TYPE(make_unsigned, int			, unsigned int);
 __CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned int	, unsigned int);
 __CCWRAP_MAKE_ST_TYPE(make_unsigned, long			, unsigned long);
 __CCWRAP_MAKE_ST_TYPE(make_unsigned, unsigned long	, unsigned long);
-__CCWRAP_MAKE_ST_TYPE(make_unsigned, __CCWRAP_LLONG	, __CCWRAP_ULLONG);
-__CCWRAP_MAKE_ST_TYPE(make_unsigned, __CCWRAP_ULLONG, __CCWRAP_ULLONG);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, __ccwrap_llong	, __ccwrap_ullong);
+__CCWRAP_MAKE_ST_TYPE(make_unsigned, __ccwrap_ullong, __ccwrap_ullong);
 #undef __CCWRAP_MAKE_ST_TYPE
 
 // is_arithmetic
