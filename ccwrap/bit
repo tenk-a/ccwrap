@@ -1,0 +1,23 @@
+// Boost Software Lisence Version 1.0
+#ifndef __CCWRAP_BIT_INCLUDED
+#define __CCWRAP_BIT_INCLUDED
+
+#include <ccwrap_common.h>
+
+#if __CCWRAP_CXX >= 202002L
+ #if defined(__CCWRAP_HAS_INCLUDE_NEXT)
+  #include_next <bit>
+ #elif defined(__CCWRAP_NATIVE_STL_HEADER_PATH)
+  #include __CCWRAP_NATIVE_STL_HEADER_PATH(bit)
+ #else
+  #include <../include/bit>
+ #endif
+//#else
+// #include <ccwrap_misc/bit.hxx>
+#elif __CCWRAP_CXX >= 201402L && (defined(__GNUC__) || defined(__clang__))
+  #include_next <bit>
+#endif
+
+#include <_ccwrap_detail/bit.hxx>
+
+#endif  // __CCWRAP_BIT_INCLUDED
