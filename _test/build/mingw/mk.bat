@@ -8,7 +8,9 @@ set CCWRAP_ROOT=../../..
 set CCOPTS_REL=-O2 -DNDEBUG
 set CCOPTS_DBG=-O0 -D_DEBUG
 set CCWARN=%CCWARN% -Wall -Wno-misleading-indentation -Wno-unused-variable
-set CCWARN=%CCWARN% -Wno-unused-local-typedef -Wno-unnamed-type-template-args -Wno-local-type-template-args
+set CCWARN=%CCWARN% -Wno-unused-local-typedef -Wno-unnamed-type-template-args
+set CCWARN=%CCWARN% -Wno-local-type-template-args -Wno-unused-local-typedefs
+set CCWARN=%CCWARN% -Wno-c++20-compat -Wno-sign-compare -Wno-unused-but-set-variable
 set CCOPTS=%CCOPTS% -D_CONSOLE -DCCWRAP_ASSERT_NO_ABORT -DUSE_TEST
 set LOPTS=
 if "%TestName%"=="" set TestName=test

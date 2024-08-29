@@ -7,6 +7,11 @@
 
 TEST_SUITE(unique_ptr_cxx03) {}
 
+struct St {
+    int   a;
+    float b;
+};
+
 TEST_CASE(unique_ptr_cxx03, check) {
     using namespace std;
     unique_ptr<int> p0;
@@ -36,10 +41,6 @@ TEST_CASE(unique_ptr_cxx03, check) {
     delete p1b;
     //unique_ptr<char[]>    p2(new char[1024]);
     //test_true(p2.get() != nullptr);
-    struct St {
-        int a;
-        float b;
-    };
     unique_ptr<St>  stp(new St);
     stp->a = 10;
     stp->b = 100.0f;

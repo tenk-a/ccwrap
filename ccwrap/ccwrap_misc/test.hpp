@@ -263,7 +263,7 @@ inline bool _test_is_aligned(void const* p, std::size_t aln) {
     std::size_t m = aln - 1;
     return ((s & m) == 0);
 }
-inline bool _test_is_aligned(void const* p) {
+inline bool _test_is_aligned(void const* /*p*/) {
     return true;
 }
 template<typename T> bool _test_is_aligned(T const* p) {
