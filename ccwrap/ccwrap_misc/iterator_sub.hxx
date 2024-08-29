@@ -85,7 +85,7 @@ namespace std {
     template <class A, size_t N> constexpr bool             empty(A const (&a)[N]) { return N == 0; }
  #endif
 
- #if __CCWRAP_CXX < 202202L && !defined(__glibcxx_ssize)
+ #if __CCWRAP_CXX < 202002L  
     template <class C          > constexpr ptrdiff_t        ssize(C const& c) { return ptrdiff_t(c.size()); }
     template <class A, size_t N> constexpr ptrdiff_t        ssize(A const (&a)[N]) { return ptrdiff_t(N); }
  #endif
