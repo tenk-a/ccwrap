@@ -79,7 +79,7 @@ public:
     const_reference         at(size_type i) const {if(i>=size_){throw_out_of_range();} return ptr_[i];}
     void                    swap(basic_string_view& r) noexcept { std::swap(ptr_, r.ptr_); std::swap(size_, r.size_); }
     void                    remove_prefix(size_type n) { if (n > size_) n = size_; size_ -= n; ptr_ += n; }
-    void                    remove_surfix(size_type n) { size_ = (size_ > n) ? size_ - n : 0; }
+    void                    remove_suffix(size_type n) { size_ = (size_ > n) ? size_ - n : 0; }
     size_type               copy(value_type* cary, size_type n, size_type pos = 0) const;
     basic_string_view       substr(size_type pos = 0, size_type n = npos) const;
 

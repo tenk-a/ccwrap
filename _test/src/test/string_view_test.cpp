@@ -333,13 +333,13 @@ TEST_SUITE(string_view) {
 	        test_eq(s1, T(""));
 
 	        s1 = s0;
-	        s1.remove_surfix(26);
+	        s1.remove_suffix(26);
 	        test_eq(s1, T("0123456789"));
-	        s1.remove_surfix(9);
+	        s1.remove_suffix(9);
 	        test_eq(s1, T("0"));
-	        s1.remove_surfix(2);
+	        s1.remove_suffix(2);
 	        test_eq(s1, T(""));
-	        s1.remove_surfix(5);
+	        s1.remove_suffix(5);
 	        test_eq(s1, T(""));
 	     #endif
 	    }
