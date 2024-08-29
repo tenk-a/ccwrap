@@ -128,6 +128,7 @@ typedef unsigned __int64            __ccwrap_uint64;
 //#define __fastcall                __fastcall
 //#define __forceinline        	    __forceinline
 
+#define __ccwrap_forceinline        __forceinline
 #define __ccwrap_noinline           __declspec(noinline)
 #define __ccwrap_selectany          __declspec(selectany)
 #define __ccwrap_dllimport          __declspec(dllimport)
