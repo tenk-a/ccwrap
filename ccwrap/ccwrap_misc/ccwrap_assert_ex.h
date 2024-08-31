@@ -89,7 +89,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#if !defined(__CCWRAP_NO_STRINGSTREAM)
 #include <sstream>
+#endif
 
 #if defined(_WIN32) && !defined(__CCWRAP_ABORT_PRINTF)
 #include <windows.h>
@@ -212,6 +214,7 @@ bool __range_assert(X const& x, A const& a, B const& b, charp xstr, charp astr, 
 {
     bool rc = (a <= x && x <= b);
     if (!rc) {
+	 #if !defined(__CCWRAP_NO_STRINGSTREAM)
         std::stringstream ss;
         ss << "`" << xstr << "'("
             << x    // typename IfCharToInt<X>::type(x)
@@ -221,6 +224,10 @@ bool __range_assert(X const& x, A const& a, B const& b, charp xstr, charp astr, 
             << b    // typename IfCharToInt<B>::type(b)
             << "]. ([" << astr << ", " << bstr << "])";
         __CCWRAP_ABORT_PRINTF("%s (%d): %s%s: %s\n", fname, line, fnc, ArgNum<>(n).str, ss.str().c_str());
+     #else
+        __CCWRAP_ABORT_PRINTF("%s (%d): %s%s: %s is out of range[%s,%s]\n"
+        	, fname, line, fnc, ArgNum<>(n).str, xstr, astr, bstr);
+     #endif
     }
     return rc;
 }

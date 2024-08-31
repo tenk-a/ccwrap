@@ -2,7 +2,8 @@
 
 #include <algorithm>
 #include <iostream>
-#include <array>
+//#include <array>
+#include "ccwrap_misc/array.hpp"
 
 
 TEST_SUITE(array) {
@@ -35,12 +36,25 @@ TEST_SUITE(array) {
 	        test_eq(ct0[i], i);
 	        test_eq(ct0.at(i), i);
 	    }
-	    T   t1 = T();
+
+	    T   t1;
+	    t1.fill(0);
 	    T   t2(t1);
-	    T   t3 = t0;
 	    test_eq(t1.empty(), false);
 	    test_true(t1 == t2);
+	    test_false(t1 != t2);
+	    test_false(t1 < t2);
+	    test_true(t1 >= t2);
+	    test_false(t1 > t2);
+	    test_true(t1 <= t2);
+
+	    T   t3 = t0;
 	    test_true(t0 == t3);
+	    test_false(t0 != t3);
+	    test_false(t0 < t3);
+	    test_true(t0 >= t3);
+	    test_false(t0 > t3);
+	    test_true(t0 <= t3);
 
 	    t2 = t3;
 	    test_true(t0 == t2);
@@ -90,6 +104,6 @@ TEST_SUITE(array) {
 	    smp_arrays c;
 	    array_test_1(c.charArray_);
 	    array_test_1(c.intArray_);
-	    array_test_1(c.fltArray_);
+        array_test_1(c.fltArray_);
 	}
 }

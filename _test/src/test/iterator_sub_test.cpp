@@ -134,10 +134,8 @@ TEST_SUITE(iterator_sub) {
 	    static int i_tbl[] = { 1, 2, 3, 4, 5 };
 	    Chk2<VecInt>(i_tbl, 5);
 	    Chk2<String>("test-test", 9);
-	 #if !defined(__WATCOMC__)
 	    Chk2<const VecInt>(i_tbl, 5);
 	    Chk2<const String>("Test-test", 9);
-	 #endif
 	    AryChk2<int, 5>(i_tbl, 5);
 	    AryChk2<char, 9>("test-test", 9);
 	}

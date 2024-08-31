@@ -9,7 +9,7 @@ void assert_ex_test();
 int main()
 {
     std::printf("CCWRAP 'test' & 'assert_ex' test.\n");
-    CCWRAP_TEST_RUN();
+    TEST_SUITES_RUN();
     assert_ex_test();
     return 0;
 }

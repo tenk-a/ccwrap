@@ -67,6 +67,7 @@ TEST_SUITE(math) {
         test_true(!signbit(qnan));
         test_true(!signbit(numeric_limits<T>::signaling_NaN()));
 
+	 #if 1 //!defined(__WATCOMC__)
         test_true(!isunordered(zero, one));
         test_true(!isunordered(one, minusOne));
         test_true(!isunordered(minusOne, inf));
@@ -121,6 +122,7 @@ TEST_SUITE(math) {
         test_true( islessequal(inf,inf));
         test_true(!islessequal(inf,one));
         test_true( islessequal(one,inf));
+	 #endif
     }
 
 	TEST_CASE(math_test, double) {

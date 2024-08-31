@@ -79,6 +79,7 @@ TEST_CASE(string_sub, to_string) {
 	    test_eq(to_string(ullong( 1)), "1");
 	    test_eq(to_string(ullong(UINT_MAX)), "4294967295");
 	}
+ #if !defined(__CCWRAP_NO_STRINGSTREAM)
     {
         std::stringstream    ss;
         ss << "char " << to_string('0') << '\n';
@@ -120,6 +121,7 @@ TEST_CASE(string_sub, to_string) {
                     "ldouble 0.000000,-1.000000,1.000000,-16777215.000000,16777215.000000\n"
         );
     }
+ #endif
 }
 
 

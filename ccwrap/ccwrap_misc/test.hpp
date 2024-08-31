@@ -16,11 +16,12 @@
 
 #if !defined(USE_TEST) && !defined(USE_TEST_MSW)
 
-#define TEST_SUITE(suite)     namespace __zatU_TestCase_##suite
+#define TEST_SUITE(suite)     namespace __ccwraP_TestCase_##suite
 #define TEST_CASE(suite,name) template<class DMY> void _ccwrap_##suite##_##TestCase_##name()
 #define TEST_SUITES_RUN()
 
 #define test_true(p)        ((void)0)
+#define test_false(p)       ((void)0)
 #define test_ptr(p)         ((void)0)
 #define test_ptr0(p)        ((void)0)
 #define test_lim(x,a,b)     ((void)0)
@@ -49,9 +50,9 @@
 #include <map>
 #include <memory>
 #include <string_view>
+#include <cstdarg>
 
-#if !defined(CCWRAP_TEST_LOG_LITE)
-//#include "str_stream.hpp"
+#if !defined(__CCWRAP_NO_STRINGSTREAM)
 #include <sstream>
 #include "utf_cvt_stream.hpp"
 #endif
@@ -70,40 +71,41 @@
 #define TEST_PRINTF(...)    ::ccwrap::_test::TestMgr<>::putf(__VA_ARGS__)
 #define TEST_SUITES_RUN()   ::ccwrap::_test::TestMgr<>::instance().run()
 
-#define TEST_SUITE(suite)                   \
-namespace __zatU_TestCase_##suite {         \
-    static ::ccwrap::_test::TestCase*		\
-       __zatU_TestCase_current_ = nullptr;	\
-}                                           \
-using __zatU_TestCase_##suite::__zatU_TestCase_current_; \
-namespace __zatU_TestCase_##suite
+#define TEST_SUITE(suite)                    \
+namespace __ccwraP_TestCase_##suite {        \
+    static ::ccwrap::_test::TestCase*		 \
+       __ccwraP_TestCase_current_ = nullptr; \
+}                                            \
+using __ccwraP_TestCase_##suite::__ccwraP_TestCase_current_; \
+namespace __ccwraP_TestCase_##suite
 
 
 #define TEST_CASE(suite, name)                                              \
-struct __zatU_TestCase_##suite##_##name {                                   \
-    __zatU_TestCase_##suite##_##name() {                                    \
+struct __ccwraP_TestCase_##suite##_##name {                                 \
+    __ccwraP_TestCase_##suite##_##name() {                                  \
         testcase_ = ::ccwrap::_test::TestMgr<>::instance()                  \
-            .add(#suite, #name, &__zatU_TestCase_##suite##_##name::run);    \
+            .add(#suite, #name, &__ccwraP_TestCase_##suite##_##name::run);  \
     }                                                                       \
     static void run() {                                                     \
-		__zatU_TestCase_current_ = s_inst.testcase_;                        \
+		__ccwraP_TestCase_current_ = s_inst.testcase_;                      \
 		run1();                                                             \
 	}                                                                       \
     static void run1();                                                     \
 private:                                                                    \
     ::ccwrap::_test::TestCase*	testcase_;									\
-    static __zatU_TestCase_##suite##_##name  s_inst;                        \
+    static __ccwraP_TestCase_##suite##_##name  s_inst;                      \
 };                                                                          \
-__zatU_TestCase_##suite##_##name __zatU_TestCase_##suite##_##name::s_inst;  \
-void  __zatU_TestCase_##suite##_##name::run1()
+__ccwraP_TestCase_##suite##_##name __ccwraP_TestCase_##suite##_##name::s_inst;  \
+void  __ccwraP_TestCase_##suite##_##name::run1()
 
 #define test_fail()       throw false
 
-#define test_true(c)      ccwrap::_test::_test_true<void>(!!(c)  , #c, *__zatU_TestCase_current_, __FILE__, __LINE__)
-#define test_ptr(p)       ccwrap::_test::_test_ptr<void>(p, false, #p, *__zatU_TestCase_current_, __FILE__, __LINE__)
-#define test_ptr0(p)      ccwrap::_test::_test_ptr<void>(p, true , #p, *__zatU_TestCase_current_, __FILE__, __LINE__)
+#define test_true(c)      ccwrap::_test::_test_true<void>(!!(c)  , #c, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
+#define test_false(c)     ccwrap::_test::_test_false<void>(!!(c) , #c, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
+#define test_ptr(p)       ccwrap::_test::_test_ptr<void>(p, false, #p, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
+#define test_ptr0(p)      ccwrap::_test::_test_ptr<void>(p, true , #p, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
 #define test_lim(x,a,b) \
-     ccwrap::_test::_test_limit<void>(x, a, b, #x, #a, #b, *__zatU_TestCase_current_, __FILE__, __LINE__)
+     ccwrap::_test::_test_limit<void>(x, a, b, #x, #a, #b, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
 
 #define test_eq(l,r)      __test_cc(l,==,r)
 #define test_ne(l,r)      __test_cc(l,!=,r)
@@ -113,7 +115,7 @@ void  __zatU_TestCase_##suite##_##name::run1()
 #define test_ge(l,r)      __test_cc(l,>=,r)
 
 #define __test_cc(a,op,b) \
-    ccwrap::_test::_test_cc_body<void>((a) op (b), a, b, #a,#op,#b, *__zatU_TestCase_current_, __FILE__, __LINE__)
+    ccwrap::_test::_test_cc_body<void>((a) op (b), a, b, #a,#op,#b, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
 
 
 #define test_str_eq(a,b)  __test_str_cc(a,==,b)
@@ -121,7 +123,7 @@ void  __zatU_TestCase_##suite##_##name::run1()
 
 #define __test_str_cc(a,op,b)  \
     ccwrap::_test::_test_cc_body<void>(string_view(a) op string_view(b)  \
-    , string_view(a), string_view(b), #a,#op,#b, *__zatU_TestCase_current_, __FILE__, __LINE__)
+    , string_view(a), string_view(b), #a,#op,#b, *__ccwraP_TestCase_current_, __FILE__, __LINE__)
 
 // #define test_near_eq(l,r,delta)   ccwrap::test::_test_near_eq(l,==,r)
 
@@ -135,7 +137,7 @@ void  __zatU_TestCase_##suite##_##name::run1()
         }                                            \
         if (!f)                                      \
             ccwrap::_test::_test_throw_msg<void>     \
-               (#x,*__zatU_TestCase_current_,__FILE__,__LINE__); \
+               (#x,*__ccwraP_TestCase_current_,__FILE__,__LINE__); \
     } while (0)
 
 #define test_no_throw(x)                             \
@@ -148,7 +150,7 @@ void  __zatU_TestCase_##suite##_##name::run1()
         }                                            \
         if (!f)                                      \
             ccwrap::_test::_test_no_throw_msg<void>  \
-               (#x,*__zatU_TestCase_current_,__FILE__,__LINE__); \
+               (#x,*__ccwraP_TestCase_current_,__FILE__,__LINE__); \
     } while (0)
 
 
@@ -279,6 +281,14 @@ _test_true(bool cc, char const* ccStr, TestCase& tcase, char const* fname, unsig
 }
 
 template<class DMY> void
+_test_false(bool cc, char const* ccStr, TestCase& tcase, char const* fname, unsigned int line) {
+    if (cc) {
+        tcase.err(fname, line);
+        TEST_PRINTF("'%s' is true.\n", ccStr);
+    }
+}
+
+template<class DMY> void
 _test_ptr_impl(void const* ptr, bool zok, bool aok, char const* ptrStr
             , TestCase& tcase, char const* fname, unsigned int line)
 {
@@ -309,12 +319,15 @@ _test_cc_body(bool cc, A const& a, B const &b, char const* astr, char const* op,
                , TestCase& tcase, char const* fname, unsigned int line)
 {
     if (!cc) {
-        //char buf[1024]; str_stream st(buf);
+        tcase.err(fname, line);
+	  #if !defined(__CCWRAP_NO_STRINGSTREAM)
         std::stringstream st;
         //st << "\"'" << astr << "'(" << a << ") " << op << " '" << bstr << "'(" << b << ")\" is failed.\n";
         st << "'" << astr << ' ' << op << ' ' << bstr << "' is failed. (L='" << a << "' R='" << b << "')\n";
-        tcase.err(fname, line);
         TEST_PRINTF("%s", st.str().data());
+	  #else
+        TEST_PRINTF("'%s' %s '%s' is failed.\n", astr, op, bstr);
+      #endif
     }
 }
 #else
@@ -335,12 +348,15 @@ _test_limit(X const& x, A const& a, B const& b, char const* xstr, char const* as
             , TestCase& tcase, char const* fname, unsigned int line)
 {
     if (!(a <= x && x <= b)) {
-        //char buf[1024]; str_stream st(buf);
+        tcase.err(fname, line);
+	  #if !defined(__CCWRAP_NO_STRINGSTREAM)
         std::stringstream st;
         st << "'" << xstr << "'(" << x << ") is out of range[" << a << ", " << b << "]. (["
             << astr << ", " << bstr << "])\n";
-        tcase.err(fname, line);
         TEST_PRINTF("%s", st.str().data());
+	  #else
+        TEST_PRINTF("'%s' is out of range[%s,%s].\n", xstr, astr, bstr);
+      #endif
     }
 }
 #else

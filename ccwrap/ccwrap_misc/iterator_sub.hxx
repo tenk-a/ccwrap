@@ -18,7 +18,7 @@
 
 namespace std {
 
- #if __CCWRAP_CXX < 201103L || (defined(_MSC_VER) && _MSC_VER < 1700)
+ #if (__CCWRAP_CXX < 201103L && !defined(_MSC_VER)) || (defined(_MSC_VER) && _MSC_VER < 1700)
     template <class InpIte>
     constexpr InpIte next(InpIte x, typename std::iterator_traits<InpIte>::difference_type n=1) {
         advance(x, n);
@@ -41,7 +41,7 @@ namespace std {
     template <class A, size_t N> constexpr A const*             end(  A const (&a)[N]) { return (A*)&a[N]; }
  #endif
 
- #if __CCWRAP_CXX < 201402L || (defined(_MSC_VER) && _MSC_VER < 1800)
+ #if (__CCWRAP_CXX < 201402L && !defined(_MSC_VER)) || (defined(_MSC_VER) && _MSC_VER < 1800)
     template <class C> constexpr typename C::reverse_iterator       rbegin(C& c) { return c.rbegin(); }
     template <class C> constexpr typename C::reverse_iterator       rend(  C& c) { return c.rend()  ; }
     template <class C> constexpr typename C::const_reverse_iterator rbegin(C const& c) { return c.rbegin(); }
@@ -69,7 +69,7 @@ namespace std {
  #endif
     //template <class E> constexpr reverse_iterator<const E*> rbegin(initializer_list<E> il);
 
- #if __CCWRAP_CXX < 201703L || (defined(_MSC_VER) && _MSC_VER < 1900)
+ #if (__CCWRAP_CXX < 201703L && !defined(_MSC_VER)) || (defined(_MSC_VER) && _MSC_VER < 1900)
     template <class C>           typename C::pointer        data(C& c) { return &c[0]; }
     template <class C> constexpr typename C::const_pointer  data(C const& c) { return &c[0]; }
 
