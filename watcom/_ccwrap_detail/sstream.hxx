@@ -1,3 +1,4 @@
+#if 0
 /*
  * Copyright (c) 1999
  * Silicon Graphics Computer Systems, Inc.
@@ -20,11 +21,11 @@
 #define __CCWRAP_SSTREAM_CXX03_INCLUDED
 
 
-#include <streambuf>
-#include <ios>
-#include <iostream>
-#include <string>
 #include <cassert>
+#include <cstdarg>
+#include <string>
+#include <iostream>
+#include <streambuf>
 
 
 namespace std {
@@ -59,7 +60,7 @@ protected:
   int_type overflow()  { return overflow( T::eof()); }
 
   virtual streamsize xsputn(const char_type* s, streamsize n);
-  virtual streamsize _M_xsputnc(char_type c, streamsize n);
+  //virtual streamsize _M_xsputnc(char_type c, streamsize n);
 
   virtual basic_streambuf<C,T>* setbuf(C* buf, streamsize n);
   virtual pos_type   seekoff(off_type ofs, ios_base::seekdir dir
@@ -100,7 +101,7 @@ public:
   ~basic_istringstream();
 
   basic_stringbuf<C,T,A>* rdbuf() const
-    { return __CONST_CAST(buf_type*,&buf_); }
+    { return const_cast<buf_type*>(&buf_); }
 
   string_type str() const { return buf_.str(); }
   void str(string_type const& s) { buf_.str(s); }
@@ -138,7 +139,7 @@ public:
   					, ios_base::openmode mode = ios_base::out);
   ~basic_ostringstream();
 
-  basic_stringbuf<C,T,A>* rdbuf() const { return __CONST_CAST(buf_type*,&buf_); }
+  basic_stringbuf<C,T,A>* rdbuf() const { return const_cast<buf_type*>(&buf_); }
 
   string_type str() const { return buf_.str(); }
   void str(string_type const& s) { buf_.str(s); } // dwa 02/07/00 - BUG STOMPER DAVE
@@ -180,7 +181,7 @@ public:
   ~basic_stringstream();
 
   basic_stringbuf<C,T,A>* rdbuf() const
-    { return __CONST_CAST(buf_type*,&buf_); }
+    { return const_cast<buf_type*>(&buf_); }
 
   string_type str() const { return buf_.str(); }
   void        str(string_type const& s) { buf_.str(s); }
@@ -231,22 +232,22 @@ basic_stringbuf<C,T,A>::str(const basic_string<C,T,A>& s)
 template <class C, class T, class A>
 void basic_stringbuf<C,T,A>::set_ptrs()
 {
-  C* __data_ptr = this->start(str_);
-  C* __data_end = this->finish(str_);
+  C* data_ptr = this->start(str_);
+  C* data_end = this->finish(str_);
   // The initial read position is the beginning of the string.
   if (mode_ & ios_base::in) {
-    this->setg(__data_ptr, (mode_ & ios_base::ate) ? __data_end : __data_ptr, __data_end);
+    this->setg(data_ptr, (mode_ & ios_base::ate) ? data_end : data_ptr, data_end);
   }
 
   // The initial write position is the beginning of the string.
   if (mode_ & ios_base::out) {
     if ( mode_ & (ios_base::app | ios_base::ate) ) {
-      this->setp( __data_end, __data_end );
+      this->setp( data_end, data_end );
     } else {
-      this->setp( __data_ptr, __data_end );
+      this->setp( data_ptr, data_end );
       this->pbump((int)str_.size()); // initial write position, if we initialized with string
     }
-    // this->setp((mode_ & (ios_base::app | ios_base::ate))? __data_end : __data_ptr, __data_end);
+    // this->setp((mode_ & (ios_base::app | ios_base::ate))? data_end : data_ptr, data_end);
   }
 }
 
@@ -307,11 +308,11 @@ int basic_stringbuf<C,T,A>::overflow(int_type c)
         str_.push_back( T::to_char_type(c) );
         this->pbump(1);
       } else if ( mode_ & ios_base::in ) {
-        ptrdiff_t __offset = this->gptr() - this->eback();
+        ptrdiff_t offset = this->gptr() - this->eback();
         str_.push_back(T::to_char_type(c));
-        C* __data_ptr = this->start(str_);
-        this->setg(__data_ptr, __data_ptr + __offset, this->finish(str_));
-        this->setp(__data_ptr, this->finish(str_));
+        C* data_ptr = this->start(str_);
+        this->setg(data_ptr, data_ptr + offset, this->finish(str_));
+        this->setp(data_ptr, this->finish(str_));
         this->pbump((int)str_.size());
       } else {
         str_.push_back( T::to_char_type(c) );
@@ -329,89 +330,91 @@ template <class C, class T, class A>
 streamsize
 basic_stringbuf<C,T,A>::xsputn(const char_type* s, streamsize n)
 {
-  streamsize __nwritten = 0;
+  streamsize nwritten = 0;
 
   if ((mode_ & ios_base::out) && n > 0) {
     // If the put pointer is somewhere in the middle of the string,
     // then overwrite instead of append.
     if ( !str_.empty() && this->pbase() == this->start(str_)) {
-      ptrdiff_t __avail = this->finish(str_) - this->pptr();
-      if (__avail > n) {
+      ptrdiff_t avail = this->finish(str_) - this->pptr();
+      if (avail > n) {
         T::copy(this->pptr(), s, size_t(n));
         this->pbump((int)n);
         return n;
       } else {
-        T::copy(this->pptr(), s, __avail);
-        __nwritten += __avail;
-        n -= __avail;
-        s += __avail;
+        T::copy(this->pptr(), s, avail);
+        nwritten += avail;
+        n -= avail;
+        s += avail;
       }
     }
 
     // At this point we know we're appending.
-    C* __data_ptr;
+    C* data_ptr;
     if (mode_ & ios_base::in) {
-      ptrdiff_t __get_offset = this->gptr() - this->eback();
+      ptrdiff_t get_offset = this->gptr() - this->eback();
       str_.append(s, s + ptrdiff_t(n));
-      __data_ptr = this->start(str_);
-      this->setg(__data_ptr, __data_ptr + __get_offset, this->finish(str_));
+      data_ptr = this->start(str_);
+      this->setg(data_ptr, data_ptr + get_offset, this->finish(str_));
     } else {
       str_.append(s, s + ptrdiff_t(n));
-      __data_ptr = this->start(str_);
+      data_ptr = this->start(str_);
     }
 
-    this->setp(__data_ptr, this->finish(str_));
+    this->setp(data_ptr, this->finish(str_));
     this->pbump((int)str_.size());
-    __nwritten += n;
+    nwritten += n;
   }
 
-  return __nwritten;
+  return nwritten;
 }
 
+#if 0
 template <class C, class T, class A>
 streamsize
 basic_stringbuf<C,T,A>::_M_xsputnc(char_type c, streamsize n) {
-  streamsize __nwritten = 0;
+  streamsize nwritten = 0;
 
   if ((mode_ & ios_base::out) && n > 0) {
     // If the put pointer is somewhere in the middle of the string,
     // then overwrite instead of append.
     if (this->pbase() == this->start(str_)) {
-      ptrdiff_t __avail = this->finish(str_) - this->pptr();
-      if (__avail > n) {
+      ptrdiff_t avail = this->finish(str_) - this->pptr();
+      if (avail > n) {
         T::assign(this->pptr(), size_t(n), c);
         this->pbump(int(n));
         return n;
       }
       else {
-        T::assign(this->pptr(), __avail, c);
-        __nwritten += __avail;
-        n -= __avail;
+        T::assign(this->pptr(), avail, c);
+        nwritten += avail;
+        n -= avail;
       }
     }
 
     // At this point we know we're appending.
-    size_t __app_size = sizeof(streamsize) > sizeof(size_t)
+    size_t app_size = sizeof(streamsize) > sizeof(size_t)
     				  ? size_t((min)(n, streamsize(str_.max_size())))
                       : size_t(n);
-    C* __data_ptr;
+    C* data_ptr;
     if (this->mode_ & ios_base::in) {
-      ptrdiff_t __get_offset = this->gptr() - this->eback();
-      str_.append(__app_size, c);
-      __data_ptr = this->start(str_);
-      this->setg(__data_ptr, __data_ptr + __get_offset, this->finish(str_));
+      ptrdiff_t get_offset = this->gptr() - this->eback();
+      str_.append(app_size, c);
+      data_ptr = this->start(str_);
+      this->setg(data_ptr, data_ptr + get_offset, this->finish(str_));
     } else {
-      str_.append(__app_size, c);
-      __data_ptr = this->start(str_);
+      str_.append(app_size, c);
+      data_ptr = this->start(str_);
     }
 
-    this->setp(__data_ptr, this->finish(str_));
+    this->setp(data_ptr, this->finish(str_));
     this->pbump((int)str_.size());
-    __nwritten += __app_size;
+    nwritten += app_size;
   }
 
-  return __nwritten;
+  return nwritten;
 }
+#endif
 
 // According to the C++ standard the effects of setbuf are implementation
 // defined, except that setbuf(0, 0) has no effect.  In this implementation,
@@ -422,19 +425,19 @@ basic_streambuf<C, T>*
 basic_stringbuf<C,T,A>::setbuf(C*, streamsize n)
 {
   if (n > 0) {
-    bool __do_get_area = false;
-    bool __do_put_area = false;
-    ptrdiff_t __offg = 0;
-    ptrdiff_t __offp = 0;
+    bool do_get_area = false;
+    bool do_put_area = false;
+    ptrdiff_t offg = 0;
+    ptrdiff_t offp = 0;
 
     if (this->pbase() == this->start(str_)) {
-      __do_put_area = true;
-      __offp = this->pptr() - this->pbase();
+      do_put_area = true;
+      offp = this->pptr() - this->pbase();
     }
 
     if (this->eback() == this->start(str_)) {
-      __do_get_area = true;
-      __offg = this->gptr() - this->eback();
+      do_get_area = true;
+      offg = this->gptr() - this->eback();
     }
 
     str_.reserve(sizeof(streamsize) > sizeof(size_t)
@@ -442,15 +445,15 @@ basic_stringbuf<C,T,A>::setbuf(C*, streamsize n)
                  : size_t(n)
                  );
 
-    C* __data_ptr = this->start(str_);
+    C* data_ptr = this->start(str_);
 
-    if (__do_get_area) {
-      this->setg(__data_ptr, __data_ptr + __offg, this->finish(str_));
+    if (do_get_area) {
+      this->setg(data_ptr, data_ptr + offg, this->finish(str_));
     }
 
-    if (__do_put_area) {
-      this->setp(__data_ptr, this->finish(str_));
-      this->pbump((int)__offp);
+    if (do_put_area) {
+      this->setp(data_ptr, this->finish(str_));
+      this->pbump((int)offp);
     }
   }
 
@@ -463,36 +466,36 @@ basic_stringbuf<C,T,A>::seekoff(off_type ofs, ios_base::seekdir dir, ios_base::o
 {
   mode &= mode_;
 
-  bool __imode  = (mode & ios_base::in) != 0;
-  bool __omode = (mode & ios_base::out) != 0;
+  bool imode  = (mode & ios_base::in) != 0;
+  bool omode = (mode & ios_base::out) != 0;
 
-  if ( !(__imode || __omode) )
+  if ( !(imode || omode) )
     return pos_type(off_type(-1));
 
-  if ( (__imode && (this->gptr() == 0)) || (__omode && (this->pptr() == 0)) )
+  if ( (imode && (this->gptr() == 0)) || (omode && (this->pptr() == 0)) )
     return pos_type(off_type(-1));
 
-  streamoff __newoff;
+  streamoff newoff;
   switch(dir) {
     case ios_base::beg:
-      __newoff = 0;
+      newoff = 0;
       break;
     case ios_base::end:
-      __newoff = str_.size();
+      newoff = str_.size();
       break;
     case ios_base::cur:
-      __newoff = __imode ? this->gptr() - this->eback() : this->pptr() - this->pbase();
+      newoff = imode ? this->gptr() - this->eback() : this->pptr() - this->pbase();
       if ( ofs == 0 ) {
-        return pos_type(__newoff);
+        return pos_type(newoff);
       }
       break;
     default:
       return pos_type(off_type(-1));
   }
 
-  ofs += __newoff;
+  ofs += newoff;
 
-  if (__imode) {
+  if (imode) {
     ptrdiff_t n = this->egptr() - this->eback();
 
     if (ofs < 0 || ofs > n)
@@ -501,7 +504,7 @@ basic_stringbuf<C,T,A>::seekoff(off_type ofs, ios_base::seekdir dir, ios_base::o
                               this->eback() + ptrdiff_t(n));
   }
 
-  if (__omode) {
+  if (omode) {
     ptrdiff_t n = this->epptr() - this->pbase();
 
     if (ofs < 0 || ofs > n)
@@ -519,24 +522,24 @@ basic_stringbuf<C,T,A>::seekpos(pos_type pos, ios_base::openmode mode)
 {
   mode &= mode_;
 
-  bool __imode = (mode & ios_base::in) != 0;
-  bool __omode = (mode & ios_base::out) != 0;
+  bool imode = (mode & ios_base::in) != 0;
+  bool omode = (mode & ios_base::out) != 0;
 
-  if ( !(__imode || __omode) )
+  if ( !(imode || omode) )
     return pos_type(off_type(-1));
 
-  if ( (__imode && (this->gptr() == 0)) || (__omode && (this->pptr() == 0)) )
+  if ( (imode && (this->gptr() == 0)) || (omode && (this->pptr() == 0)) )
     return pos_type(off_type(-1));
 
   const off_type n = pos - pos_type(off_type(0));
 
-  if (__imode) {
+  if (imode) {
     if (n < 0 || n > this->egptr() - this->eback())
       return pos_type(off_type(-1));
     this->setg(this->eback(), this->eback() + ptrdiff_t(n), this->egptr());
   }
 
-  if (__omode) {
+  if (omode) {
     if (n < 0 || size_t(n) > str_.size())
       return pos_type(off_type(-1));
 
@@ -622,4 +625,5 @@ basic_stringstream<C,T,A>::~basic_stringstream()
 
 }	// std
 
+#endif
 #endif

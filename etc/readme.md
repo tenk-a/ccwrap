@@ -8,7 +8,6 @@ etc/ フォルダにあるのは
 
    - borland c/c++ v5.5.1 (bc55) Embarcadero C++ 7.2 (bcc32c) 
    - digital mars c/c++                              (dmc)
-   - open watcom c/c++ v1.9                          (ow)
 
 用。
 （だが、現状、手元の環境ではコンパイラをインストールしていないものもあるため

@@ -1,5 +1,4 @@
 #if 0 //_MSC_VER && _MSC_VER < 1800
-
 #if _MSC_VER < 1600
 __forceinline __int64	    	llabs(__int64 v) { return _abs64(v); }
 #endif
@@ -14,5 +13,5 @@ __forceinline float 	    	strtof(char const* p, char **e) { return (float)strtod
 __forceinline float 	    	wcstof(wchar_t const* p, wchar_t **e) { return (float)wcstod(p,e); }
 __forceinline long double   	strtold(char const* p, char **e) { return strtod(p,e); }
 __forceinline long double   	wcstold(wchar_t const* p, wchar_t **e) { return wcstod(p,e); }
-
 #endif	// _MSC_VER
+

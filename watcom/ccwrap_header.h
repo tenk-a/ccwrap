@@ -3,7 +3,6 @@
  *  @brief  for open watcom c/c++ v1.9
  *  @license Boost Software Lisence Version 1.0
  *  @note
- *      mada tekikou
  */
 #pragma once
 
@@ -29,6 +28,7 @@
 #ifndef __CCWRAP_NATIVE_C_HEADER_DIR
    #define __CCWRAP_NATIVE_C_HEADER_DIR     ../h
 #endif
+
 #ifndef __CCWRAP_NATIVE_C_HEADER_PATH
   #define __CCWRAP_NATIVE_C_HEADER_PATH(x)   <../h/##x>
 #endif
@@ -55,10 +55,6 @@
 #ifdef __SW_BM	// -bm
   #define __CCWRAP_MT		1
 #endif
-
-//#ifndef __CCWRAP_NATIVE_UC_HEADER_PATH
-//  #define __CCWRAP_NATIVE_UC_HEADER_PATH(x)   <__CCWRAP_NATIVE_C_HEADER_DIR/##x>
-//#endif
 
 #define __CCWRAP_HAS_PRAGMA_ONCE
 
@@ -101,7 +97,11 @@
     #define final
   #endif
   #if !defined(noexcept)
+   #if defined(__SW_XD) || defined(__SW_XDT) || defined(__SW_XDS)
     #define noexcept            throw()
+   #else
+    #define noexcept
+   #endif
   #endif
   #if !defined(nullptr)
     #define nullptr             (0)
@@ -135,6 +135,9 @@
   //  #define thread_local      //__declspec(thread)
   //#endif
   #define __CCWRAP_NO_WCHAR
+
+  // Specify to use sstream replacement processing in ccwrap.
+  #define __CCWRAP_NO_STRINGSTREAM
 #else
   #if !defined(_Alignof)
     #define _Alignof(T)             ((size_t)((ptrdiff_t)(&((struct {char a_; T t_;}*)(0))->t_)))

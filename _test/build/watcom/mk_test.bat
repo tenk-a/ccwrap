@@ -1,4 +1,3 @@
-rem ‚Ü‚¾ƒRƒ“ƒpƒCƒ‹‚ª’Ê‚ç‚È‚¢.
 @echo off
 setlocal
 set CCWRAP_ROOT=..\..\..

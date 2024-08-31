@@ -6,9 +6,10 @@ ccwrap  は 古いコンパイラで、c11/c++11以降の規格の極々一部�
 
 対象コンパイラは  Windows 用で
 - vc: MS Visual C/C++ (8～12(2005-2013)系、14.x(2015～2019)系) 
-- clang, mingw (c++11 対応以降での c++03 モード利用して確認)
+- gcc(mingw), clang (c++11 対応以降での c++03 モード利用して確認)
+- watco c/c++ 1.9,2.0
 
-※ 以前 試していた open watcom, borland c5.5.1, dmc は etc/ フォルダ下を参照。
+※ 以前 試していた borland c5.5.1, dmc は etc/ フォルダ下を参照。
 
 
 ## やれること
@@ -29,7 +30,7 @@ ccwrap  は 古いコンパイラで、c11/c++11以降の規格の極々一部�
 ヘッダについては、
 
 - c 用:  
-    stdint.h, stdalign.h, stdbool.h, stdnoreturn.h, (unistd.h)
+    stdint.h, stdalign.h, stdbool.h, stdnoreturn.h
 
 - c++ 用:  
     cstdint
@@ -48,7 +49,7 @@ vc++ では、別の方法として boost を用いることで
 
 ### 暗黙include＆includeパス
 
-ccwrap は、本来の標準ライブラリより先に ccwrap の置換ファイルが
+ccwrap は、本来の標準ライブラリより先に ccwrap の置換ヘッダ・ファイルが
 読み込まれることで実現している。
 ので、各コンパイラ別のディレクトリと ccwrap/ccwrap/ を
 コンパイラ・オプションで指定する必要がある。  
@@ -62,7 +63,7 @@ ccwrap は、本来の標準ライブラリより先に ccwrap の置換ファ�
   ccwrap_header.h
 
 が、暗黙include される必要がある。  
-(vc では -FI、clang/gcc では -include )
+(vc では -FI、clang/gcc では -include、watcom では -fi= )
 
 
 例えば X:\ccwrap だとして、  
