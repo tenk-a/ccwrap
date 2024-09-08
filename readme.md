@@ -57,6 +57,7 @@ ccwrap は、本来の標準ライブラリより先に ccwrap の置換ヘッ�
 
   ccwrap/vc/      vc2005～vc2022(vc8～vc14.3)   
   ccwrap/gcc/     msys2 clang++,g++ 用  
+  ccwrap/watcom/  open watcom 1.9 2.0 用  
 
 また、 各コンパイラ別フォルダにある  
 
