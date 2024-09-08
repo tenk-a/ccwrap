@@ -79,8 +79,18 @@
   #define __CCWRAP_ENABLE_INLINE_FUNCTIONS	1
 #endif
 
+#ifdef __FLAT__ 
+#define __CCWRAP_INT_BIT            32
+#define __CCWRAP_PTR_BIT            32
+#else
+#define __CCWRAP_INT_BIT            16
+#define __CCWRAP_PTR_BIT            16
+#endif
+
 #define __CCWRAP_LONG_BIT           32
 #define __CCWRAP_LDOUBLE_BIT        64
+
+#define __CCWRAP_WCHAR_BIT			16
 
 #define __CCWRAP_HAS_STDINT         1
 #define __CCWRAP_HAS_TYPE_TRAITS    1
@@ -98,9 +108,9 @@
   #endif
   #if !defined(noexcept)
    #if defined(__SW_XD) || defined(__SW_XDT) || defined(__SW_XDS)
-    #define noexcept            throw()
-   #else
     #define noexcept
+   #else
+    #define noexcept            throw()
    #endif
   #endif
   #if !defined(nullptr)
