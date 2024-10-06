@@ -85,6 +85,7 @@
 #else
 #define __CCWRAP_INT_BIT            16
 #define __CCWRAP_PTR_BIT            16
+#define __CCWRAP_CPU_BIT            16
 #endif
 
 #define __CCWRAP_LONG_BIT           32

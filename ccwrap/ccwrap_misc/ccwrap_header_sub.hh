@@ -448,7 +448,7 @@
  static_assert(__CCWRAP_DOUBLE_BIT  == 8*sizeof(double)     , "");
  static_assert(__CCWRAP_LDOUBLE_BIT == 8*sizeof(long double), "");
  static_assert(__CCWRAP_PTR_BIT     == 8*sizeof(void*)      , "");
- static_assert(__CCWRAP_CPU_BIT == 64 || __CCWRAP_CPU_BIT == 32, "");
+ static_assert(__CCWRAP_CPU_BIT == 64 || __CCWRAP_CPU_BIT == 32 || __CCWRAP_CPU_BIT == 16, "");
 #endif
 
 
