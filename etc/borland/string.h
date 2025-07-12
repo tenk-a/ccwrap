@@ -32,7 +32,7 @@ static inline int   _stricmp(char const* l, char const* r) { return stricmp(l, r
 static inline int   _strnicmp(char const* l, char const* r, unsigned/*size_t*/ n) { return strnicmp(l, r, n); }
 #endif
 
-#if 1
+#if 0
 static inline int   strcasecmp(char const* l, char const* r) { return stricmp(l, r); }
 static inline int   strncasecmp(char const* l, char const* r, unsigned/*size_t*/ n) { return strnicmp(l, r, n); }
 #if __BORLANDC__ >= 0x560

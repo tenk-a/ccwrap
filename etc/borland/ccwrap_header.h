@@ -48,6 +48,14 @@
 #define __CCWRAP_LONG_BIT           32
 #define __CCWRAP_NATIVE_INT_BIT     32
 
+#if __BORLANDC__ < 0x561
+#define __CCWRAP_LLONG              __int64
+#define __CCWRAP_ULLONG             unsigned __int64
+#else
+#define __CCWRAP_LLONG              long long
+#define __CCWRAP_ULLONG             unsigned long long
+#endif
+
 #if __BORLANDC__ < 0x700
   typedef __int64 __ccwrap_llong;
   typedef unsigned __int64 __ccwrap_ullong;
