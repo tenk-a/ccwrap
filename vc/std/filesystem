@@ -1,0 +1,33 @@
+// ccwrap <filesystem>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L && _MSC_VER >= 1914
+ #include _CCW_NATIVE_STL_HEADER_PATH(filesystem)
+
+// space_info's comparison came with P1614 (C++20), like the charconv results.
+# if _CCW_TARGET_CXX >= 2020 && !defined(__cpp_lib_three_way_comparison)
+namespace std { namespace filesystem {
+inline bool operator==(const space_info& __a, const space_info& __b) {
+    return __a.capacity == __b.capacity && __a.free == __b.free && __a.available == __b.available; }
+inline bool operator!=(const space_info& __a, const space_info& __b) { return !(__a == __b); }
+} }
+# endif
+
+// hash<path> is C++17 but MSVC only added the specialisation in VS2019; hash_value
+// itself is there from the start, so forward to it.
+# if _MSC_VER < 1920
+#include <functional>
+namespace std {
+template <> struct hash< ::std::filesystem::path> {
+    typedef ::std::filesystem::path argument_type;
+    typedef size_t                  result_type;
+    size_t operator()(const ::std::filesystem::path& __p) const {
+        return ::std::filesystem::hash_value(__p); }
+};
+}
+# endif
+#else
+ #include <../../detail/llibcxx03/include/filesystem>
+#endif

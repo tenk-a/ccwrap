@@ -1,0 +1,2 @@
+// ccwrap <barrier>
+#include "../std/barrier"

@@ -1,0 +1,8 @@
+// ccwrap watcom forwarder: pull the genuine C++ <ranges> from detail/llibcxx03/include so that
+// putting only watcom/ on the include path overrides Open Watcom's native header.
+// libcxx03's <ranges> is a C++03 SUBSET: the range access functions (ranges::begin/end/
+// size/data/...) + dangling / view_base / from_range_t. Views and the range concepts are
+// out of scope (no concepts on Open Watcom).
+#pragma once
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_STL_HEADER_PATH(ranges)

@@ -1,0 +1,2 @@
+// ccwrap <any>
+#include "../std/any"

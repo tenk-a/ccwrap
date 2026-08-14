@@ -1,0 +1,2 @@
+// ccwrap <type_traits>
+#include "../std/type_traits"

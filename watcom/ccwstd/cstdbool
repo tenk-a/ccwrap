@@ -1,0 +1,2 @@
+// ccwrap <cstdbool>
+#include "../std/cstdbool"

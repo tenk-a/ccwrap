@@ -1,0 +1,14 @@
+// ccwrap <charconv>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L && __cplusplus >= 201703L
+ #include_next <charconv>
+ namespace _ccw {
+     using std::to_chars_result; using std::from_chars_result;
+     using std::to_chars; using std::from_chars; using std::chars_format;
+ }
+#else
+ #include <../../detail/llibcxx03/include/charconv>
+#endif

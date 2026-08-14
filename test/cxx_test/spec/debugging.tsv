@@ -1,0 +1,6 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"debugging"	"cxx26:__cpp_lib_debugging"	"2026"	"*"	""	"値 202403L"
+"debugging"	"cxx26:<debugging> header"	"2026"	"*"	""	""
+"debugging"	"cxx26:breakpoint"	"2026"	"*"	""	""
+"debugging"	"cxx26:breakpoint_if_debugging"	"2026"	"*"	""	""
+"debugging"	"cxx26:is_debugger_present"	"2026"	"*"	""	""

@@ -1,0 +1,1372 @@
+//  ccwrap llibcxx03: <random> for Open Watcom -- a practical but broad subset.
+//
+//  Engines (concrete, not the general 15-parameter templates -- Open Watcom
+//  rejects a non-type parameter whose type is itself a template parameter):
+//    linear_congruential_engine<a,c,m> (minstd_rand0/minstd_rand),
+//    mt19937 (32-bit), mt19937_64 (64-bit).
+//  Each engine has: seed / operator() / min / max / discard / the named static
+//  constants / operator== / operator!= / stream insertion+extraction.
+#ifndef _CCW_LIBCPP_RANDOM
+#define _CCW_LIBCPP_RANDOM
+#include "__config"
+#include <cstddef>
+#include <cstdint>          // uint_fast32_t / uint_fast64_t (mt19937 typedefs)
+#include <cmath>
+#include <ctime>
+#include <string>
+#include <vector>
+#include <iosfwd>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+#if defined(__WATCOMC__)
+#define _CCW_LCE_TPARAMS  unsigned long _A, unsigned long _C, unsigned long _M
+#define _CCW_LCE_TARGS    _A, _C, _M
+#define _CCW_LCE_RESULT   unsigned long
+#define _CCW_LCE_DECL(a, c, m)  linear_congruential_engine<a, c, m>
+#else
+#define _CCW_LCE_TPARAMS  class _UIntType, _UIntType _A, _UIntType _C, _UIntType _M
+#define _CCW_LCE_TARGS    _UIntType, _A, _C, _M
+#define _CCW_LCE_RESULT   _UIntType
+#define _CCW_LCE_DECL(a, c, m)  linear_congruential_engine<unsigned long, a, c, m>
+#endif
+
+template <_CCW_LCE_TPARAMS>
+class linear_congruential_engine {
+    _CCW_LCE_RESULT __x_;
+public:
+    typedef _CCW_LCE_RESULT result_type;
+    static const result_type multiplier   = _A;
+    static const result_type increment    = _C;
+    static const result_type modulus      = _M;
+    static const result_type default_seed = 1UL;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit linear_congruential_engine(result_type __s = default_seed) { seed(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __s = default_seed) {
+        __x_ = _M ? (__s % _M) : __s;
+        if (__x_ == 0 && _C == 0) __x_ = 1;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        __x_ = (result_type)(((unsigned long long)_A * __x_ + _C) % _M);
+        return __x_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return _C == 0 ? 1 : 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() { return _M - 1; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type __state() const { return __x_; }   // for == / <<
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set_state(result_type __v) { __x_ = __v; }
+};
+
+template <_CCW_LCE_TPARAMS>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const linear_congruential_engine<_CCW_LCE_TARGS>& __x,
+                                             const linear_congruential_engine<_CCW_LCE_TARGS>& __y) {
+    return __x.__state() == __y.__state();
+}
+template <_CCW_LCE_TPARAMS>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const linear_congruential_engine<_CCW_LCE_TARGS>& __x,
+                                             const linear_congruential_engine<_CCW_LCE_TARGS>& __y) {
+    return !(__x == __y);
+}
+template <class _CharT, class _Traits, _CCW_LCE_TPARAMS>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_CCW_LCE_TARGS>& __e) {
+    return __os << __e.__state();
+}
+template <class _CharT, class _Traits, _CCW_LCE_TPARAMS>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
+operator>>(basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_CCW_LCE_TARGS>& __e) {
+    unsigned long __v; __is >> __v; __e.__set_state(__v); return __is;
+}
+
+typedef _CCW_LCE_DECL(16807, 0, 2147483647) minstd_rand0;
+typedef _CCW_LCE_DECL(48271, 0, 2147483647) minstd_rand;
+
+template <class _UIntType, unsigned long __w, unsigned long __n, unsigned long __m,
+          unsigned long __r, unsigned long long __a, unsigned long __u, unsigned long long __d,
+          unsigned long __s, unsigned long long __b, unsigned long __t, unsigned long long __c,
+          unsigned long __l, unsigned long long __f>
+class mersenne_twister_engine {
+    _UIntType        __x_[__n];
+    _CCW_STD::size_t __i_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static _UIntType __wmask() {
+        return (__w >= sizeof(_UIntType) * 8) ? (_UIntType)~(_UIntType)0
+                                              : (_UIntType)((((_UIntType)1 << __w) - 1));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _UIntType __lomask() {   // the low r bits
+        return (_UIntType)((((_UIntType)1 << __r) - 1));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __twist() {
+        for (_CCW_STD::size_t __k = 0; __k < __n; ++__k) {
+            _UIntType __y = (_UIntType)((__x_[__k] & ~__lomask() & __wmask())
+                                        | (__x_[(__k + 1) % __n] & __lomask()));
+            _UIntType __nx = (_UIntType)(__x_[(__k + __m) % __n] ^ (__y >> 1));
+            if (__y & (_UIntType)1) __nx = (_UIntType)(__nx ^ __a);
+            __x_[__k] = (_UIntType)(__nx & __wmask());
+        }
+        __i_ = 0;
+    }
+public:
+    typedef _UIntType result_type;
+    static const _CCW_STD::size_t word_size    = __w;
+    static const _CCW_STD::size_t state_size   = __n;
+    static const _CCW_STD::size_t shift_size   = __m;
+    static const _CCW_STD::size_t mask_bits    = __r;
+    static const result_type      xor_mask     = (result_type)__a;
+    static const _CCW_STD::size_t tempering_u  = __u;
+    static const result_type      tempering_d  = (result_type)__d;
+    static const _CCW_STD::size_t tempering_s  = __s;
+    static const result_type      tempering_b  = (result_type)__b;
+    static const _CCW_STD::size_t tempering_t  = __t;
+    static const result_type      tempering_c  = (result_type)__c;
+    static const _CCW_STD::size_t tempering_l  = __l;
+    static const result_type      initialization_multiplier = (result_type)__f;
+    static const result_type      default_seed = 5489u;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit mersenne_twister_engine(result_type __sd = default_seed) { seed(__sd); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __sd = default_seed) {
+        __x_[0] = (_UIntType)(__sd & __wmask());
+        for (_CCW_STD::size_t __k = 1; __k < __n; ++__k) {
+            _UIntType __prev = __x_[__k - 1];
+            __x_[__k] = (_UIntType)((__f * (_UIntType)(__prev ^ (__prev >> (__w - 2)))
+                                     + (_UIntType)__k) & __wmask());
+        }
+        __i_ = __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        if (__i_ >= __n) __twist();
+        _UIntType __z = __x_[__i_++];
+        __z = (_UIntType)(__z ^ ((__z >> __u) & __d));
+        __z = (_UIntType)(__z ^ ((__z << __s) & __b & __wmask()));
+        __z = (_UIntType)(__z ^ ((__z << __t) & __c & __wmask()));
+        __z = (_UIntType)(__z ^ (__z >> __l));
+        return (result_type)(__z & __wmask());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() {
+        return (__w >= sizeof(_UIntType) * 8) ? (result_type)~(_UIntType)0
+                                              : (result_type)((((_UIntType)1 << __w) - 1));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __equal(const mersenne_twister_engine& __o) const {
+        if (__i_ != __o.__i_) return false;
+        for (_CCW_STD::size_t __k = 0; __k < __n; ++__k) if (__x_[__k] != __o.__x_[__k]) return false;
+        return true;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type       __word(_CCW_STD::size_t __k) const { return __x_[__k]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t  __index() const { return __i_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set(_CCW_STD::size_t __k, result_type __v) { __x_[__k] = __v; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set_index(_CCW_STD::size_t __v) { __i_ = __v; }
+};
+
+#define _CCW_MT_TPARMS class _UIntType, unsigned long __w, unsigned long __n,       \
+    unsigned long __m, unsigned long __r, unsigned long long __a, unsigned long __u,      \
+    unsigned long long __d, unsigned long __s, unsigned long long __b, unsigned long __t,             \
+    unsigned long long __c, unsigned long __l, unsigned long long __f
+#define _CCW_MT_TARGS _UIntType, __w, __n, __m, __r, __a, __u, __d, __s, __b, __t, __c, __l, __f
+
+template <_CCW_MT_TPARMS>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const mersenne_twister_engine<_CCW_MT_TARGS>& __x,
+                                                 const mersenne_twister_engine<_CCW_MT_TARGS>& __y)
+    { return __x.__equal(__y); }
+template <_CCW_MT_TPARMS>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const mersenne_twister_engine<_CCW_MT_TARGS>& __x,
+                                                 const mersenne_twister_engine<_CCW_MT_TARGS>& __y)
+    { return !(__x == __y); }
+
+template <class _CharT, class _Traits, _CCW_MT_TPARMS>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const mersenne_twister_engine<_CCW_MT_TARGS>& __e) {
+    for (_CCW_STD::size_t __k = 0; __k < __n; ++__k) { if (__k) __os << ' '; __os << __e.__word(__k); }
+    __os << ' ' << (unsigned long)__e.__index();
+    return __os;
+}
+template <class _CharT, class _Traits, _CCW_MT_TPARMS>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
+operator>>(basic_istream<_CharT, _Traits>& __is, mersenne_twister_engine<_CCW_MT_TARGS>& __e) {
+    _UIntType __v;
+    for (_CCW_STD::size_t __k = 0; __k < __n; ++__k) { __is >> __v; __e.__set(__k, __v); }
+    unsigned long __ix; __is >> __ix; __e.__set_index((_CCW_STD::size_t)__ix);
+    return __is;
+}
+
+typedef mersenne_twister_engine<uint_fast32_t, 32, 624, 397, 31,
+        0x9908b0dfUL, 11, 0xffffffffUL, 7, 0x9d2c5680UL, 15, 0xefc60000UL, 18,
+        1812433253UL> mt19937;
+typedef mersenne_twister_engine<uint_fast64_t, 64, 312, 156, 31,
+        0xb5026f5aa96619e9ULL, 29, 0x5555555555555555ULL, 17, 0x71d67fffeda60000ULL,
+        37, 0xfff7eee000000000ULL, 43, 6364136223846793005ULL> mt19937_64;
+
+#define _CCW_MT_OPS(ENG)                                                                      _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const ENG& __x, const ENG& __y)              { return __x.__equal(__y); }                                                          _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const ENG& __x, const ENG& __y)              { return !__x.__equal(__y); }                                                         template <class _CharT, class _Traits>                                                    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&                                 operator<<(basic_ostream<_CharT, _Traits>& __os, const ENG& __e) {                            for (_CCW_STD::size_t __k = 0; __k < ENG::state_size; ++__k)                                  { if (__k) __os << ' '; __os << __e.__word(__k); }                                    __os << ' ' << (unsigned long)__e.__index();                                              return __os;                                                                          }                                                                                         template <class _CharT, class _Traits>                                                    _CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&                                 operator>>(basic_istream<_CharT, _Traits>& __is, ENG& __e) {                                  ENG::result_type __v;                                                                     for (_CCW_STD::size_t __k = 0; __k < ENG::state_size; ++__k)                                  { __is >> __v; __e.__set(__k, __v); }                                                 unsigned long __ix; __is >> __ix; __e.__set_index((_CCW_STD::size_t)__ix);                return __is;                                                                          }
+_CCW_MT_OPS(mt19937)
+_CCW_MT_OPS(mt19937_64)
+#undef _CCW_MT_OPS
+
+template <class _UIntType, size_t _W, size_t _S, size_t _R>
+class subtract_with_carry_engine {
+    _UIntType __x_[_R];
+    unsigned long long __c_;
+    size_t    __i_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static _UIntType __modulus() {
+        return (_W >= (sizeof(_UIntType) * 8)) ? (_UIntType)~(_UIntType)0
+                                               : (_UIntType)(((_UIntType)1 << _W) - 1);
+    }
+public:
+    typedef _UIntType result_type;
+    static const size_t word_size    = _W;
+    static const size_t short_lag    = _S;
+    static const size_t long_lag     = _R;
+    static const result_type default_seed = 19780503u;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit subtract_with_carry_engine(result_type __s = default_seed) { seed(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __sd = default_seed) {
+        _CCW_LCE_DECL(40014UL, 0UL, 2147483563UL) __e(__sd == 0u ? default_seed : __sd);
+        const size_t __n = (_W + 31) / 32;                    // 32-bit draws per element
+        const _UIntType __mask = __modulus();
+        for (size_t __k = 0; __k < _R; ++__k) {
+            _UIntType __val = 0; _UIntType __sh = 0;
+            for (size_t __j = 0; __j < __n; ++__j) {
+                __val += ((_UIntType)(__e() & 0xffffffffUL)) << __sh;
+                __sh += 32;
+            }
+            __x_[__k] = __val & __mask;
+        }
+        __c_ = (__x_[_R - 1] == 0) ? 1u : 0u;
+        __i_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        const _UIntType __mask = __modulus();
+        size_t __ps = (__i_ < _S) ? (__i_ + _R - _S) : (__i_ - _S);
+        _UIntType __xs = __x_[__ps];
+        _UIntType __xr = __x_[__i_];
+        _UIntType __new;
+        if (__xs >= __xr + __c_) { __new = (__xs - __xr - __c_) & __mask; __c_ = 0; }
+        else                     { __new = ((__mask - __xr - __c_) + __xs + 1u) & __mask; __c_ = 1; }
+        __x_[__i_] = __new;
+        __i_ = (__i_ + 1) % _R;
+        return __new;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() { return __modulus(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __equal(const subtract_with_carry_engine& __o) const {
+        if (__c_ != __o.__c_ || __i_ != __o.__i_) return false;
+        for (size_t __k = 0; __k < _R; ++__k) if (__x_[__k] != __o.__x_[__k]) return false;
+        return true;
+    }
+};
+template <class _U, size_t _W, size_t _S, size_t _R>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const subtract_with_carry_engine<_U, _W, _S, _R>& __x,
+                                             const subtract_with_carry_engine<_U, _W, _S, _R>& __y) { return __x.__equal(__y); }
+template <class _U, size_t _W, size_t _S, size_t _R>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const subtract_with_carry_engine<_U, _W, _S, _R>& __x,
+                                             const subtract_with_carry_engine<_U, _W, _S, _R>& __y) { return !(__x == __y); }
+
+typedef subtract_with_carry_engine<unsigned long, 24, 10, 24>       ranlux24_base;
+typedef subtract_with_carry_engine<unsigned long long, 48, 5, 12>   ranlux48_base;
+
+template <class _Engine, size_t _P, size_t _R>
+class discard_block_engine {
+    _Engine __e_;
+    int     __n_;
+public:
+    typedef typename _Engine::result_type result_type;
+    static const size_t block_size = _P;
+    static const size_t used_block = _R;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI discard_block_engine() : __n_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit discard_block_engine(result_type __s) : __e_(__s), __n_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit discard_block_engine(const _Engine& __e) : __e_(__e), __n_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __s = _Engine::default_seed) { __e_.seed(__s); __n_ = 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        if (__n_ >= (int)_R) { for (size_t __k = _R; __k < _P; ++__k) (void)__e_(); __n_ = 0; }
+        ++__n_;
+        return __e_();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return _Engine::min(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() { return _Engine::max(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Engine& base() const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __equal(const discard_block_engine& __o) const { return __n_ == __o.__n_ && __e_ == __o.__e_; }
+};
+template <class _E, size_t _P, size_t _R>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const discard_block_engine<_E, _P, _R>& __x,
+                                             const discard_block_engine<_E, _P, _R>& __y) { return __x.__equal(__y); }
+template <class _E, size_t _P, size_t _R>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const discard_block_engine<_E, _P, _R>& __x,
+                                             const discard_block_engine<_E, _P, _R>& __y) { return !(__x == __y); }
+
+typedef discard_block_engine<ranlux24_base, 223, 23> ranlux24;
+typedef discard_block_engine<ranlux48_base, 389, 11> ranlux48;
+
+template <class _Engine, size_t _W, class _UIntType>
+class independent_bits_engine {
+    _Engine __e_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static size_t __ebits() {
+        unsigned long long __r = (unsigned long long)_Engine::max() - (unsigned long long)_Engine::min();
+        size_t __b = 0; while (__r) { ++__b; __r >>= 1; } return __b ? __b : 1;
+    }
+public:
+    typedef _UIntType result_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI independent_bits_engine() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit independent_bits_engine(result_type __s) : __e_((typename _Engine::result_type)__s) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit independent_bits_engine(const _Engine& __e) : __e_(__e) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __s = _Engine::default_seed) { __e_.seed((typename _Engine::result_type)__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        const size_t __eb = __ebits();
+        result_type __v = 0; size_t __have = 0;
+        while (__have < _W) {
+            unsigned long long __d = (unsigned long long)__e_() - (unsigned long long)_Engine::min();
+            size_t __take = (_W - __have < __eb) ? (_W - __have) : __eb;
+            result_type __part = (result_type)(__d & ((__take >= sizeof(result_type)*8) ? ~(result_type)0
+                                                       : (((result_type)1 << __take) - 1)));
+            __v |= __part << __have;
+            __have += __take;
+        }
+        return __v;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() {
+        return (_W >= sizeof(result_type)*8) ? ~(result_type)0 : (((result_type)1 << _W) - 1);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Engine& base() const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __equal(const independent_bits_engine& __o) const { return __e_ == __o.__e_; }
+};
+template <class _E, size_t _W, class _U>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const independent_bits_engine<_E, _W, _U>& __x,
+                                             const independent_bits_engine<_E, _W, _U>& __y) { return __x.__equal(__y); }
+template <class _E, size_t _W, class _U>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const independent_bits_engine<_E, _W, _U>& __x,
+                                             const independent_bits_engine<_E, _W, _U>& __y) { return !(__x == __y); }
+
+template <class _Engine, size_t _K>
+class shuffle_order_engine {
+    _Engine     __e_;
+    typename _Engine::result_type __v_[_K];
+    typename _Engine::result_type __y_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init() { for (size_t __k = 0; __k < _K; ++__k) __v_[__k] = __e_(); __y_ = __e_(); }
+public:
+    typedef typename _Engine::result_type result_type;
+    static const size_t table_size = _K;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI shuffle_order_engine() { __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit shuffle_order_engine(result_type __s) : __e_(__s) { __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit shuffle_order_engine(const _Engine& __e) : __e_(__e) { __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void seed(result_type __s = _Engine::default_seed) { __e_.seed(__s); __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() {
+        unsigned long long __range = (unsigned long long)_Engine::max() - (unsigned long long)_Engine::min() + 1ULL;
+        unsigned long long __off   = (unsigned long long)__y_ - (unsigned long long)_Engine::min();
+        size_t __j = (size_t)((__off * _K) / __range);
+        if (__j >= _K) __j = _K - 1;
+        __y_ = __v_[__j];
+        __v_[__j] = __e_();
+        return __y_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void discard(unsigned long long __z) { for (; __z; --__z) (void)(*this)(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return _Engine::min(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() { return _Engine::max(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Engine& base() const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __equal(const shuffle_order_engine& __o) const {
+        if (!(__e_ == __o.__e_) || __y_ != __o.__y_) return false;
+        for (size_t __k = 0; __k < _K; ++__k) if (__v_[__k] != __o.__v_[__k]) return false;
+        return true;
+    }
+};
+template <class _E, size_t _K>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const shuffle_order_engine<_E, _K>& __x,
+                                             const shuffle_order_engine<_E, _K>& __y) { return __x.__equal(__y); }
+template <class _E, size_t _K>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const shuffle_order_engine<_E, _K>& __x,
+                                             const shuffle_order_engine<_E, _K>& __y) { return !(__x == __y); }
+
+typedef shuffle_order_engine<minstd_rand0, 256> knuth_b;
+
+typedef mt19937 default_random_engine;
+
+class random_device {
+    mt19937 __e_;
+public:
+    typedef unsigned int result_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit random_device(const string& = string()) {
+        unsigned long __s = (unsigned long)time(0) ^ ((unsigned long)clock() << 16);
+        __e_.seed(__s ? __s : 5489UL);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()() { return (result_type)__e_(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI double entropy() const _CCW_LIBCPP_NOEXCEPT { return 0.0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type min() { return mt19937::min(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type max() { return mt19937::max(); }
+private:
+    random_device(const random_device&);            // non-copyable per [rand.device]
+    random_device& operator=(const random_device&);
+};
+
+template <class _RealType, class _URNG>
+_CCW_LIBCPP_HIDE_FROM_ABI _RealType __ccw_u01(_URNG& __g) {
+    double __lo = (double)(_URNG::min());
+    double __hi = (double)(_URNG::max());
+    double __r  = __hi - __lo + 1.0;
+    double __u  = ((double)(__g()) - __lo) / __r;
+    if (__u < 0.0) __u = 0.0;
+    if (__u >= 1.0) __u = 0.99999999999999989;   // clamp strictly below 1
+    return (_RealType)__u;
+}
+template <class _RealType, class _URNG>
+_CCW_LIBCPP_HIDE_FROM_ABI _RealType __ccw_u01_open(_URNG& __g) {
+    _RealType __u = __ccw_u01<_RealType>(__g);
+    if (__u <= (_RealType)0) __u = (_RealType)1e-15;
+    return __u;
+}
+
+template <class _RealType, size_t _Bits, class _URNG>
+_CCW_LIBCPP_HIDE_FROM_ABI _RealType generate_canonical(_URNG& __g) {
+    return __ccw_u01<_RealType>(__g);
+}
+
+template <class _RealType, class _URNG>
+_CCW_LIBCPP_HIDE_FROM_ABI _RealType __ccw_stdnormal(_URNG& __g) {
+    _RealType __u1 = __ccw_u01_open<_RealType>(__g);
+    _RealType __u2 = __ccw_u01<_RealType>(__g);
+    return (_RealType)(sqrt(-2.0 * log((double)__u1)) * cos(6.283185307179586 * (double)__u2));
+}
+
+template <class _IntType>
+class uniform_int_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        result_type __a_, __b_;
+    public:
+        typedef uniform_int_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 0, result_type __b = 2147483647) : __a_(__a), __b_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __a_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __a_ == __o.__a_ && __b_ == __o.__b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit uniform_int_distribution(result_type __a = 0, result_type __b = 2147483647) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit uniform_int_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __p_.b(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return __p_.b(); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __p) {
+        unsigned long long __range = (unsigned long long)((long long)__p.b() - (long long)__p.a()) + 1ULL;
+        unsigned long long __v = (unsigned long long)__g();
+        return (result_type)((long long)__p.a() + (long long)(__v % __range));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const uniform_int_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const uniform_int_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class uniform_real_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __a_, __b_;
+    public:
+        typedef uniform_real_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 0, result_type __b = 1) : __a_(__a), __b_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __a_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __a_ == __o.__a_ && __b_ == __o.__b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit uniform_real_distribution(result_type __a = 0, result_type __b = 1) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit uniform_real_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __p_.b(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return __p_.b(); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __p) {
+        _RealType __u = __ccw_u01<_RealType>(__g);
+        return (result_type)(__p.a() + (__p.b() - __p.a()) * __u);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const uniform_real_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const uniform_real_distribution& __o) const { return !(*this == __o); }
+};
+
+class bernoulli_distribution {
+public:
+    typedef bool result_type;
+    class param_type {
+        double __p_;
+    public:
+        typedef bernoulli_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(double __p = 0.5) : __p_(__p) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __p_ == __o.__p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit bernoulli_distribution(double __p = 0.5) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit bernoulli_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_.p(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return true; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator()(_Eng& __g, const param_type& __p) {
+        return __ccw_u01<double>(__g) < __p.p();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const bernoulli_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const bernoulli_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _IntType>
+class binomial_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        result_type __t_; double __p_;
+    public:
+        typedef binomial_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __t = 1, double __p = 0.5) : __t_(__t), __p_(__p) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type t() const { return __t_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __t_ == __o.__t_ && __p_ == __o.__p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit binomial_distribution(result_type __t = 1, double __p = 0.5) : __p_(__t, __p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit binomial_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type t() const { return __p_.t(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_.p(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return __p_.t(); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        result_type __n = 0;
+        for (result_type __i = 0; __i < __pr.t(); ++__i)
+            if (__ccw_u01<double>(__g) < __pr.p()) ++__n;
+        return __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const binomial_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const binomial_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _IntType>
+class geometric_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        double __p_;
+    public:
+        typedef geometric_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(double __p = 0.5) : __p_(__p) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __p_ == __o.__p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit geometric_distribution(double __p = 0.5) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit geometric_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_.p(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)-1 < 0 ? 2147483647 : (result_type)-1; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __u = __ccw_u01_open<double>(__g);
+        double __lp = log(1.0 - __pr.p());
+        if (__lp == 0.0) return 0;
+        return (result_type)(log(__u) / __lp);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const geometric_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const geometric_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _IntType>
+class negative_binomial_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        result_type __k_; double __p_;
+    public:
+        typedef negative_binomial_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __k = 1, double __p = 0.5) : __k_(__k), __p_(__p) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type k() const { return __k_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __k_ == __o.__k_ && __p_ == __o.__p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit negative_binomial_distribution(result_type __k = 1, double __p = 0.5) : __p_(__k, __p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit negative_binomial_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type k() const { return __p_.k(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI double p() const { return __p_.p(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)-1 < 0 ? 2147483647 : (result_type)-1; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        result_type __succ = 0, __fail = 0;
+        while (__succ < __pr.k()) {
+            if (__ccw_u01<double>(__g) < __pr.p()) ++__succ; else ++__fail;
+        }
+        return __fail;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const negative_binomial_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const negative_binomial_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _IntType>
+class poisson_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        double __mean_;
+    public:
+        typedef poisson_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(double __m = 1.0) : __mean_(__m) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI double mean() const { return __mean_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __mean_ == __o.__mean_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit poisson_distribution(double __m = 1.0) : __p_(__m) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit poisson_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI double mean() const { return __p_.mean(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)-1 < 0 ? 2147483647 : (result_type)-1; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __L = exp(-__pr.mean());
+        result_type __k = 0;
+        double __prod = 1.0;
+        do {
+            ++__k;
+            __prod *= __ccw_u01_open<double>(__g);
+        } while (__prod > __L);
+        return __k - 1;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const poisson_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const poisson_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class exponential_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __lambda_;
+    public:
+        typedef exponential_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __l = 1) : __lambda_(__l) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type lambda() const { return __lambda_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __lambda_ == __o.__lambda_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit exponential_distribution(result_type __l = 1) : __p_(__l) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit exponential_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type lambda() const { return __p_.lambda(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __u = __ccw_u01_open<double>(__g);
+        return (result_type)(-log(__u) / (double)__pr.lambda());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const exponential_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const exponential_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class gamma_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __alpha_, __beta_;
+    public:
+        typedef gamma_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 1, result_type __b = 1) : __alpha_(__a), __beta_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type alpha() const { return __alpha_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type beta() const { return __beta_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __alpha_ == __o.__alpha_ && __beta_ == __o.__beta_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI static double __sample_unit(_Eng& __g, double __a) {
+        if (__a < 1.0) {
+            double __u = __ccw_u01_open<double>(__g);
+            return __sample_unit(__g, __a + 1.0) * pow(__u, 1.0 / __a);
+        }
+        double __d = __a - 1.0 / 3.0;
+        double __c = 1.0 / sqrt(9.0 * __d);
+        for (;;) {
+            double __x = __ccw_stdnormal<double>(__g);
+            double __v = 1.0 + __c * __x;
+            if (__v <= 0.0) continue;
+            __v = __v * __v * __v;
+            double __u = __ccw_u01_open<double>(__g);
+            if (__u < 1.0 - 0.0331 * __x * __x * __x * __x) return __d * __v;
+            if (log(__u) < 0.5 * __x * __x + __d * (1.0 - __v + log(__v))) return __d * __v;
+        }
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit gamma_distribution(result_type __a = 1, result_type __b = 1) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit gamma_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type alpha() const { return __p_.alpha(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type beta() const { return __p_.beta(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        return (result_type)(__sample_unit(__g, (double)__pr.alpha()) * (double)__pr.beta());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const gamma_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const gamma_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class weibull_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __a_, __b_;
+    public:
+        typedef weibull_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 1, result_type __b = 1) : __a_(__a), __b_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __a_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __a_ == __o.__a_ && __b_ == __o.__b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit weibull_distribution(result_type __a = 1, result_type __b = 1) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit weibull_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __p_.b(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __u = __ccw_u01_open<double>(__g);
+        return (result_type)((double)__pr.b() * pow(-log(__u), 1.0 / (double)__pr.a()));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const weibull_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const weibull_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class extreme_value_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __a_, __b_;
+    public:
+        typedef extreme_value_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 0, result_type __b = 1) : __a_(__a), __b_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __a_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __a_ == __o.__a_ && __b_ == __o.__b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit extreme_value_distribution(result_type __a = 0, result_type __b = 1) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit extreme_value_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __p_.b(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return (result_type)-1e300; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __u = __ccw_u01_open<double>(__g);
+        return (result_type)((double)__pr.a() - (double)__pr.b() * log(-log(__u)));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const extreme_value_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const extreme_value_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class normal_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __mean_, __stddev_;
+    public:
+        typedef normal_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __m = 0, result_type __s = 1) : __mean_(__m), __stddev_(__s) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type mean() const { return __mean_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type stddev() const { return __stddev_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __mean_ == __o.__mean_ && __stddev_ == __o.__stddev_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+    double __spare_;
+    bool   __has_spare_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit normal_distribution(result_type __m = 0, result_type __s = 1) : __p_(__m, __s), __spare_(0), __has_spare_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit normal_distribution(const param_type& __p) : __p_(__p), __spare_(0), __has_spare_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { __has_spare_ = false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type mean() const { return __p_.mean(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type stddev() const { return __p_.stddev(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return (result_type)-1e300; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __z;
+        if (__has_spare_) { __has_spare_ = false; __z = __spare_; }
+        else {
+            double __u1 = __ccw_u01_open<double>(__g);
+            double __u2 = __ccw_u01<double>(__g);
+            double __r  = sqrt(-2.0 * log(__u1));
+            __z         = __r * cos(6.283185307179586 * __u2);
+            __spare_    = __r * sin(6.283185307179586 * __u2);
+            __has_spare_ = true;
+        }
+        return (result_type)((double)__pr.mean() + (double)__pr.stddev() * __z);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const normal_distribution& __o) const { return __p_ == __o.__p_ && __has_spare_ == __o.__has_spare_ && (!__has_spare_ || __spare_ == __o.__spare_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const normal_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class lognormal_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __m_, __s_;
+    public:
+        typedef lognormal_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __m = 0, result_type __s = 1) : __m_(__m), __s_(__s) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type m() const { return __m_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type s() const { return __s_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __m_ == __o.__m_ && __s_ == __o.__s_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+    normal_distribution<_RealType> __nd_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit lognormal_distribution(result_type __m = 0, result_type __s = 1) : __p_(__m, __s), __nd_(__m, __s) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit lognormal_distribution(const param_type& __p) : __p_(__p), __nd_(__p.m(), __p.s()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { __nd_.reset(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type m() const { return __p_.m(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type s() const { return __p_.s(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; __nd_ = normal_distribution<_RealType>(__p.m(), __p.s()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (result_type)exp((double)__nd_(__g)); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        normal_distribution<_RealType> __n(__pr.m(), __pr.s());
+        return (result_type)exp((double)__n(__g));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const lognormal_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const lognormal_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class chi_squared_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __n_;
+    public:
+        typedef chi_squared_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __n = 1) : __n_(__n) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __n_ == __o.__n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+    gamma_distribution<_RealType> __g_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit chi_squared_distribution(result_type __n = 1) : __p_(__n), __g_(__n / 2, 2) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit chi_squared_distribution(const param_type& __p) : __p_(__p), __g_(__p.n() / 2, 2) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { __g_.reset(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __p_.n(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; __g_ = gamma_distribution<_RealType>(__p.n() / 2, 2); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return __g_(__g); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        gamma_distribution<_RealType> __gd(__pr.n() / 2, 2);
+        return __gd(__g);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const chi_squared_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const chi_squared_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class cauchy_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __a_, __b_;
+    public:
+        typedef cauchy_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __a = 0, result_type __b = 1) : __a_(__a), __b_(__b) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __a_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __a_ == __o.__a_ && __b_ == __o.__b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit cauchy_distribution(result_type __a = 0, result_type __b = 1) : __p_(__a, __b) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit cauchy_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type a() const { return __p_.a(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type b() const { return __p_.b(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return (result_type)-1e300; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __u = __ccw_u01<double>(__g);
+        return (result_type)((double)__pr.a() + (double)__pr.b() * tan(3.141592653589793 * (__u - 0.5)));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const cauchy_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const cauchy_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class fisher_f_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __m_, __n_;
+    public:
+        typedef fisher_f_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __m = 1, result_type __n = 1) : __m_(__m), __n_(__n) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type m() const { return __m_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __m_ == __o.__m_ && __n_ == __o.__n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit fisher_f_distribution(result_type __m = 1, result_type __n = 1) : __p_(__m, __n) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit fisher_f_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type m() const { return __p_.m(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __p_.n(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        chi_squared_distribution<_RealType> __c1(__pr.m()), __c2(__pr.n());
+        double __x = (double)__c1(__g) / (double)__pr.m();
+        double __y = (double)__c2(__g) / (double)__pr.n();
+        return (result_type)(__x / __y);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const fisher_f_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const fisher_f_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class student_t_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        result_type __n_;
+    public:
+        typedef student_t_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit param_type(result_type __n = 1) : __n_(__n) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __n_ == __o.__n_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit student_t_distribution(result_type __n = 1) : __p_(__n) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit student_t_distribution(const param_type& __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type n() const { return __p_.n(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return (result_type)-1e300; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)1e300; }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __p_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        double __z = __ccw_stdnormal<double>(__g);
+        chi_squared_distribution<_RealType> __c(__pr.n());
+        double __v = (double)__c(__g);
+        return (result_type)(__z / sqrt(__v / (double)__pr.n()));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const student_t_distribution& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const student_t_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _IntType>
+class discrete_distribution {
+public:
+    typedef _IntType result_type;
+    class param_type {
+        vector<double> __p_;
+    public:
+        typedef discrete_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type() : __p_(1, 1.0) {}
+        template <class _II>
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type(_II __f, _II __l) : __p_(__f, __l) { __norm(); }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<double>& __probs() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI vector<double> probabilities() const { return __p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI void __norm() {
+            if (__p_.empty()) { __p_.push_back(1.0); return; }
+            double __s = 0.0;
+            for (size_t __i = 0; __i < __p_.size(); ++__i) __s += __p_[__i];
+            if (__s > 0.0) for (size_t __i = 0; __i < __p_.size(); ++__i) __p_[__i] /= __s;
+        }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __p_ == __o.__p_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __pp_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI discrete_distribution() {}
+    template <class _II>
+    _CCW_LIBCPP_HIDE_FROM_ABI discrete_distribution(_II __f, _II __l) : __pp_(__f, __l) {}
+    template <class _UnaryOp>
+    _CCW_LIBCPP_HIDE_FROM_ABI discrete_distribution(size_t __n, double __xmin, double __xmax, _UnaryOp __fw) {
+        vector<double> __w;
+        if (__n == 0) { __w.push_back(1.0); }
+        else {
+            double __delta = (__xmax - __xmin) / (double)__n;
+            for (size_t __k = 0; __k < __n; ++__k)
+                __w.push_back(__fw(__xmin + __delta * ((double)__k + 0.5)));
+        }
+        __pp_ = param_type(__w.begin(), __w.end());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit discrete_distribution(const param_type& __p) : __pp_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI vector<double> probabilities() const { return __pp_.probabilities(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __pp_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return (result_type)(__pp_.__probs().size() - 1); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __pp_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        const vector<double>& __p = __pr.__probs();
+        double __u = __ccw_u01<double>(__g);
+        double __acc = 0.0;
+        for (size_t __i = 0; __i < __p.size(); ++__i) {
+            __acc += __p[__i];
+            if (__u < __acc) return (result_type)__i;
+        }
+        return (result_type)(__p.size() - 1);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const discrete_distribution& __o) const { return __pp_ == __o.__pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const discrete_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class piecewise_constant_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        vector<_RealType> __b_;   // interval boundaries (n+1)
+        vector<double>    __d_;   // densities (n)
+        vector<double>    __c_;   // cumulative weights (n) normalized
+    public:
+        typedef piecewise_constant_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type() { __b_.push_back(0); __b_.push_back(1); __d_.push_back(1.0); __build(); }
+        template <class _IIB, class _IIW>
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type(_IIB __bf, _IIB __bl, _IIW __wf) : __b_(__bf, __bl) {
+            size_t __n = __b_.size() > 0 ? __b_.size() - 1 : 0;
+            for (size_t __i = 0; __i < __n; ++__i) { __d_.push_back(*__wf); ++__wf; }
+            __build();
+        }
+        _CCW_LIBCPP_HIDE_FROM_ABI void __build() {
+            __c_.clear();
+            double __tot = 0.0;
+            size_t __n = __d_.size();
+            for (size_t __i = 0; __i < __n; ++__i) __tot += __d_[__i] * (double)(__b_[__i + 1] - __b_[__i]);
+            if (__tot > 0)
+                for (size_t __i = 0; __i < __n; ++__i) __d_[__i] /= __tot;
+            double __acc = 0.0;
+            for (size_t __i = 0; __i < __n; ++__i) {
+                __acc += __d_[__i] * (double)(__b_[__i + 1] - __b_[__i]);
+                __c_.push_back(__tot > 0 ? __acc : 0.0);
+            }
+        }
+        _CCW_LIBCPP_HIDE_FROM_ABI vector<_RealType> intervals() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI vector<double> densities() const { return __d_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<_RealType>& __bnd() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<double>& __cum() const { return __c_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __b_ == __o.__b_ && __d_ == __o.__d_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __pp_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI piecewise_constant_distribution() {}
+    template <class _IIB, class _IIW>
+    _CCW_LIBCPP_HIDE_FROM_ABI piecewise_constant_distribution(_IIB __bf, _IIB __bl, _IIW __wf) : __pp_(__bf, __bl, __wf) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit piecewise_constant_distribution(const param_type& __p) : __pp_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI vector<_RealType> intervals() const { return __pp_.intervals(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI vector<double> densities() const { return __pp_.densities(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __pp_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return __pp_.__bnd().front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return __pp_.__bnd().back(); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __pp_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        const vector<_RealType>& __b = __pr.__bnd();
+        const vector<double>&    __c = __pr.__cum();
+        double __u = __ccw_u01<double>(__g);
+        size_t __i = 0;
+        while (__i + 1 < __c.size() && __u >= __c[__i]) ++__i;
+        double __lo = (__i == 0) ? 0.0 : __c[__i - 1];
+        double __frac = (__c[__i] > __lo) ? (__u - __lo) / (__c[__i] - __lo) : 0.0;
+        return (result_type)((double)__b[__i] + __frac * (double)(__b[__i + 1] - __b[__i]));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const piecewise_constant_distribution& __o) const { return __pp_ == __o.__pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const piecewise_constant_distribution& __o) const { return !(*this == __o); }
+};
+
+template <class _RealType>
+class piecewise_linear_distribution {
+public:
+    typedef _RealType result_type;
+    class param_type {
+        vector<_RealType> __b_;   // boundaries (n+1)
+        vector<double>    __d_;   // densities at boundaries (n+1)
+        vector<double>    __c_;   // cumulative area up to boundary i (n+1), normalized
+    public:
+        typedef piecewise_linear_distribution distribution_type;
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type() { __b_.push_back(0); __b_.push_back(1); __d_.push_back(1.0); __d_.push_back(1.0); __build(); }
+        template <class _IIB, class _IIW>
+        _CCW_LIBCPP_HIDE_FROM_ABI param_type(_IIB __bf, _IIB __bl, _IIW __wf) : __b_(__bf, __bl) {
+            for (size_t __i = 0; __i < __b_.size(); ++__i) { __d_.push_back(*__wf); ++__wf; }
+            __build();
+        }
+        _CCW_LIBCPP_HIDE_FROM_ABI void __build() {
+            __c_.clear();
+            __c_.push_back(0.0);
+            double __tot = 0.0;
+            size_t __n = __b_.size() > 0 ? __b_.size() - 1 : 0;
+            for (size_t __i = 0; __i < __n; ++__i) {
+                double __area = 0.5 * (__d_[__i] + __d_[__i + 1]) * (double)(__b_[__i + 1] - __b_[__i]);
+                __tot += __area;
+                __c_.push_back(__tot);
+            }
+            if (__tot > 0.0) for (size_t __i = 0; __i < __c_.size(); ++__i) __c_[__i] /= __tot;
+        }
+        _CCW_LIBCPP_HIDE_FROM_ABI vector<_RealType> intervals() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI vector<double> densities() const { return __d_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<_RealType>& __bnd() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<double>& __den() const { return __d_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const vector<double>& __cum() const { return __c_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const param_type& __o) const { return __b_ == __o.__b_ && __d_ == __o.__d_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const param_type& __o) const { return !(*this == __o); }
+    };
+private:
+    param_type __pp_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI piecewise_linear_distribution() {}
+    template <class _IIB, class _IIW>
+    _CCW_LIBCPP_HIDE_FROM_ABI piecewise_linear_distribution(_IIB __bf, _IIB __bl, _IIW __wf) : __pp_(__bf, __bl, __wf) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit piecewise_linear_distribution(const param_type& __p) : __pp_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI vector<_RealType> intervals() const { return __pp_.intervals(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI vector<double> densities() const { return __pp_.densities(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI param_type param() const { return __pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(const param_type& __p) { __pp_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type min() const { return __pp_.__bnd().front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type max() const { return __pp_.__bnd().back(); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g) { return (*this)(__g, __pp_); }
+    template <class _Eng>
+    _CCW_LIBCPP_HIDE_FROM_ABI result_type operator()(_Eng& __g, const param_type& __pr) {
+        const vector<_RealType>& __b = __pr.__bnd();
+        const vector<double>&    __d = __pr.__den();
+        const vector<double>&    __c = __pr.__cum();
+        double __u = __ccw_u01<double>(__g);
+        size_t __i = 0;
+        while (__i + 1 < __c.size() - 1 && __u >= __c[__i + 1]) ++__i;
+        double __x0 = (double)__b[__i], __x1 = (double)__b[__i + 1];
+        double __d0 = __d[__i], __d1 = __d[__i + 1];
+        double __segc = __c[__i + 1] - __c[__i];
+        double __t = (__segc > 0) ? (__u - __c[__i]) / __segc : 0.0;   // fraction of segment area
+        double __w = __x1 - __x0;
+        double __area = 0.5 * (__d0 + __d1) * __w;
+        double __pos;
+        if (__area <= 0.0 || __d0 == __d1) {
+            __pos = __x0 + __t * __w;
+        } else {
+            double __a = 0.5 * (__d1 - __d0) / __w;
+            double __bb = __d0;
+            double __cc = -__t * __area;
+            double __disc = __bb * __bb - 4.0 * __a * __cc;
+            if (__disc < 0.0) __disc = 0.0;
+            double __s = (-__bb + sqrt(__disc)) / (2.0 * __a);
+            __pos = __x0 + __s;
+        }
+        return (result_type)__pos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const piecewise_linear_distribution& __o) const { return __pp_ == __o.__pp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const piecewise_linear_distribution& __o) const { return !(*this == __o); }
+};
+
+class seed_seq {
+public:
+    typedef uint_least32_t result_type;
+private:
+    vector<result_type> __v_;
+    seed_seq(const seed_seq&);
+    seed_seq& operator=(const seed_seq&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI seed_seq() {}
+    template <class _II>
+    _CCW_LIBCPP_HIDE_FROM_ABI seed_seq(_II __f, _II __l) { for (; __f != __l; ++__f) __v_.push_back((result_type)*__f & 0xffffffffUL); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t size() const { return __v_.size(); }
+    template <class _OI>
+    _CCW_LIBCPP_HIDE_FROM_ABI void param(_OI __o) const { for (size_t __i = 0; __i < __v_.size(); ++__i) { *__o = __v_[__i]; ++__o; } }
+
+    template <class _RI>
+    _CCW_LIBCPP_HIDE_FROM_ABI void generate(_RI __first, _RI __last) {
+        if (__first == __last) return;
+        for (_RI __it = __first; __it != __last; ++__it) *__it = 0x8b8b8b8bUL;
+        size_t __n = 0; for (_RI __it = __first; __it != __last; ++__it) ++__n;
+        size_t __s = __v_.size();
+        size_t __t = (__n >= 623) ? 11 : (__n >= 68) ? 7 : (__n >= 39) ? 5 : (__n >= 7) ? 3 : (__n - 1) / 2;
+        size_t __p = (__n - __t) / 2;
+        size_t __q = __p + __t;
+        size_t __m = __s + 1 > __n ? __s + 1 : __n;
+        for (size_t __k = 0; __k < __m; ++__k) {
+            result_type __r1 = __at(__first, __n, __k % __n) ^ __at(__first, __n, (__k + __p) % __n) ^ __at(__first, __n, (__k + __n - 1) % __n);
+            __r1 = (__r1 ^ (__r1 >> 27)) & 0xffffffffUL;
+            __r1 = (__r1 * 1664525UL) & 0xffffffffUL;
+            result_type __r2 = __r1;
+            if (__k == 0) __r2 = (__r2 + __s) & 0xffffffffUL;
+            else if (__k <= __s) __r2 = (__r2 + (__k % __n) + __v_[__k - 1]) & 0xffffffffUL;
+            else __r2 = (__r2 + (__k % __n)) & 0xffffffffUL;
+            __xadd(__first, __n, (__k + __p) % __n, __r1);
+            __xadd(__first, __n, (__k + __q) % __n, __r2);
+            __set(__first, __n, __k % __n, __r2);
+        }
+        for (size_t __k = __m; __k < __m + __n; ++__k) {
+            result_type __r3 = (__at(__first, __n, __k % __n) + __at(__first, __n, (__k + __p) % __n)) & 0xffffffffUL;
+            __r3 = (__r3 ^ (__r3 >> 27)) & 0xffffffffUL;
+            __r3 = (__r3 * 1566083941UL) & 0xffffffffUL;
+            result_type __r4 = (__r3 - (__k % __n)) & 0xffffffffUL;
+            __xadd(__first, __n, (__k + __p) % __n, __r3);
+            __xxor(__first, __n, (__k + __q) % __n, __r4);
+            __set(__first, __n, __k % __n, __r4);
+        }
+    }
+private:
+    template <class _RI>
+    _CCW_LIBCPP_HIDE_FROM_ABI static result_type __at(_RI __f, size_t __n, size_t __i) { _RI __it = __f; for (size_t __j = 0; __j < __i && __j < __n; ++__j) ++__it; return (result_type)*__it & 0xffffffffUL; }
+    template <class _RI>
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __set(_RI __f, size_t __n, size_t __i, result_type __v) { _RI __it = __f; for (size_t __j = 0; __j < __i && __j < __n; ++__j) ++__it; *__it = __v & 0xffffffffUL; }
+    template <class _RI>
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __xadd(_RI __f, size_t __n, size_t __i, result_type __v) { __set(__f, __n, __i, (__at(__f, __n, __i) + __v)); }
+    template <class _RI>
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __xxor(_RI __f, size_t __n, size_t __i, result_type __v) { __set(__f, __n, __i, (__at(__f, __n, __i) ^ __v)); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_RANDOM

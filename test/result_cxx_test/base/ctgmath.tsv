@@ -1,0 +1,4 @@
+"suite"	"pass"	"status"	"note"
+"ctgmath"	"cxx11:<ctgmath> provides <cmath> and <complex>"	"tested"	""
+"ctgmath"	"cxx11:cmath declarations via <ctgmath>"	"tested"	""
+"ctgmath"	"cxx11:complex declarations via <ctgmath>"	"tested"	""

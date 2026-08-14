@@ -1,0 +1,46 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <numbers> -- the C++20 math constants. The double-typed
+//  _CCW_STD::numbers::* are always provided; the numbers::*_v<T> variable templates
+//  only where the compiler has variable templates (Open Watcom has none).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_NUMBERS
+#define _CCW_LIBCPP_NUMBERS
+#include "__config"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+namespace numbers {
+static const double e          = 2.718281828459045235360287471352662;
+static const double log2e      = 1.442695040888963407359924681001892;
+static const double log10e     = 0.434294481903251827651128918916605;
+static const double pi         = 3.141592653589793238462643383279503;
+static const double inv_pi     = 0.318309886183790671537767526745029;
+static const double inv_sqrtpi = 0.564189583547756286948079451560772;
+static const double ln2        = 0.693147180559945309417232121458176;
+static const double ln10       = 2.302585092994045684017991454684364;
+static const double sqrt2      = 1.414213562373095048801688724209698;
+static const double sqrt3      = 1.732050807568877293527446341505872;
+static const double inv_sqrt3  = 0.577350269189625764509148780501957;
+static const double egamma     = 0.577215664901532860606512090082402;
+static const double phi        = 1.618033988749894848204586834365638;
+
+#if _CCW_HAS_VAR_TEMPLATE
+#define _CCW_NUMBERS_V(_Nm, _Val) template <class _Tp> const _Tp _Nm##_v = (_Tp)(_Val);
+_CCW_NUMBERS_V(e,          2.718281828459045235360287471352662L)
+_CCW_NUMBERS_V(log2e,      1.442695040888963407359924681001892L)
+_CCW_NUMBERS_V(log10e,     0.434294481903251827651128918916605L)
+_CCW_NUMBERS_V(pi,         3.141592653589793238462643383279503L)
+_CCW_NUMBERS_V(inv_pi,     0.318309886183790671537767526745029L)
+_CCW_NUMBERS_V(inv_sqrtpi, 0.564189583547756286948079451560772L)
+_CCW_NUMBERS_V(ln2,        0.693147180559945309417232121458176L)
+_CCW_NUMBERS_V(ln10,       2.302585092994045684017991454684364L)
+_CCW_NUMBERS_V(sqrt2,      1.414213562373095048801688724209698L)
+_CCW_NUMBERS_V(sqrt3,      1.732050807568877293527446341505872L)
+_CCW_NUMBERS_V(inv_sqrt3,  0.577350269189625764509148780501957L)
+_CCW_NUMBERS_V(egamma,     0.577215664901532860606512090082402L)
+_CCW_NUMBERS_V(phi,        1.618033988749894848204586834365638L)
+#undef _CCW_NUMBERS_V
+#endif
+}   // namespace numbers
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_NUMBERS

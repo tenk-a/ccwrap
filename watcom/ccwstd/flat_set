@@ -1,0 +1,2 @@
+// ccwrap <flat_set>
+#include "../std/flat_set"

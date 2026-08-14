@@ -1,0 +1,8 @@
+// ccwrap watcom: <cwchar>. Thin forwarder to Open Watcom's native <cwchar> (the wide
+// character library -- wchar_t, wint_t, mbstate_t, the wcs*/wmem* functions -- in
+// namespace std), guaranteeing ccwrap_common.h is pulled in first. No supplements
+// are needed yet.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cwchar)

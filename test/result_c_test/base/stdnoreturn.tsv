@@ -1,0 +1,3 @@
+"suite"	"pass"	"status"	"note"
+"stdnoreturn"	"c2011:_Noreturn"	"tested"	""
+"stdnoreturn"	"c2011:noreturn"	"tested"	""

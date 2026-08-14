@@ -1,0 +1,37 @@
+// ccwrap <cstdlib>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cstdlib)
+
+#include <stdlib.h>
+#if defined(_CCW_VC_HAVE_UNDERSCORE_EXIT) && _MSC_VER < 1900
+namespace std {
+    using ::_Exit;
+    using ::quick_exit;
+    using ::at_quick_exit;
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+namespace std {
+    using ::atoll;
+    using ::strtoll;
+    using ::strtoull;
+    using ::wcstoll;
+    using ::wcstoull;
+    using ::strtof;
+    using ::wcstof;
+    using ::strtold;
+    using ::wcstold;
+#if _MSC_VER < 1600
+    using ::llabs;
+#endif
+#if _MSC_VER < 1600
+    using ::lldiv_t;
+    using ::lldiv;
+#endif
+}
+#endif
+

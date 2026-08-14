@@ -1,0 +1,322 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "watcom-base",
+      "hidden": true,
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "wcl386",
+        "CMAKE_CXX_COMPILER": "wcl386"
+      }
+    },
+    {
+      "name": "watcom-win32-base",
+      "hidden": true,
+      "inherits": "watcom-base",
+      "environment": {
+        "INCLUDE": "$env{WATCOM}/h;$env{WATCOM}/h/nt"
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_WATCOM_RUNTIME_LIBRARY": "MultiThreaded"
+      }
+    },
+    {
+      "name": "watcom-dos32-base",
+      "hidden": true,
+      "inherits": "watcom-base",
+      "environment": {
+        "INCLUDE": "$env{WATCOM}/h"
+      },
+      "cacheVariables": {
+        "//": "CMAKE_SYSTEM_NAME / ランタイム / -bt=dos は toolchain 側が決める。ここで Windows を焼かないこと。",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../../test/toolchains/watcom-dos32-toolchain.cmake"
+      }
+    },
+    {
+      "name": "watcom-debug-base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "//": "-d2 だと <tuple> を含む TU がコンパイルできない (A19)。-d1 (行番号のみ) に落とす。",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "CMAKE_CXX_FLAGS_DEBUG": "-d1"
+      }
+    },
+    {
+      "name": "watcom-full-base",
+      "hidden": true,
+      "cacheVariables": {
+        "//": "ccwstd / -fs-char / -xst も作る。",
+        "CCW_LIB_CCWSTD": "ON",
+        "CCW_LIB_FS_CHAR": "ON",
+        "CCW_LIB_XST": "ON"
+      }
+    },
+    {
+      "name": "watcom",
+      "inherits": "watcom-win32-base",
+      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/win32-<ns>[-fs-char][-<opts>]/",
+      "binaryDir": "${sourceDir}/_build/watcom",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "watcom-full",
+      "inherits": [
+        "watcom-full-base",
+        "watcom-win32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/win32-<ns>[-fs-char][-<opts>]/  + ccwstd / -fs-char / -xst",
+      "binaryDir": "${sourceDir}/_build/watcom-full",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "watcom-debug",
+      "inherits": [
+        "watcom-debug-base",
+        "watcom-win32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/win32-<ns>[-fs-char][-<opts>]/",
+      "binaryDir": "${sourceDir}/_build/watcom-debug"
+    },
+    {
+      "name": "watcom-debug-full",
+      "inherits": [
+        "watcom-full-base",
+        "watcom-debug-base",
+        "watcom-win32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/win32-<ns>[-fs-char][-<opts>]/  + ccwstd / -fs-char / -xst",
+      "binaryDir": "${sourceDir}/_build/watcom-debug-full"
+    },
+    {
+      "name": "watcom-dos32",
+      "inherits": "watcom-dos32-base",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos32-std[-<opts>]/",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "watcom-dos32-full",
+      "inherits": [
+        "watcom-full-base",
+        "watcom-dos32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos32-std[-<opts>]/  + ccwstd / -fs-char / -xst",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32-full",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "watcom-dos32-debug",
+      "inherits": [
+        "watcom-debug-base",
+        "watcom-dos32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos32-std[-<opts>]/",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32-debug"
+    },
+    {
+      "name": "watcom-dos32-debug-full",
+      "inherits": [
+        "watcom-full-base",
+        "watcom-debug-base",
+        "watcom-dos32-base"
+      ],
+      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos32-std[-<opts>]/  + ccwstd / -fs-char / -xst",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32-debug-full"
+    },
+    {
+      "name": "watcom-xrxs",
+      "inherits": "watcom",
+      "displayName": "Open Watcom 2.0 (Win32) release -- -xrxs only (-xs; test only)",
+      "binaryDir": "${sourceDir}/_build/watcom-xrxs",
+      "cacheVariables": {
+        "CCW_LIB_XS": "ON"
+      }
+    },
+    {
+      "name": "watcom-debug-xrxs",
+      "inherits": "watcom-debug",
+      "displayName": "Open Watcom 2.0 (Win32) debug -- -xrxs only (-xs; test only)",
+      "binaryDir": "${sourceDir}/_build/watcom-debug-xrxs",
+      "cacheVariables": {
+        "CCW_LIB_XS": "ON"
+      }
+    },
+    {
+      "name": "watcom-dos32-xrxs",
+      "inherits": "watcom-dos32",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- -xrxs only (-xs; test only)",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32-xrxs",
+      "cacheVariables": {
+        "CCW_LIB_XS": "ON"
+      }
+    },
+    {
+      "name": "watcom-dos32-debug-xrxs",
+      "inherits": "watcom-dos32-debug",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- -xrxs only (-xs; test only)",
+      "binaryDir": "${sourceDir}/_build/watcom-dos32-debug-xrxs",
+      "cacheVariables": {
+        "CCW_LIB_XS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "watcom",
+      "configurePreset": "watcom",
+      "displayName": "watcom -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+    },
+    {
+      "name": "watcom-default",
+      "configurePreset": "watcom",
+      "displayName": "watcom -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "targets": [
+        "ccwrap_win32_std"
+      ]
+    },
+    {
+      "name": "watcom-xrxs",
+      "configurePreset": "watcom-xrxs",
+      "displayName": "watcom -- the -xrxs variant only (-xs -xr: what test/ measures)",
+      "targets": [
+        "ccwrap_win32_std_xrxs"
+      ]
+    },
+    {
+      "name": "watcom-noeh",
+      "configurePreset": "watcom",
+      "displayName": "watcom -- the -noeh variant only (neither -xs nor -xr)",
+      "targets": [
+        "ccwrap_win32_std_noeh"
+      ]
+    },
+    {
+      "name": "watcom-full",
+      "configurePreset": "watcom-full",
+      "displayName": "watcom -- every variant (ccwstd / -fs-char / -xst too)"
+    },
+    {
+      "name": "watcom-debug",
+      "configurePreset": "watcom-debug",
+      "displayName": "watcom-debug -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+    },
+    {
+      "name": "watcom-debug-default",
+      "configurePreset": "watcom-debug",
+      "displayName": "watcom-debug -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "targets": [
+        "ccwrap_win32_std"
+      ]
+    },
+    {
+      "name": "watcom-debug-xrxs",
+      "configurePreset": "watcom-debug-xrxs",
+      "displayName": "watcom-debug -- the -xrxs variant only (-xs -xr: what test/ measures)",
+      "targets": [
+        "ccwrap_win32_std_xrxs"
+      ]
+    },
+    {
+      "name": "watcom-debug-noeh",
+      "configurePreset": "watcom-debug",
+      "displayName": "watcom-debug -- the -noeh variant only (neither -xs nor -xr)",
+      "targets": [
+        "ccwrap_win32_std_noeh"
+      ]
+    },
+    {
+      "name": "watcom-debug-full",
+      "configurePreset": "watcom-debug-full",
+      "displayName": "watcom-debug -- every variant (ccwstd / -fs-char / -xst too)"
+    },
+    {
+      "name": "watcom-dos32",
+      "configurePreset": "watcom-dos32",
+      "displayName": "watcom-dos32 -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+    },
+    {
+      "name": "watcom-dos32-default",
+      "configurePreset": "watcom-dos32",
+      "displayName": "watcom-dos32 -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "targets": [
+        "ccwrap_dos32_std"
+      ]
+    },
+    {
+      "name": "watcom-dos32-xrxs",
+      "configurePreset": "watcom-dos32-xrxs",
+      "displayName": "watcom-dos32 -- the -xrxs variant only (-xs -xr: what test/ measures)",
+      "targets": [
+        "ccwrap_dos32_std_xrxs"
+      ]
+    },
+    {
+      "name": "watcom-dos32-noeh",
+      "configurePreset": "watcom-dos32",
+      "displayName": "watcom-dos32 -- the -noeh variant only (neither -xs nor -xr)",
+      "targets": [
+        "ccwrap_dos32_std_noeh"
+      ]
+    },
+    {
+      "name": "watcom-dos32-full",
+      "configurePreset": "watcom-dos32-full",
+      "displayName": "watcom-dos32 -- every variant (ccwstd / -fs-char / -xst too)"
+    },
+    {
+      "name": "watcom-dos32-debug",
+      "configurePreset": "watcom-dos32-debug",
+      "displayName": "watcom-dos32-debug -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+    },
+    {
+      "name": "watcom-dos32-debug-default",
+      "configurePreset": "watcom-dos32-debug",
+      "displayName": "watcom-dos32-debug -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "targets": [
+        "ccwrap_dos32_std"
+      ]
+    },
+    {
+      "name": "watcom-dos32-debug-xrxs",
+      "configurePreset": "watcom-dos32-debug-xrxs",
+      "displayName": "watcom-dos32-debug -- the -xrxs variant only (-xs -xr: what test/ measures)",
+      "targets": [
+        "ccwrap_dos32_std_xrxs"
+      ]
+    },
+    {
+      "name": "watcom-dos32-debug-noeh",
+      "configurePreset": "watcom-dos32-debug",
+      "displayName": "watcom-dos32-debug -- the -noeh variant only (neither -xs nor -xr)",
+      "targets": [
+        "ccwrap_dos32_std_noeh"
+      ]
+    },
+    {
+      "name": "watcom-dos32-debug-full",
+      "configurePreset": "watcom-dos32-debug-full",
+      "displayName": "watcom-dos32-debug -- every variant (ccwstd / -fs-char / -xst too)"
+    }
+  ]
+}

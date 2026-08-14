@@ -1,0 +1,1017 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <regex> for Open Watcom -- a practical ECMAScript-subset
+//  engine. The pattern is parsed into a small AST and matched by a backtracking
+//  matcher that threads a continuation (so quantifiers/alternation/captures work
+//  without a bytecode relocation pass). Supported: literals, '.', character classes
+//  [...] / [^...] with ranges and \d\w\s\D\W\S, anchors ^ $, word boundaries \b \B,
+//  the quantifiers * + ? and {n}/{n,}/{n,m} (greedy), capturing groups ( ),
+//  alternation |, and backreferences \1..\9. An ill-formed pattern throws regex_error.
+//  regex_match / regex_search / regex_replace with match_results (smatch/cmatch),
+//  format_first_only / format_no_copy. Classic C++03 body; char only.
+//  (Not full _CCW_STD::regex: no lookaround, non-greedy, or named groups.)
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_REGEX
+#define _CCW_LIBCPP_REGEX
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include <string>
+#include <vector>
+#include <cstddef>
+#include <cctype>
+#include <cwctype>   // the wide classification the wchar_t engine asks for
+#include <stdexcept>
+#include <iterator>   // forward_iterator_tag
+#include <iosfwd>     // basic_ostream, for the sub_match inserter
+#include <locale>     // [re.traits] locale_type is std::locale
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+namespace regex_constants {
+    typedef int syntax_option_type;
+    static const syntax_option_type ECMAScript = 4;
+    static const syntax_option_type icase      = 1;
+    static const syntax_option_type nosubs     = 2;
+    static const syntax_option_type multiline  = 8;
+    static const syntax_option_type optimize   = 16;
+    static const syntax_option_type collate    = 32;
+    static const syntax_option_type basic      = 64;
+    static const syntax_option_type extended   = 128;
+    static const syntax_option_type awk        = 256;
+    static const syntax_option_type grep       = 512;
+    static const syntax_option_type egrep      = 1024;
+    typedef int match_flag_type;
+    static const match_flag_type match_default     = 0;
+    static const match_flag_type match_not_bol     = 1;
+    static const match_flag_type match_not_eol     = 2;
+    static const match_flag_type format_default    = 0;
+    static const match_flag_type format_first_only = 4;
+    static const match_flag_type format_no_copy    = 16;   // omit the unmatched text
+    static const match_flag_type format_sed        = 32;
+    static const match_flag_type match_not_bow     = 64;    // \b must not match at [first
+    static const match_flag_type match_not_eow     = 128;   // \b must not match at last)
+    static const match_flag_type match_any         = 256;   // any match will do (a hint)
+    static const match_flag_type match_not_null    = 512;   // an empty match is not a match
+    static const match_flag_type match_continuous  = 1024;  // the match must start at first
+    static const match_flag_type match_prev_avail  = 2048;  // --first is valid; ^ and \b
+    typedef int error_type;
+    static const error_type error_collate   = 100;
+    static const error_type error_ctype     = 101;
+    static const error_type error_escape    = 102;
+    static const error_type error_backref   = 103;
+    static const error_type error_brack     = 104;
+    static const error_type error_paren     = 105;
+    static const error_type error_brace     = 106;
+    static const error_type error_badbrace  = 107;
+    static const error_type error_range     = 108;
+    static const error_type error_space     = 109;
+    static const error_type error_badrepeat = 110;
+    static const error_type error_complexity = 111;
+    static const error_type error_stack     = 112;
+}
+
+class regex_error : public _CCW_STD::runtime_error {
+    regex_constants::error_type __code_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static const char* __msg(regex_constants::error_type __c) {
+        switch (__c) {
+        case regex_constants::error_collate:    return "regex_error: invalid collating element";
+        case regex_constants::error_ctype:      return "regex_error: invalid character class";
+        case regex_constants::error_escape:     return "regex_error: invalid escape";
+        case regex_constants::error_backref:    return "regex_error: invalid back reference";
+        case regex_constants::error_brack:      return "regex_error: unbalanced [ ]";
+        case regex_constants::error_paren:      return "regex_error: unbalanced ( )";
+        case regex_constants::error_brace:      return "regex_error: unbalanced { }";
+        case regex_constants::error_badbrace:   return "regex_error: invalid range in { }";
+        case regex_constants::error_range:      return "regex_error: invalid character range";
+        case regex_constants::error_space:      return "regex_error: out of memory";
+        case regex_constants::error_badrepeat:  return "regex_error: nothing to repeat";
+        case regex_constants::error_complexity: return "regex_error: match too complex";
+        case regex_constants::error_stack:      return "regex_error: out of stack";
+        default:                                return "regex_error";
+        }
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit regex_error(regex_constants::error_type __c)
+        : _CCW_STD::runtime_error(__msg(__c)), __code_(__c) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_constants::error_type code() const { return __code_; }
+};
+
+template <class _CharT>
+class regex_traits {
+public:
+    typedef _CharT                     char_type;
+    typedef _CCW_STD::basic_string<_CharT> string_type;
+    typedef _CCW_STD::size_t           size_type;
+    typedef _CCW_STD::locale           locale_type;      // [re.traits]
+    typedef unsigned                   char_class_type;
+
+    static const char_class_type __alnum = 1, __alpha = 2, __blank = 4, __cntrl = 8,
+                                 __digit = 16, __graph = 32, __lower = 64, __print = 128,
+                                 __punct = 256, __space = 512, __upper = 1024,
+                                 __xdigit = 2048, __w = 4096;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_traits() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static size_type length(const char_type* __p) {
+        size_type __n = 0; while (__p[__n]) ++__n; return __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type translate(char_type __c) const { return __c; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type translate_nocase(char_type __c) const {
+        return (__c >= 'A' && __c <= 'Z') ? (char_type)(__c - 'A' + 'a') : __c;
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type transform(_FwdIt __f, _FwdIt __l) const {
+        return string_type(__f, __l);           // "C" locale: the identity
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type transform_primary(_FwdIt __f, _FwdIt __l) const {
+        string_type __s(__f, __l);              // primary = case-insensitive here
+        for (size_type __i = 0; __i < __s.size(); ++__i) __s[__i] = translate_nocase(__s[__i]);
+        return __s;
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type lookup_collatename(_FwdIt __f, _FwdIt __l) const {
+        string_type __s(__f, __l);
+        return __s.size() == 1 ? __s : string_type();   // only [.x.] with one character
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI char_class_type lookup_classname(_FwdIt __f, _FwdIt __l, bool __icase = false) const {
+        string_type __s(__f, __l);
+        char_class_type __r = __name_to_class(__s);
+        if (__icase && (__r == __upper || __r == __lower)) __r = __alpha;
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool isctype(char_type __c, char_class_type __f) const {
+        unsigned char __u = (unsigned char)__c;
+        bool __is_digit = __u >= '0' && __u <= '9';
+        bool __is_lower = __u >= 'a' && __u <= 'z';
+        bool __is_upper = __u >= 'A' && __u <= 'Z';
+        bool __is_alpha = __is_lower || __is_upper;
+        bool __is_space = __u == ' ' || (__u >= 0x09 && __u <= 0x0D);
+        bool __is_print = __u >= 0x20 && __u < 0x7F;
+        if ((__f & __alnum)  && (__is_alpha || __is_digit)) return true;
+        if ((__f & __alpha)  && __is_alpha) return true;
+        if ((__f & __blank)  && (__u == ' ' || __u == '\t')) return true;
+        if ((__f & __cntrl)  && (__u < 0x20 || __u == 0x7F)) return true;
+        if ((__f & __digit)  && __is_digit) return true;
+        if ((__f & __graph)  && __is_print && __u != ' ') return true;
+        if ((__f & __lower)  && __is_lower) return true;
+        if ((__f & __print)  && __is_print) return true;
+        if ((__f & __punct)  && __is_print && __u != ' ' && !__is_alpha && !__is_digit) return true;
+        if ((__f & __space)  && __is_space) return true;
+        if ((__f & __upper)  && __is_upper) return true;
+        if ((__f & __xdigit) && (__is_digit || (__u >= 'a' && __u <= 'f') || (__u >= 'A' && __u <= 'F'))) return true;
+        if ((__f & __w)      && (__is_alpha || __is_digit || __u == '_')) return true;
+        return false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int value(char_type __c, int __radix) const {
+        unsigned char __u = (unsigned char)__c;
+        int __v;
+        if (__u >= '0' && __u <= '9')      __v = __u - '0';
+        else if (__u >= 'a' && __u <= 'z') __v = __u - 'a' + 10;
+        else if (__u >= 'A' && __u <= 'Z') __v = __u - 'A' + 10;
+        else return -1;
+        return __v < __radix ? __v : -1;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale_type imbue(locale_type __l) { locale_type __o = __loc_; __loc_ = __l; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale_type getloc() const { return __loc_; }
+
+private:
+    locale_type __loc_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __name_is(const string_type& __s, const char* __n) {
+        size_type __i = 0;
+        for (; __n[__i]; ++__i) if (__i >= __s.size() || __s[__i] != (char_type)__n[__i]) return false;
+        return __i == __s.size();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static char_class_type __name_to_class(const string_type& __s) {
+        if (__name_is(__s, "alnum"))  return __alnum;
+        if (__name_is(__s, "alpha"))  return __alpha;
+        if (__name_is(__s, "blank"))  return __blank;
+        if (__name_is(__s, "cntrl"))  return __cntrl;
+        if (__name_is(__s, "digit"))  return __digit;
+        if (__name_is(__s, "graph"))  return __graph;
+        if (__name_is(__s, "lower"))  return __lower;
+        if (__name_is(__s, "print"))  return __print;
+        if (__name_is(__s, "punct"))  return __punct;
+        if (__name_is(__s, "space"))  return __space;
+        if (__name_is(__s, "upper"))  return __upper;
+        if (__name_is(__s, "xdigit")) return __xdigit;
+        if (__name_is(__s, "w"))      return __w;
+        return 0;
+    }
+};
+
+#define _CCW_RE_VEC(_Ty) _CCW_STD::vector<_Ty, _CCW_STD::allocator<_Ty> >
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isdigit(char __c) { return _CCW_STD::isdigit((unsigned char)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isalnum(char __c) { return _CCW_STD::isalnum((unsigned char)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isspace(char __c) { return _CCW_STD::isspace((unsigned char)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline char __re_tolower(char __c) { return (char)_CCW_STD::tolower((unsigned char)__c); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isdigit(wchar_t __c) { return _CCW_STD::iswdigit((wint_t)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isalnum(wchar_t __c) { return _CCW_STD::iswalnum((wint_t)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __re_isspace(wchar_t __c) { return _CCW_STD::iswspace((wint_t)__c) != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline wchar_t __re_tolower(wchar_t __c) { return (wchar_t)_CCW_STD::towlower((wint_t)__c); }
+
+template <class _CharT>
+struct __re_class {
+    bool        __negate;
+    _CCW_STD::basic_string<_CharT> __chars;
+    _CCW_STD::basic_string<_CharT> __lo, __hi;
+    int         __shorthand;   // 1 d,2 w,4 s,8 D,16 W,32 S
+    int         __posix;       // OR of the traits' char_class_type bits, from [:name:]
+    _CCW_LIBCPP_HIDE_FROM_ABI __re_class() : __negate(false), __shorthand(0), __posix(0) {}
+};
+template <class _CharT>
+struct __re_node {
+    int              __type;   // 0 char,1 any,2 class,3 bol,4 eol,5 concat,6 alt,7 repeat,8 group
+    _CharT           __c;
+    int              __cls;
+    int              __rmin, __rmax;   // repeat; max<0 = unbounded
+    int              __group;
+    _CCW_STD::vector<int> __kids;
+    _CCW_LIBCPP_HIDE_FROM_ABI __re_node() : __type(0), __c(0), __cls(-1), __rmin(0), __rmax(0), __group(0) {}
+};
+
+template <class _CharT, class _Traits = regex_traits<_CharT> >
+class basic_regex {
+public:
+    typedef _CharT value_type;
+    typedef regex_constants::syntax_option_type flag_type;
+private:
+    _CCW_RE_VEC(__re_node<_CharT>)  __nodes_;
+    _CCW_RE_VEC(__re_class<_CharT>) __classes_;
+    int                     __root_;
+    int                     __ngroups_;
+    bool                    __icase_;
+    const _CharT*             __p_;
+    const _CharT*             __pend_;
+    bool                    __err_;
+    int                     __errcode_;
+    flag_type               __flags_;   // the flag_type the ctor/assign was given
+    bool                    __bre_;     // basic or grep: POSIX basic grammar
+    bool                    __grep_;    // grep: a newline separates alternatives
+    _Traits                 __tr_;      // the traits instance ([re.regex]: getloc/imbue)
+    _CCW_LIBCPP_HIDE_FROM_ABI void __fail(int __c) { if (!__err_) { __err_ = true; __errcode_ = __c; } }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __mk(int __type) { __re_node<_CharT> __n; __n.__type = __type; __nodes_.push_back(__n); return (int)__nodes_.size() - 1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CharT __peek() const { return __p_ < __pend_ ? *__p_ : 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CharT __get() { return __p_ < __pend_ ? *__p_++ : 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI int __shbit(_CharT __e) { switch (__e) { case 'd': return 1; case 'w': return 2; case 's': return 4; case 'D': return 8; case 'W': return 16; case 'S': return 32; } return 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __parse_bracket_name(_CharT __kind, __re_class<_CharT>& __c) {
+        _CCW_STD::basic_string<_CharT> __name;
+        bool __closed = false;
+        while (__p_ < __pend_) {
+            if (__peek() == __kind && __p_ + 1 < __pend_ && __p_[1] == ']') { __get(); __get(); __closed = true; break; }
+            __name.push_back(__get());
+        }
+        const int __unknown = __kind == ':' ? regex_constants::error_ctype
+                                            : regex_constants::error_collate;
+        if (!__closed) { __fail(__unknown); return; }
+        if (__kind == ':') {
+            int __cc = (int)__tr_.lookup_classname(__name.begin(), __name.end(), __icase_);
+            if (__cc == 0) __fail(regex_constants::error_ctype);
+            else __c.__posix |= __cc;
+        } else {
+            _CCW_STD::basic_string<_CharT> __el = __tr_.lookup_collatename(__name.begin(), __name.end());
+            if (__el.empty()) __fail(regex_constants::error_collate);
+            else __c.__chars.push_back(__el[0]);
+        }
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_class_node() {
+        __re_class<_CharT> __c;
+        if (__peek() == '^') { __c.__negate = true; __get(); }
+        while (__p_ < __pend_ && __peek() != ']') {
+            _CharT __ch = __get();
+            if (__ch == '[' && (__peek() == ':' || __peek() == '.' || __peek() == '=')) {
+                __parse_bracket_name(__get(), __c);
+                continue;
+            }
+            if (__ch == '\\') { _CharT __e = __get(); int __sb = __shbit(__e); if (__sb) { __c.__shorthand |= __sb; continue; }
+                switch (__e) { case 'n': __ch = '\n'; break; case 't': __ch = '\t'; break; case 'r': __ch = '\r'; break; default: __ch = __e; } }
+            if (__peek() == '-' && __p_ + 1 < __pend_ && __p_[1] != ']') { __get(); _CharT __hi = __get(); if (__hi == '\\') __hi = __get();
+                if (__hi < __ch) __fail(regex_constants::error_range);
+                __c.__lo.push_back(__ch); __c.__hi.push_back(__hi); }
+            else __c.__chars.push_back(__ch);
+        }
+        if (__peek() == ']') __get(); else __fail(regex_constants::error_brack);   // unterminated [
+        __classes_.push_back(__c);
+        int __n = __mk(2); __nodes_[__n].__cls = (int)__classes_.size() - 1; return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_group() {
+        int __g = ++__ngroups_; int __child = __parse_alt();
+        bool __closed = __bre_ ? (__peek() == '\\' && __p_ + 1 < __pend_ && __p_[1] == ')')
+                               : (__peek() == ')');
+        if (__closed) { __get(); if (__bre_) __get(); } else __fail(regex_constants::error_paren);
+        int __n = __mk(8); __nodes_[__n].__group = __g; __nodes_[__n].__kids.push_back(__child); return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_atom() {
+        _CharT __c = __peek();
+        if (!__bre_ && (__c == '*' || __c == '+' || __c == '?')) {
+            __fail(regex_constants::error_badrepeat); __get(); return __mk(0); }
+        if (__c == '(' && !__bre_) { __get(); return __parse_group(); }
+        if (__c == ')' && !__bre_) { __fail(regex_constants::error_paren); __get(); return __mk(0); }   // stray )
+        if (__c == '[') { __get(); return __parse_class_node(); }
+        if (__c == '.') { __get(); return __mk(1); }
+        if (__c == '^') { __get(); return __mk(3); }
+        if (__c == '$') { __get(); return __mk(4); }
+        if (__c == '\\') { __get(); _CharT __e = __get(); int __sb = __shbit(__e);
+            if (__e == 0) { __fail(regex_constants::error_escape); return __mk(0); }   // dangling backslash
+            if (__bre_ && __e == '(') return __parse_group();
+            if (__bre_ && __e == ')') { __fail(regex_constants::error_paren); return __mk(0); }
+            if (__sb) { __re_class<_CharT> __cl; __cl.__shorthand = __sb; __classes_.push_back(__cl); int __n = __mk(2); __nodes_[__n].__cls = (int)__classes_.size() - 1; return __n; }
+            if (__e == 'b') return __mk(9);    // word boundary
+            if (__e == 'B') return __mk(10);   // non-word-boundary
+            if (__e >= '1' && __e <= '9') {    // backreference \1..\9
+                int __n = __mk(11); __nodes_[__n].__group = __e - '0'; return __n; }
+            _CharT __lit = __e; if (__e == 'n') __lit = '\n'; else if (__e == 't') __lit = '\t'; else if (__e == 'r') __lit = '\r';
+            int __n = __mk(0); __nodes_[__n].__c = __lit; return __n; }
+        __get(); int __n = __mk(0); __nodes_[__n].__c = __c; return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __parse_interval(int& __mn, int& __mx) {
+        __mn = 0;
+        while (__re_isdigit(__peek())) __mn = __mn * 10 + (int)(__get() - '0');
+        if (__peek() == ',') { __get(); if (__re_isdigit(__peek())) { __mx = 0; while (__re_isdigit(__peek())) __mx = __mx * 10 + (int)(__get() - '0'); } else __mx = -1; }
+        else __mx = __mn;
+        bool __closed = __bre_ ? (__peek() == '\\' && __p_ + 1 < __pend_ && __p_[1] == '}')
+                               : (__peek() == '}');
+        if (__closed) { __get(); if (__bre_) __get(); } else __fail(regex_constants::error_brace);
+        if (__mx >= 0 && __mx < __mn) __fail(regex_constants::error_badbrace);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_term() {
+        int __atom = __parse_atom();
+        _CharT __q = __peek();
+        int __mn = 0, __mx = 0; bool __quant = false;
+        if (__q == '*') { __get(); __mn = 0; __mx = -1; __quant = true; }
+        else if (!__bre_ && __q == '+') { __get(); __mn = 1; __mx = -1; __quant = true; }
+        else if (!__bre_ && __q == '?') { __get(); __mn = 0; __mx = 1; __quant = true; }
+        else if (!__bre_ && __q == '{') { __get(); __parse_interval(__mn, __mx); __quant = true; }
+        else if (__bre_ && __q == '\\' && __p_ + 1 < __pend_ && __p_[1] == '{') {
+            __get(); __get(); __parse_interval(__mn, __mx); __quant = true; }
+        if (__quant) { int __n = __mk(7); __nodes_[__n].__rmin = __mn; __nodes_[__n].__rmax = __mx; __nodes_[__n].__kids.push_back(__atom); return __n; }
+        return __atom;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __at_alt() const {
+        if (__p_ >= __pend_) return false;
+        if (__bre_) return __grep_ && *__p_ == '\n';
+        return *__p_ == '|';
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __at_group_end() const {
+        if (__p_ >= __pend_) return false;
+        if (__bre_) return *__p_ == '\\' && __p_ + 1 < __pend_ && __p_[1] == ')';
+        return *__p_ == ')';
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_seq() {
+        int __n = __mk(5);   // concat
+        for (;;) { if (__p_ >= __pend_ || __peek() == 0 || __at_alt() || __at_group_end()) break;
+            int __t = __parse_term(); __nodes_[__n].__kids.push_back(__t); }
+        return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int __parse_alt() {
+        int __first = __parse_seq();
+        if (!__at_alt()) return __first;
+        int __n = __mk(6); __nodes_[__n].__kids.push_back(__first);
+        while (__at_alt()) { __get(); int __s = __parse_seq(); __nodes_[__n].__kids.push_back(__s); }
+        return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __compile(const _CCW_STD::basic_string<_CharT>& __pat) {
+        __p_ = __pat.data(); __pend_ = __pat.data() + __pat.size();
+        __ngroups_ = 0; __err_ = false; __errcode_ = 0;
+        __grep_ = (__flags_ & regex_constants::grep) != 0;
+        __bre_  = __grep_ || (__flags_ & regex_constants::basic) != 0;
+        __root_ = __parse_alt();
+        if (__p_ < __pend_) __fail(regex_constants::error_paren);   // leftover input (e.g. a stray ')')
+        for (_CCW_STD::size_t __i = 0; __i < __nodes_.size(); ++__i)
+            if (__nodes_[__i].__type == 11 && __nodes_[__i].__group > __ngroups_) __fail(regex_constants::error_backref);
+        if (__err_) _CCW_THROW(regex_error(__errcode_));
+    }
+
+    struct __cont {
+        int __node; int __closegrp; int __rnode; int __rcount; const __cont* __next;
+        _CCW_LIBCPP_HIDE_FROM_ABI __cont() : __node(-1), __closegrp(-1), __rnode(-1), __rcount(0), __next(0) {}
+    };
+    struct __state {
+        const _CharT* __beg; const _CharT* __end; int __flags;
+        _CCW_RE_VEC(const _CharT*) __caps;   // 2*(ngroups+1)
+        const _CharT* __matchend;
+        long __steps;
+        const _CharT* __sbase;   // stack address captured at __match_at, for the depth guard
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __eqc(_CharT __a, _CharT __b) const {
+        if (__a == __b) return true;
+        if (__icase_) return __re_tolower(__a) == __re_tolower(__b);
+        return false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __isword(_CharT __c) { return __re_isalnum(__c) || __c == '_'; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __clsmatch(const __re_class<_CharT>& __cl, _CharT __ch) const {
+        bool __m = false;
+        for (_CCW_STD::size_t __i = 0; __i < __cl.__chars.size() && !__m; ++__i) if (__eqc(__cl.__chars[__i], __ch)) __m = true;
+        for (_CCW_STD::size_t __i = 0; __i < __cl.__lo.size() && !__m; ++__i) if (__ch >= __cl.__lo[__i] && __ch <= __cl.__hi[__i]) __m = true;
+        if (!__m && __cl.__shorthand) {
+            if ((__cl.__shorthand & 1) && __re_isdigit(__ch)) __m = true;
+            if ((__cl.__shorthand & 2) && (__re_isalnum(__ch) || __ch == '_')) __m = true;
+            if ((__cl.__shorthand & 4) && __re_isspace(__ch)) __m = true;
+            if ((__cl.__shorthand & 8) && !__re_isdigit(__ch)) __m = true;
+            if ((__cl.__shorthand & 16) && !(__re_isalnum(__ch) || __ch == '_')) __m = true;
+            if ((__cl.__shorthand & 32) && !__re_isspace(__ch)) __m = true; }
+        if (!__m && __cl.__posix && __tr_.isctype(__ch, __cl.__posix)) __m = true;
+        return __cl.__negate ? !__m : __m;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __m(const __cont* __k, const _CharT* __sp, __state& __st) const {
+        if (++__st.__steps > 20000000L) return false;   // runaway guard (total work)
+        { _CharT __probe; long __used = (long)(__st.__sbase - &__probe);
+          if (__used < 0) __used = -__used;
+          if (__used > 600000L) return false; }
+        if (!__k) { __st.__matchend = __sp; return true; }
+        if (__k->__closegrp >= 0) { const _CharT* __o = __st.__caps[2 * __k->__closegrp + 1]; __st.__caps[2 * __k->__closegrp + 1] = __sp;
+            if (__m(__k->__next, __sp, __st)) return true; __st.__caps[2 * __k->__closegrp + 1] = __o; return false; }
+        if (__k->__rnode >= 0) return __m_rep(__k->__rnode, __k->__rcount, __k->__next, __sp, __st);
+        const __re_node<_CharT>& __n = __nodes_[__k->__node];
+        switch (__n.__type) {
+        case 0: if (__sp < __st.__end && __eqc(__n.__c, *__sp)) return __m(__k->__next, __sp + 1, __st); return false;
+        case 1: if (__sp < __st.__end && *__sp != '\n') return __m(__k->__next, __sp + 1, __st); return false;
+        case 2: if (__sp < __st.__end && __clsmatch(__classes_[__n.__cls], *__sp)) return __m(__k->__next, __sp + 1, __st); return false;
+        case 3: if ((__sp == __st.__beg && !(__st.__flags & regex_constants::match_not_bol)) || (__sp > __st.__beg && __sp[-1] == '\n')) return __m(__k->__next, __sp, __st); return false;
+        case 4: if ((__sp == __st.__end && !(__st.__flags & regex_constants::match_not_eol)) || (__sp < __st.__end && *__sp == '\n')) return __m(__k->__next, __sp, __st); return false;
+        case 5: return __m_seq(__n.__kids, __k->__next, __sp, __st);
+        case 6: { const __cont* __after = __k->__next;
+            for (_CCW_STD::size_t __i = 0; __i < __n.__kids.size(); ++__i) { __cont __c; __c.__node = __n.__kids[__i]; __c.__next = __after; if (__m(&__c, __sp, __st)) return true; } return false; }
+        case 7: return __m_rep(__k->__node, 0, __k->__next, __sp, __st);
+        case 8: { int __g = __n.__group; const _CharT* __os = __st.__caps[2 * __g]; __st.__caps[2 * __g] = __sp;
+            __cont __close; __close.__closegrp = __g; __close.__next = __k->__next;
+            __cont __inner; __inner.__node = __n.__kids[0]; __inner.__next = &__close;
+            if (__m(&__inner, __sp, __st)) return true; __st.__caps[2 * __g] = __os; return false; }
+        case 9: {   // \b word boundary (zero-width)
+            bool __l = (__sp > __st.__beg) && __isword(__sp[-1]);
+            bool __r = (__sp < __st.__end) && __isword(*__sp);
+            if (__l != __r) return __m(__k->__next, __sp, __st); return false; }
+        case 10: {  // \B non-word-boundary (zero-width)
+            bool __l = (__sp > __st.__beg) && __isword(__sp[-1]);
+            bool __r = (__sp < __st.__end) && __isword(*__sp);
+            if (__l == __r) return __m(__k->__next, __sp, __st); return false; }
+        case 11: {  // \N backreference: match the text previously captured by group N
+            int __g = __n.__group;
+            const _CharT* __gs = __st.__caps[2 * __g];
+            const _CharT* __ge = __st.__caps[2 * __g + 1];
+            if (!__gs || !__ge) return __m(__k->__next, __sp, __st);   // group did not participate -> empty
+            _CCW_STD::size_t __len = (_CCW_STD::size_t)(__ge - __gs);
+            if ((_CCW_STD::size_t)(__st.__end - __sp) < __len) return false;
+            for (_CCW_STD::size_t __i = 0; __i < __len; ++__i) if (!__eqc(__gs[__i], __sp[__i])) return false;
+            return __m(__k->__next, __sp + __len, __st); }
+        }
+        return false;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __m_seq(const _CCW_STD::vector<int>& __kids, const __cont* __after, const _CharT* __sp, __state& __st) const {
+        _CCW_STD::size_t __n = __kids.size();
+        if (__n == 0) return __m(__after, __sp, __st);
+        _CCW_STD::vector<__cont> __c(__n);
+        for (_CCW_STD::size_t __i = 0; __i < __n; ++__i) { __c[__i].__node = __kids[__i]; __c[__i].__next = (__i + 1 < __n) ? &__c[__i + 1] : __after; }
+        return __m(&__c[0], __sp, __st);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __m_rep(int __rn, int __count, const __cont* __after, const _CharT* __sp, __state& __st) const {
+        const __re_node<_CharT>& __nd = __nodes_[__rn];
+        bool __can = (__nd.__rmax < 0) || (__count < __nd.__rmax);
+        bool __must = __count < __nd.__rmin;
+        if (__count > (int)(__st.__end - __st.__beg) + __nd.__rmin + 8) __can = false;
+        if (__can) {
+            __cont __rep; __rep.__rnode = __rn; __rep.__rcount = __count + 1; __rep.__next = __after;
+            __cont __one; __one.__node = __nd.__kids[0]; __one.__next = &__rep;
+            if (__m(&__one, __sp, __st)) return true;
+        }
+        if (!__must) return __m(__after, __sp, __st);
+        return false;
+    }
+
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex() : __root_(-1), __ngroups_(0), __icase_(false), __err_(false), __errcode_(0), __flags_(regex_constants::ECMAScript), __bre_(false), __grep_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex(const _CCW_STD::basic_string<_CharT>& __pat, flag_type __f = regex_constants::ECMAScript) : __ngroups_(0), __icase_((__f & regex_constants::icase) != 0), __flags_(__f) { __compile(__pat); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex(const _CharT* __pat, flag_type __f = regex_constants::ECMAScript) : __ngroups_(0), __icase_((__f & regex_constants::icase) != 0), __flags_(__f) { __compile(_CCW_STD::basic_string<_CharT>(__pat)); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI unsigned mark_count() const { return (unsigned)__ngroups_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI flag_type flags() const { return __flags_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& assign(const _CCW_STD::basic_string<_CharT>& __pat, flag_type __f = regex_constants::ECMAScript)
+        { __ngroups_ = 0; __icase_ = (__f & regex_constants::icase) != 0; __flags_ = __f; __compile(__pat); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& assign(const _CharT* __pat, flag_type __f = regex_constants::ECMAScript)
+        { return assign(_CCW_STD::basic_string<_CharT>(__pat), __f); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& operator=(const _CCW_STD::basic_string<_CharT>& __pat) { return assign(__pat); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& operator=(const _CharT* __pat) { return assign(_CCW_STD::basic_string<_CharT>(__pat)); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_regex& __o) {
+        __nodes_.swap(__o.__nodes_); __classes_.swap(__o.__classes_);
+        int __t;
+        __t = __root_;    __root_    = __o.__root_;    __o.__root_    = __t;
+        __t = __ngroups_; __ngroups_ = __o.__ngroups_; __o.__ngroups_ = __t;
+        bool __b = __icase_; __icase_ = __o.__icase_; __o.__icase_ = __b;
+        flag_type __f = __flags_; __flags_ = __o.__flags_; __o.__flags_ = __f;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __match_at(const _CharT* __beg, const _CharT* __end, const _CharT* __sp, _CCW_RE_VEC(const _CharT*)& __caps, int __flags) const {
+        _CharT __base;   // stack watermark for the recursion-depth guard in __m
+        __state __st; __st.__beg = __beg; __st.__end = __end; __st.__flags = __flags; __st.__steps = 0; __st.__matchend = 0; __st.__sbase = &__base;
+        __st.__caps.assign((_CCW_STD::size_t)(2 * (__ngroups_ + 1)), (const _CharT*)0);
+        __st.__caps[0] = __sp;
+        if (__root_ < 0) return false;
+        __cont __root; __root.__node = __root_; __root.__next = 0;
+        if (__m(&__root, __sp, __st)) { __st.__caps[1] = __st.__matchend; __caps = __st.__caps; return true; }
+        return false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int __ngroups() const { return __ngroups_; }
+
+    typedef _Traits                    traits_type;
+    typedef _CCW_STD::basic_string<char> string_type;
+    typedef typename _Traits::locale_type locale_type;
+
+    static const flag_type ECMAScript = regex_constants::ECMAScript;
+    static const flag_type icase      = regex_constants::icase;
+    static const flag_type nosubs     = regex_constants::nosubs;
+    static const flag_type optimize   = regex_constants::optimize;
+    static const flag_type collate    = regex_constants::collate;
+    static const flag_type multiline  = regex_constants::multiline;
+    static const flag_type basic      = regex_constants::basic;
+    static const flag_type extended   = regex_constants::extended;
+    static const flag_type awk        = regex_constants::awk;
+    static const flag_type grep       = regex_constants::grep;
+    static const flag_type egrep      = regex_constants::egrep;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI locale_type imbue(locale_type __l) { return __tr_.imbue(__l); }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale_type getloc() const { return __tr_.getloc(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex(const _CharT* __pat, _CCW_STD::size_t __n, flag_type __f = regex_constants::ECMAScript)
+        : __ngroups_(0), __icase_((__f & regex_constants::icase) != 0), __flags_(__f) {
+        __compile(_CCW_STD::basic_string<_CharT>(__pat, __n));
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex(_FwdIt __f, _FwdIt __l, flag_type __fl = regex_constants::ECMAScript)
+        : __ngroups_(0), __icase_((__fl & regex_constants::icase) != 0), __flags_(__fl) {
+        __compile(_CCW_STD::basic_string<_CharT>(__f, __l));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& assign(const _CharT* __pat, _CCW_STD::size_t __n, flag_type __f = regex_constants::ECMAScript) {
+        return __assign_str(_CCW_STD::basic_string<_CharT>(__pat, __n), __f);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& __assign_str(const _CCW_STD::basic_string<_CharT>& __pat, flag_type __f) {
+        __ngroups_ = 0; __icase_ = (__f & regex_constants::icase) != 0; __flags_ = __f;
+        __compile(__pat); return *this;
+    }
+    template <class _FwdIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_regex& assign(_FwdIt __f, _FwdIt __l, flag_type __fl = regex_constants::ECMAScript) {
+        return __assign_str(_CCW_STD::basic_string<_CharT>(__f, __l), __fl);
+    }
+private:
+public:
+};
+
+typedef basic_regex<char>    regex;
+typedef basic_regex<wchar_t> wregex;
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(regex& __a, regex& __b)   { __a.swap(__b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(wregex& __a, wregex& __b) { __a.swap(__b); }
+
+template <class _It> struct __re_char_of { typedef typename _It::value_type type; };
+template <> struct __re_char_of<const char*>    { typedef char type; };
+template <> struct __re_char_of<char*>          { typedef char type; };
+template <> struct __re_char_of<const wchar_t*> { typedef wchar_t type; };
+template <> struct __re_char_of<wchar_t*>       { typedef wchar_t type; };
+
+template <class _BiIter>
+class sub_match {
+public:
+    typedef typename __re_char_of<_BiIter>::type                    value_type;
+    typedef _CCW_STD::basic_string<value_type>                      string_type;
+    typedef _CCW_STD::ptrdiff_t                                     difference_type;
+    typedef _BiIter                                                 iterator;
+
+    _BiIter first, second;
+    bool    matched;
+    _CCW_LIBCPP_HIDE_FROM_ABI sub_match() : matched(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t length() const { return matched ? (_CCW_STD::size_t)(second - first) : 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type str() const { return matched ? string_type(first, second) : string_type(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const string_type& __s) const { return str().compare(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const value_type* __s) const { return str().compare(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const sub_match& __o) const { return str().compare(__o.str()); }
+};
+
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const sub_match<_BiIter>& __a, const sub_match<_BiIter>& __b) { return __a.str() == __b.str(); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const sub_match<_BiIter>& __a, const sub_match<_BiIter>& __b) { return __a.str() != __b.str(); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::string_type& __b) { return __a.str() == __b; }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::string_type& __b) { return __a.str() != __b; }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const typename sub_match<_BiIter>::string_type& __a, const sub_match<_BiIter>& __b) { return __a == __b.str(); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const typename sub_match<_BiIter>::string_type& __a, const sub_match<_BiIter>& __b) { return __a != __b.str(); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::value_type* __b) { return __a.str() == typename sub_match<_BiIter>::string_type(__b); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::value_type* __b) { return __a.str() != typename sub_match<_BiIter>::string_type(__b); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const typename sub_match<_BiIter>::value_type* __a, const sub_match<_BiIter>& __b) { return typename sub_match<_BiIter>::string_type(__a) == __b.str(); }
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const typename sub_match<_BiIter>::value_type* __a, const sub_match<_BiIter>& __b) { return typename sub_match<_BiIter>::string_type(__a) != __b.str(); }
+
+#define _CCW_SM_ORD(_Op)                                                                                             \
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator _Op(const sub_match<_BiIter>& __a, const sub_match<_BiIter>& __b) { return __a.str() _Op __b.str(); } \
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator _Op(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::string_type& __b)    { return __a.str() _Op __b; }       \
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator _Op(const typename sub_match<_BiIter>::string_type& __a, const sub_match<_BiIter>& __b)    { return __a _Op __b.str(); }       \
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator _Op(const sub_match<_BiIter>& __a, const typename sub_match<_BiIter>::value_type* __b)            { return __a.str() _Op typename sub_match<_BiIter>::string_type(__b); } \
+template <class _BiIter> _CCW_LIBCPP_HIDE_FROM_ABI bool operator _Op(const typename sub_match<_BiIter>::value_type* __a, const sub_match<_BiIter>& __b)            { return typename sub_match<_BiIter>::string_type(__a) _Op __b.str(); }
+_CCW_SM_ORD(<)
+_CCW_SM_ORD(<=)
+_CCW_SM_ORD(>)
+_CCW_SM_ORD(>=)
+#undef _CCW_SM_ORD
+
+template <class _CharT, class _Traits, class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const sub_match<_BiIter>& __m) { return __os << __m.str(); }
+
+typedef sub_match<const char*>                       csub_match;
+typedef sub_match<_CCW_STD::string::const_iterator>  ssub_match;
+typedef sub_match<const wchar_t*>                    wcsub_match;
+typedef sub_match<_CCW_STD::wstring::const_iterator> wssub_match;
+
+template <class _BiIter>
+class match_results {
+    typedef _CCW_RE_VEC(sub_match<_BiIter>) __sub_vec;
+    __sub_vec __subs_;
+    _BiIter __prefix_first_, __prefix_second_, __suffix_first_, __suffix_second_;
+    bool    __ready_;
+public:
+    typedef sub_match<_BiIter>                                          value_type;
+    typedef typename sub_match<_BiIter>::value_type                     char_type;
+    typedef typename __sub_vec::const_iterator                           const_iterator;
+    typedef const_iterator                                              iterator;
+    _CCW_LIBCPP_HIDE_FROM_ABI match_results() : __ready_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool ready() const { return __ready_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool empty() const { return __subs_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t size() const { return __subs_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin()  const { return __subs_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end()    const { return __subs_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __subs_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend()   const { return __subs_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const sub_match<_BiIter>& operator[](_CCW_STD::size_t __i) const { return __subs_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t position(_CCW_STD::size_t __i = 0) const { return (_CCW_STD::size_t)(__subs_[__i].first - __prefix_first_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t length(_CCW_STD::size_t __i = 0) const { return __subs_[__i].length(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI typename sub_match<_BiIter>::string_type str(_CCW_STD::size_t __i = 0) const { return __subs_[__i].str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI sub_match<_BiIter> prefix() const { sub_match<_BiIter> __s; __s.first = __prefix_first_; __s.second = __prefix_second_; __s.matched = __prefix_first_ != __prefix_second_; return __s; }
+    _CCW_LIBCPP_HIDE_FROM_ABI sub_match<_BiIter> suffix() const { sub_match<_BiIter> __s; __s.first = __suffix_first_; __s.second = __suffix_second_; __s.matched = __suffix_first_ != __suffix_second_; return __s; }
+    template <class _Rx>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set(const _Rx& __re, _BiIter __sbeg, const char_type* __cbeg,
+                                         const _CCW_RE_VEC(const char_type*)& __caps, const char_type* __mend) {
+        __ready_ = true; __subs_.clear();
+        int __ng = __re.__ngroups();
+        for (int __g = 0; __g <= __ng; ++__g) {
+            sub_match<_BiIter> __s;
+            const char_type* __f = __caps[2 * __g];
+            const char_type* __e = (__g == 0) ? __mend : __caps[2 * __g + 1];
+            if (__f && __e) { __s.first = __sbeg + (__f - __cbeg); __s.second = __sbeg + (__e - __cbeg); __s.matched = true; }
+            else { __s.first = __sbeg; __s.second = __sbeg; __s.matched = false; }
+            __subs_.push_back(__s);
+        }
+        __prefix_first_ = __sbeg; __prefix_second_ = __subs_[0].first;
+        __suffix_first_ = __subs_[0].second; __suffix_second_ = __sbeg + 0;   // suffix end fixed by caller
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set_suffix_end(_BiIter __e) { __suffix_second_ = __e; }
+
+    typedef _CCW_STD::allocator<sub_match<_BiIter> > allocator_type;
+    typedef _CCW_STD::basic_string<char_type>        string_type;
+    typedef _CCW_STD::size_t                         size_type;
+    typedef _CCW_STD::ptrdiff_t                      difference_type;
+    typedef const sub_match<_BiIter>&                const_reference;
+    typedef sub_match<_BiIter>&                      reference;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit match_results(const allocator_type&) : __ready_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return allocator_type(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __subs_.max_size(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(match_results& __o) {
+        __subs_.swap(__o.__subs_);
+        _BiIter __t;
+        __t = __prefix_first_;  __prefix_first_  = __o.__prefix_first_;  __o.__prefix_first_  = __t;
+        __t = __prefix_second_; __prefix_second_ = __o.__prefix_second_; __o.__prefix_second_ = __t;
+        __t = __suffix_first_;  __suffix_first_  = __o.__suffix_first_;  __o.__suffix_first_  = __t;
+        __t = __suffix_second_; __suffix_second_ = __o.__suffix_second_; __o.__suffix_second_ = __t;
+        bool __b = __ready_; __ready_ = __o.__ready_; __o.__ready_ = __b;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type format(const string_type& __fmt,
+            regex_constants::match_flag_type __flags = regex_constants::format_default) const {
+        string_type __out_;
+        __format_into(__out_, __fmt, __flags);
+        return __out_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type format(const char_type* __fmt,
+            regex_constants::match_flag_type __flags = regex_constants::format_default) const {
+        return format(string_type(__fmt), __flags);
+    }
+    template <class _OutIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI _OutIt format(_OutIt __o, const string_type& __fmt,
+            regex_constants::match_flag_type __flags = regex_constants::format_default) const {
+        string_type __t; __format_into(__t, __fmt, __flags);
+        for (size_type __i = 0; __i < __t.size(); ++__i) { *__o = __t[__i]; ++__o; }
+        return __o;
+    }
+
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI void __format_into(string_type& __out_, const string_type& __fmt,
+                                                 regex_constants::match_flag_type __flags) const {
+        const bool __sed = (__flags & regex_constants::format_sed) != 0;
+        for (size_type __i = 0; __i < __fmt.size(); ++__i) {
+            char_type __c = __fmt[__i];
+            if (__sed) {
+                if (__c == '\\' && __i + 1 < __fmt.size()) {
+                    char_type __n = __fmt[++__i];
+                    if (__n >= '0' && __n <= '9') { __out_ += __safe_str((size_type)(__n - '0')); continue; }
+                    __out_ += __n; continue;
+                }
+                if (__c == '&') { __out_ += str(0); continue; }
+                __out_ += __c;
+                continue;
+            }
+            if (__c != '$') { __out_ += __c; continue; }
+            if (__i + 1 >= __fmt.size()) { __out_ += __c; continue; }
+            char_type __n = __fmt[++__i];
+            if (__n == '$')      { __out_ += '$'; }
+            else if (__n == '&') { __out_ += str(0); }
+            else if (__n == '`') { __out_ += prefix().str(); }
+            else if (__n == '\'') { __out_ += suffix().str(); }
+            else if (__n >= '0' && __n <= '9') {
+                size_type __k = (size_type)(__n - '0');
+                if (__i + 1 < __fmt.size() && __fmt[__i + 1] >= '0' && __fmt[__i + 1] <= '9') {
+                    size_type __two = __k * 10 + (size_type)(__fmt[__i + 1] - '0');
+                    if (__two < size()) { __k = __two; ++__i; }
+                }
+                __out_ += __safe_str(__k);
+            } else {
+                __out_ += '$'; __out_ += __n;      // not a placeholder: copied through
+            }
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type __safe_str(size_type __i) const {
+        return __i < size() ? str(__i) : string_type();
+    }
+public:
+};
+
+typedef match_results<_CCW_STD::string::const_iterator>  smatch;
+typedef match_results<const char*>                      cmatch;
+typedef match_results<_CCW_STD::wstring::const_iterator> wsmatch;
+typedef match_results<const wchar_t*>                    wcmatch;
+
+template <class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI inline const typename __re_char_of<_BiIter>::type*
+__re_addr(_BiIter __first, _BiIter __last) {
+    return __first == __last ? (const typename __re_char_of<_BiIter>::type*)0 : &*__first;
+}
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __regex_search_impl(const _CharT* __beg, const _CharT* __end,
+        const basic_regex<_CharT, _Traits>& __re, _CCW_RE_VEC(const _CharT*)& __caps,
+        const _CharT*& __mstart, const _CharT*& __mend, int __flags) {
+    for (const _CharT* __sp = __beg; ; ++__sp) {
+        if (__re.__match_at(__beg, __end, __sp, __caps, __flags)) { __mstart = __sp; __mend = __caps[1] ? __caps[1] : __sp; return true; }
+        if ((__flags & regex_constants::match_continuous) != 0) break;
+        if (__sp == __end) break;
+    }
+    return false;
+}
+
+template <class _CharT, class _Traits, class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_search(const _CharT* __s, match_results<_BiIter>& __m,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __end = __s; while (*__end) ++__end;
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __ms; const _CharT* __me;
+    if (!__regex_search_impl(__s, __end, __re, __caps, __ms, __me, __flags)) return false;
+    __m.__set(__re, __s, __s, __caps, __me); __m.__set_suffix_end(__end); return true;
+}
+template <class _CharT, class _Traits, class _Alloc, class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_search(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s,
+        match_results<_BiIter>& __m,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __b = __s.data(); const _CharT* __e = __b + __s.size();
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __ms; const _CharT* __me;
+    if (!__regex_search_impl(__b, __e, __re, __caps, __ms, __me, __flags)) return false;
+    __m.__set(__re, __s.begin(), __b, __caps, __me); __m.__set_suffix_end(__s.end()); return true;
+}
+template <class _CharT, class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_search(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __b = __s.data(); const _CharT* __e = __b + __s.size();
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __ms; const _CharT* __me;
+    return __regex_search_impl(__b, __e, __re, __caps, __ms, __me, __flags);
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_search(const _CharT* __s, const basic_regex<_CharT, _Traits>& __re,
+        int __flags = regex_constants::match_default) {
+    const _CharT* __e = __s; while (*__e) ++__e;
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __ms; const _CharT* __me;
+    return __regex_search_impl(__s, __e, __re, __caps, __ms, __me, __flags);
+}
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __regex_match_impl(const _CharT* __beg, const _CharT* __end,
+        const basic_regex<_CharT, _Traits>& __re, _CCW_RE_VEC(const _CharT*)& __caps,
+        const _CharT*& __mend, int __flags) {
+    if (!__re.__match_at(__beg, __end, __beg, __caps, __flags)) return false;
+    __mend = __caps[1] ? __caps[1] : __beg;
+    return __mend == __end;   // whole-string match
+}
+template <class _CharT, class _Traits, class _Alloc, class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_match(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s,
+        match_results<_BiIter>& __m,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __b = __s.data(); const _CharT* __e = __b + __s.size();
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __me;
+    if (!__regex_match_impl(__b, __e, __re, __caps, __me, __flags)) return false;
+    __m.__set(__re, __s.begin(), __b, __caps, __me); __m.__set_suffix_end(__s.end()); return true;
+}
+template <class _CharT, class _Traits, class _BiIter>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_match(const _CharT* __s, match_results<_BiIter>& __m,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __e = __s; while (*__e) ++__e;
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __me;
+    if (!__regex_match_impl(__s, __e, __re, __caps, __me, __flags)) return false;
+    __m.__set(__re, __s, __s, __caps, __me); __m.__set_suffix_end(__e); return true;
+}
+template <class _CharT, class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_match(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s,
+        const basic_regex<_CharT, _Traits>& __re, int __flags = regex_constants::match_default) {
+    const _CharT* __b = __s.data(); const _CharT* __e = __b + __s.size();
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __me;
+    return __regex_match_impl(__b, __e, __re, __caps, __me, __flags);
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool regex_match(const _CharT* __s, const basic_regex<_CharT, _Traits>& __re,
+        int __flags = regex_constants::match_default) {
+    const _CharT* __e = __s; while (*__e) ++__e;
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __me;
+    return __regex_match_impl(__s, __e, __re, __caps, __me, __flags);
+}
+
+template <class _CharT, class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>
+regex_replace(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s, const basic_regex<_CharT, _Traits>& __re, const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __fmt,
+              int __flags = regex_constants::match_default) {
+    typedef _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc> _Str;
+    _Str __out_;
+    const _CharT* __b = __s.data(); const _CharT* __e = __b + __s.size();
+    const _CharT* __cur = __b;
+    _CCW_RE_VEC(const _CharT*) __caps; const _CharT* __ms; const _CharT* __me;
+    bool __nocopy = (__flags & regex_constants::format_no_copy) != 0;
+    bool __sed    = (__flags & regex_constants::format_sed) != 0;
+    for (;;) {
+        if (!__regex_search_impl(__cur, __e, __re, __caps, __ms, __me, __flags)) break;
+        if (!__nocopy) __out_.append(_Str(__cur, __ms));   // prefix (unless format_no_copy)
+        for (_CCW_STD::size_t __i = 0; __i < __fmt.size(); ++__i) {   // expand format
+            if (__sed) {
+                if (__fmt[__i] == (_CharT)0x5C && __i + 1 < __fmt.size()) {
+                    _CharT __d = __fmt[++__i];
+                    if (__d >= (_CharT)0x30 && __d <= (_CharT)0x39) { int __g = (int)(__d - (_CharT)0x30);
+                        if (2 * __g + 1 < (int)__caps.size() && __caps[2 * __g] && __caps[2 * __g + 1]) __out_.append(_Str(__caps[2 * __g], __caps[2 * __g + 1])); }
+                    else __out_.push_back(__d);
+                } else if (__fmt[__i] == (_CharT)0x26) __out_.append(_Str(__ms, __me));
+                else __out_.push_back(__fmt[__i]);
+                continue;
+            }
+            if (__fmt[__i] == (_CharT)0x24 && __i + 1 < __fmt.size()) {
+                _CharT __d = __fmt[__i + 1];
+                if (__d == (_CharT)0x24) { __out_.push_back((_CharT)0x24); ++__i; }
+                else if (__d == (_CharT)0x26) { __out_.append(_Str(__ms, __me)); ++__i; }
+                else if (__d >= (_CharT)0x30 && __d <= (_CharT)0x39) { int __g = (int)(__d - (_CharT)0x30); ++__i;
+                    if (2 * __g + 1 < (int)__caps.size() && __caps[2 * __g] && __caps[2 * __g + 1]) __out_.append(_Str(__caps[2 * __g], __caps[2 * __g + 1])); }
+                else __out_.push_back((_CharT)0x24);
+            } else __out_.push_back(__fmt[__i]);
+        }
+        if (__me == __cur) { if (__cur == __e) break; __out_.push_back(*__cur); ++__cur; }   // zero-width: advance one
+        else __cur = __me;
+        if (__flags & regex_constants::format_first_only) break;
+    }
+    if (!__nocopy) __out_.append(_Str(__cur, __e));   // trailing (unless format_no_copy)
+    return __out_;
+}
+template <class _CharT, class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>
+regex_replace(const _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>& __s, const basic_regex<_CharT, _Traits>& __re, const _CharT* __fmt,
+              int __flags = regex_constants::match_default) {
+    return regex_replace(__s, __re, _CCW_STD::basic_string<_CharT, _CCW_STD::char_traits<_CharT>, _Alloc>(__fmt), __flags);
+}
+
+template <class _BiIter>
+class regex_iterator {
+public:
+    typedef typename __re_char_of<_BiIter>::type                     char_type;
+    typedef basic_regex<char_type>                                  regex_type;
+    typedef match_results<_BiIter>                                  value_type;
+private:
+    const regex_type*      __re_;
+    const char_type*       __beg_;    // the engine's view of the range
+    const char_type*       __end_;
+    const char_type*       __pos_;
+    _BiIter                __sbeg_;   // the caller's, for turning positions back
+    _BiIter                __send_;
+    match_results<_BiIter> __m_;
+    int                    __flags_;
+    bool                   __atend_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_iterator() : __re_(0), __beg_(0), __end_(0), __pos_(0), __flags_(0), __atend_(true) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_iterator(_BiIter __b, _BiIter __e, const regex_type& __re, int __flags = regex_constants::match_default)
+        : __re_(&__re), __beg_(__re_addr(__b, __e)), __end_(__beg_ + (__e - __b)), __pos_(__beg_),
+          __sbeg_(__b), __send_(__e), __flags_(__flags), __atend_(false) { __next(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const regex_iterator& __o) const {
+        if (__atend_ || __o.__atend_) return __atend_ == __o.__atend_;
+        return __pos_ == __o.__pos_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const regex_iterator& __o) const { return !(*this == __o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const match_results<_BiIter>& operator*()  const { return __m_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const match_results<_BiIter>* operator->() const { return &__m_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_iterator& operator++() { __next(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_iterator operator++(int) { regex_iterator __t(*this); __next(); return __t; }
+    typedef _CCW_STD::ptrdiff_t           difference_type;
+    typedef const match_results<_BiIter>* pointer;
+    typedef const match_results<_BiIter>& reference;
+    typedef _CCW_STD::forward_iterator_tag iterator_category;
+
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI void __next() {
+        if (__atend_) return;
+        if (!__beg_ || __pos_ > __end_) { __atend_ = true; return; }
+        _CCW_RE_VEC(const char_type*) __caps; const char_type* __ms; const char_type* __me;
+        if (!__regex_search_impl(__pos_, __end_, *__re_, __caps, __ms, __me, __flags_)) { __atend_ = true; return; }
+        __m_.__set(*__re_, __sbeg_, __beg_, __caps, __me);
+        __m_.__set_suffix_end(__send_);
+        __pos_ = (__me == __ms) ? __me + 1 : __me;   // zero-width match: step on
+    }
+};
+
+template <class _BiIter>
+class regex_token_iterator {
+public:
+    typedef typename __re_char_of<_BiIter>::type                     char_type;
+    typedef basic_regex<char_type>                                  regex_type;
+    typedef sub_match<_BiIter>                                      value_type;
+private:
+    regex_iterator<_BiIter> __it_;
+    int                     __sub_;
+    sub_match<_BiIter>      __cur_;
+    _BiIter                 __last_end_;
+    _BiIter                 __seq_end_;
+    bool                    __atend_;
+    int                     __state_;   // 0 = walking matches, 2 = finished
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_token_iterator() : __sub_(0), __atend_(true), __state_(2) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_token_iterator(_BiIter __b, _BiIter __e, const regex_type& __re, int __sub = 0, int __flags = regex_constants::match_default)
+        : __it_(__b, __e, __re, __flags), __sub_(__sub), __last_end_(__b), __seq_end_(__e), __atend_(false), __state_(0) { __load(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const regex_token_iterator& __o) const { return __atend_ == __o.__atend_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const regex_token_iterator& __o) const { return !(*this == __o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const sub_match<_BiIter>& operator*()  const { return __cur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const sub_match<_BiIter>* operator->() const { return &__cur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_token_iterator& operator++() { __load(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI regex_token_iterator operator++(int) { regex_token_iterator __t(*this); __load(); return __t; }
+    typedef _CCW_STD::ptrdiff_t         difference_type;
+    typedef const sub_match<_BiIter>*   pointer;
+    typedef const sub_match<_BiIter>&   reference;
+    typedef _CCW_STD::forward_iterator_tag iterator_category;
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI void __load() {
+        if (__state_ != 0) { __atend_ = true; return; }
+        regex_iterator<_BiIter> __e;
+        if (!(__it_ != __e)) {                       // no match left
+            if (__sub_ < 0 && __last_end_ != __seq_end_) {
+                __cur_.first = __last_end_; __cur_.second = __seq_end_; __cur_.matched = true;
+                __state_ = 2; return;                // emit the trailing field
+            }
+            __atend_ = true; __state_ = 2; return;
+        }
+        const match_results<_BiIter>& __m = *__it_;
+        if (__sub_ < 0) {
+            __cur_.first = __last_end_; __cur_.second = __m[0].first; __cur_.matched = true;
+            __last_end_ = __m[0].second;
+        } else {
+            __cur_ = __m[(_CCW_STD::size_t)__sub_];
+        }
+        ++__it_;
+    }
+};
+
+typedef regex_iterator<_CCW_STD::string::const_iterator>        sregex_iterator;
+typedef regex_iterator<const char*>                             cregex_iterator;
+typedef regex_iterator<_CCW_STD::wstring::const_iterator>       wsregex_iterator;
+typedef regex_iterator<const wchar_t*>                          wcregex_iterator;
+typedef regex_token_iterator<_CCW_STD::string::const_iterator>  sregex_token_iterator;
+typedef regex_token_iterator<const char*>                       cregex_token_iterator;
+typedef regex_token_iterator<_CCW_STD::wstring::const_iterator> wsregex_token_iterator;
+typedef regex_token_iterator<const wchar_t*>                    wcregex_token_iterator;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(ergx, regex_error, regex_error)
+
+#endif // _CCW_LIBCPP_REGEX

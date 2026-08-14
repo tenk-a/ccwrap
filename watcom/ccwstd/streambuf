@@ -1,0 +1,2 @@
+// ccwrap <streambuf>
+#include "../std/streambuf"

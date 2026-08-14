@@ -1,0 +1,7 @@
+# std::ratio: cases the standard requires to be ill-formed.
+# Each macro must make ratio_illformed.cpp fail to compile.
+REJ_DEN_ZERO
+REJ_ZERO_OVER_ZERO
+REJ_NUM_MIN
+REJ_DEN_MIN
+REJ_DIVIDE_BY_ZERO

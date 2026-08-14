@@ -1,0 +1,35 @@
+// ccwrap vc forwarder for <set>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(set)
+
+// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
+#include <iterator>
+
+#if defined(__cplusplus) && !defined(__cpp_lib_erase_if)
+namespace _CCW_STD20 {
+template <class _Key, class _Cmp, class _Alloc, class _Pred>
+inline typename std::set<_Key, _Cmp, _Alloc>::size_type erase_if(std::set<_Key, _Cmp, _Alloc>& __c, _Pred __p) {
+    typename std::set<_Key, _Cmp, _Alloc>::size_type __n = 0;
+    for (typename std::set<_Key, _Cmp, _Alloc>::iterator __i = __c.begin(); __i != __c.end(); ) {
+        if (__p(*__i)) { __c.erase(__i++); ++__n; } else { ++__i; }
+    }
+    return __n;
+}
+
+template <class _Key, class _Cmp, class _Alloc, class _Pred>
+inline typename std::multiset<_Key, _Cmp, _Alloc>::size_type erase_if(std::multiset<_Key, _Cmp, _Alloc>& __c, _Pred __p) {
+    typename std::multiset<_Key, _Cmp, _Alloc>::size_type __n = 0;
+    for (typename std::multiset<_Key, _Cmp, _Alloc>::iterator __i = __c.begin(); __i != __c.end(); ) {
+        if (__p(*__i)) { __c.erase(__i++); ++__n; } else { ++__i; }
+    }
+    return __n;
+}
+
+}   // _CCW_STD20
+#endif

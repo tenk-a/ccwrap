@@ -1,0 +1,8 @@
+// ccwrap watcom/ccwstd: thin wrapper -> watcom/std/initializer_list. Only watcom/ccwstd/
+// is on the include path, so every header watcom/std/ provides needs a counterpart here.
+//
+// No using-bridge here, unlike the other ccwstd headers: Open Watcom's own
+// <initializer_list> is an empty stub ("TODO: Implement me!") and defines no
+// std::initializer_list, so there is nothing to bring into ccwstd. Naming it would be an
+// error, not an omission.
+#include "../std/initializer_list"

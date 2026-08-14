@@ -1,0 +1,39 @@
+// ccwrap <tuple>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1600
+ #include _CCW_NATIVE_STL_HEADER_PATH(tuple)
+#else
+ #include <../../detail/cxx/tuple.hpp>
+#endif
+
+/* apply / make_from_tuple are C++17; vc14 has none of them but does have the
+   variadic templates and index_sequence they need. vc15 ships them itself. */
+#if defined(__cplusplus) && _MSC_VER >= 1900 && _MSC_VER < 1910
+#include <utility>
+namespace _CCW_STD17 {
+template <class _Fn, class _Tp, ::std::size_t... _Is>
+decltype(auto) __ccw_apply_impl(_Fn&& __f, _Tp&& __t, ::std::index_sequence<_Is...>) {
+    return __f(::std::get<_Is>(::std::forward<_Tp>(__t))...);
+}
+template <class _Fn, class _Tp>
+decltype(auto) apply(_Fn&& __f, _Tp&& __t) {
+    return __ccw_apply_impl(::std::forward<_Fn>(__f), ::std::forward<_Tp>(__t),
+        ::std::make_index_sequence< ::std::tuple_size<
+            typename ::std::remove_reference<_Tp>::type>::value>());
+}
+
+template <class _Ty, class _Tp, ::std::size_t... _Is>
+_Ty __ccw_mft_impl(_Tp&& __t, ::std::index_sequence<_Is...>) {
+    return _Ty(::std::get<_Is>(::std::forward<_Tp>(__t))...);
+}
+template <class _Ty, class _Tp>
+_Ty make_from_tuple(_Tp&& __t) {
+    return __ccw_mft_impl<_Ty>(::std::forward<_Tp>(__t),
+        ::std::make_index_sequence< ::std::tuple_size<
+            typename ::std::remove_reference<_Tp>::type>::value>());
+}
+}   // _CCW_STD17
+#endif

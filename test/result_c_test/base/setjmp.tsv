@@ -1,0 +1,7 @@
+"suite"	"pass"	"status"	"note"
+"setjmp"	"c1990:jmp_buf"	"tested"	""
+"setjmp"	"c1990:jmp_buf reuse"	"tested"	""
+"setjmp"	"c1990:longjmp value 0 is replaced by 1"	"tested"	""
+"setjmp"	"c1990:longjmp(jmp_buf,int) delivers the value to setjmp"	"tested"	""
+"setjmp"	"c1990:setjmp(jmp_buf) direct return is 0"	"tested"	""
+"setjmp"	"c2023:__STDC_VERSION_SETJMP_H__"	"tested"	""

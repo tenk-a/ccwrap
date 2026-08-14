@@ -1,0 +1,20 @@
+// ccwrap <shared_mutex>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201402L
+ #include_next <shared_mutex>
+ // shared_timed_mutex / shared_lock are C++14; shared_mutex itself is C++17
+ namespace _ccw { using std::shared_timed_mutex; using std::shared_lock; }
+ #if __cplusplus >= 201703L
+ namespace _ccw { using std::shared_mutex; }
+ #endif
+#else
+#if defined(_WIN32)
+ #include <../../detail/cxx/win/shared_mutex.hpp>
+#else
+ // the C++03 stand-in is Win32-only; elsewhere the native header decides
+ #include_next <shared_mutex>
+#endif
+#endif

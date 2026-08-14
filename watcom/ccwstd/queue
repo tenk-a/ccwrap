@@ -1,0 +1,2 @@
+// ccwrap <queue>
+#include "../std/queue"

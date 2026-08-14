@@ -1,0 +1,85 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <stack> for Open Watcom -- a classic LIFO adaptor over an
+//  underlying container (_CCW_STD::deque by default, as the standard specifies). Pure
+//  library, so it is fully expressible; emplace forwards through the fnctmpl
+//  emulation to the container's emplace_back.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STACK
+#define _CCW_LIBCPP_STACK
+#include "__config"
+#include "__memory/misc.h"   // uses_allocator
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include <deque>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp, class _Container = deque<_Tp> >
+class _CCW_LIBCPP_TEMPLATE_VIS stack {
+public:
+    typedef _Container                           container_type;
+    typedef typename _Container::value_type      value_type;
+    typedef typename _Container::size_type       size_type;
+    typedef typename _Container::reference        reference;
+    typedef typename _Container::const_reference  const_reference;
+protected:
+    container_type c;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI stack() : c() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit stack(const container_type& __c) : c(__c) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit stack(_CCW_RV_REF(container_type) __r) : c(_ccw::move(_CCW_MOVED_OBJ(__r))) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI stack(_CCW_RV_REF(stack) __r) : c(_ccw::move(_CCW_MOVED_OBJ(__r).c)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI stack& operator=(_CCW_RV_REF(stack) __r) {
+        c = _ccw::move(_CCW_MOVED_OBJ(__r).c); return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void push(_CCW_RV_REF(value_type) __v) { c.push_back(__v); }
+#endif
+
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI explicit stack(const _Alloc& __a) : c(__a) {}
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI stack(const container_type& __c, const _Alloc& __a) : c(__c, __a) {}
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI stack(const stack& __s, const _Alloc& __a) : c(__s.c, __a) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool            empty() const { return c.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type       size()  const { return c.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       top()         { return c.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference top()   const { return c.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void            push(const value_type& __v) { c.push_back(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void            pop()         { c.pop_back(); }
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace() { c.emplace_back(); }
+#  define _CCW_GEN_STACK_EMPLACE(N)                                                       \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_CCW_FNCTMPL_DECLARG(N)) { c.emplace_back(_CCW_FNCTMPL_FNCARG(N)); }
+    _CCW_GEN_STACK_EMPLACE(1) _CCW_GEN_STACK_EMPLACE(2) _CCW_GEN_STACK_EMPLACE(3) _CCW_GEN_STACK_EMPLACE(4)
+#  undef _CCW_GEN_STACK_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_Args&&... __a) { c.emplace_back(static_cast<_Args&&>(__a)...); }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(stack& __s) { c.swap(__s.c); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const container_type& __get_container() const { return c; }
+};
+
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return __x.__get_container() == __y.__get_container(); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return !(__x == __y); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return __x.__get_container() < __y.__get_container(); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return __y < __x; }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return !(__y < __x); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const stack<_Tp, _Container>& __x, const stack<_Tp, _Container>& __y) { return !(__x < __y); }
+
+template <class _Tp, class _Container, class _Alloc>
+struct uses_allocator<stack<_Tp, _Container>, _Alloc> : uses_allocator<_Container, _Alloc> {};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STACK

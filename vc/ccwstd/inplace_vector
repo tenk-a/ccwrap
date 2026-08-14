@@ -1,0 +1,6 @@
+// ccwrap vc/ccwstd: the C++ <inplace_vector> comes from libcxx03 (namespace ccwstd), not from
+// MSVC's own STL. Only vc/ccwstd/ is on the include path; the ccwstd force-include set
+// _CCW_STD=ccwstd, so everything libcxx03 declares lands in ccwstd.
+#pragma once
+#include <ccwrap_common.h>
+#include _CCW_LIBCXX03_HEADER_PATH(inplace_vector)

@@ -1,0 +1,18 @@
+// ccwrap <debugging>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if defined(__has_include_next) && __has_include_next(<debugging>)
+# include_next <debugging>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_debugging)
+
+namespace std {
+inline bool is_debugger_present() noexcept { return false; }
+inline void breakpoint() noexcept { __builtin_trap(); }
+inline void breakpoint_if_debugging() noexcept { if (is_debugger_present()) breakpoint(); }
+}   // namespace std
+
+#endif // __cplusplus && !__cpp_lib_debugging

@@ -1,0 +1,368 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <codecvt> (deprecated, C++11..23) for Open Watcom -- the Unicode
+//  conversion facets codecvt_utf8 / codecvt_utf16 / codecvt_utf8_utf16.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_CODECVT
+#define _CCW_LIBCPP_CODECVT
+#include "__config"
+#include <cstddef>
+#include <locale>     // the canonical codecvt_base / codecvt facet (uses _CCW_STD::mbstate_t)
+#include <cwchar>     // _CCW_STD::mbstate_t
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+typedef _CCW_STD::mbstate_t __ccw_mbstate_t;
+
+enum codecvt_mode { consume_header = 4, generate_header = 2, little_endian = 1 };
+
+#if _CCW_LIBCPP_NATIVE_STD && defined(_MSC_VER) && _MSC_VER < 1600
+#  define _CCW_CODECVT_LENGTH_STATE const state_type&
+#else
+#  define _CCW_CODECVT_LENGTH_STATE state_type&
+#endif
+
+inline int __ccw_u8_seqlen(unsigned char __c) {
+    if (__c < 0x80)         return 1;
+    if ((__c >> 5) == 0x6)  return 2;
+    if ((__c >> 4) == 0xE)  return 3;
+    if ((__c >> 3) == 0x1E) return 4;
+    return 0;
+}
+
+inline int __ccw_u8_decode(const char* __p, const char* __end, unsigned long& __wc) {
+    unsigned char __c = (unsigned char)*__p;
+    int __n = __ccw_u8_seqlen(__c);
+    if (__n == 0)
+        return 0;
+    if (__end - __p < __n)
+        return -1;
+    if (__n == 1)      __wc = __c;
+    else if (__n == 2) __wc = __c & 0x1FUL;
+    else if (__n == 3) __wc = __c & 0x0FUL;
+    else               __wc = __c & 0x07UL;
+    for (int __k = 1; __k < __n; ++__k) {
+        unsigned char __cc = (unsigned char)__p[__k];
+        if ((__cc >> 6) != 0x2)
+            return 0;
+        __wc = (__wc << 6) | (__cc & 0x3FUL);
+    }
+    return __n;
+}
+
+inline int __ccw_u8_enclen(unsigned long __wc) {
+    return __wc < 0x80 ? 1 : __wc < 0x800 ? 2 : __wc < 0x10000 ? 3 : 4;
+}
+
+inline char* __ccw_u8_encode(char* __to, unsigned long __wc) {
+    if (__wc < 0x80) {
+        *__to++ = (char)(unsigned char)__wc;
+    } else if (__wc < 0x800) {
+        *__to++ = (char)(unsigned char)(0xC0 | (__wc >> 6));
+        *__to++ = (char)(unsigned char)(0x80 | (__wc & 0x3F));
+    } else if (__wc < 0x10000) {
+        *__to++ = (char)(unsigned char)(0xE0 | (__wc >> 12));
+        *__to++ = (char)(unsigned char)(0x80 | ((__wc >> 6) & 0x3F));
+        *__to++ = (char)(unsigned char)(0x80 | (__wc & 0x3F));
+    } else {
+        *__to++ = (char)(unsigned char)(0xF0 | (__wc >> 18));
+        *__to++ = (char)(unsigned char)(0x80 | ((__wc >> 12) & 0x3F));
+        *__to++ = (char)(unsigned char)(0x80 | ((__wc >> 6) & 0x3F));
+        *__to++ = (char)(unsigned char)(0x80 | (__wc & 0x3F));
+    }
+    return __to;
+}
+
+inline bool __ccw_u8_is_bom(const char* __p, const char* __end) {
+    return __end - __p >= 3 && (unsigned char)__p[0] == 0xEF
+        && (unsigned char)__p[1] == 0xBB && (unsigned char)__p[2] == 0xBF;
+}
+
+inline bool __ccw_is_hi_surrogate(unsigned long __u) { return __u >= 0xD800 && __u <= 0xDBFF; }
+inline bool __ccw_is_lo_surrogate(unsigned long __u) { return __u >= 0xDC00 && __u <= 0xDFFF; }
+
+inline unsigned long __ccw_surrogate_join(unsigned long __hi, unsigned long __lo) {
+    return 0x10000UL + ((__hi - 0xD800UL) << 10) + (__lo - 0xDC00UL);
+}
+
+inline unsigned long __ccw_u16_get(const char* __p, bool __little) {
+    unsigned char __b0 = (unsigned char)__p[0], __b1 = (unsigned char)__p[1];
+    return __little ? (((unsigned long)__b1 << 8) | __b0) : (((unsigned long)__b0 << 8) | __b1);
+}
+
+inline char* __ccw_u16_put(char* __to, unsigned long __u, bool __little) {
+    unsigned char __hi = (unsigned char)(__u >> 8), __lo = (unsigned char)(__u & 0xFF);
+    if (__little) { *__to++ = (char)__lo; *__to++ = (char)__hi; }
+    else          { *__to++ = (char)__hi; *__to++ = (char)__lo; }
+    return __to;
+}
+
+template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+class codecvt_utf8 : public codecvt<_Elem, char, __ccw_mbstate_t> {
+    typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
+public:
+    typedef typename _Base::state_type state_type;
+    typedef typename _Base::intern_type intern_type;
+    typedef typename _Base::extern_type extern_type;
+    typedef typename _Base::result result;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt_utf8(size_t __refs = 0) : _Base(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~codecvt_utf8() {}
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
+                                                char* __to, char* __to_end, char*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if (_Mode & generate_header) {
+            if (__to_end - __to_nxt < 3)
+                return codecvt_base::partial;
+            *__to_nxt++ = (char)(unsigned char)0xEF;
+            *__to_nxt++ = (char)(unsigned char)0xBB;
+            *__to_nxt++ = (char)(unsigned char)0xBF;
+        }
+        for (; __frm_nxt < __frm_end; ++__frm_nxt) {
+            unsigned long __wc = (unsigned long)(_Elem)*__frm_nxt;
+            if (__wc > _Maxcode)
+                return codecvt_base::error;
+            if (__to_end - __to_nxt < __ccw_u8_enclen(__wc))
+                return codecvt_base::partial;
+            __to_nxt = __ccw_u8_encode(__to_nxt, __wc);
+        }
+        return codecvt_base::ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
+                                               _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if ((_Mode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
+            __frm_nxt += 3;
+        while (__frm_nxt < __frm_end) {
+            if (__to_nxt >= __to_end)
+                return codecvt_base::partial;
+            unsigned long __wc;
+            int __n = __ccw_u8_decode(__frm_nxt, __frm_end, __wc);
+            if (__n == 0)  return codecvt_base::error;
+            if (__n < 0)   return codecvt_base::partial;
+            if (__wc > _Maxcode)
+                return codecvt_base::error;
+            if (sizeof(_Elem) < 4 && __wc > 0xFFFF)
+                return codecvt_base::error;
+            *__to_nxt++ = (_Elem)__wc;
+            __frm_nxt += __n;
+        }
+        return codecvt_base::ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+        int __n = _Maxcode <= 0x7F ? 1 : _Maxcode <= 0x7FF ? 2 : _Maxcode <= 0xFFFF ? 3 : 4;
+        return (_Mode & consume_header) ? __n + 3 : __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
+        const char* __p = __frm;
+        if ((_Mode & consume_header) && __ccw_u8_is_bom(__p, __end))
+            __p += 3;
+        size_t __cnt = 0;
+        while (__p < __end && __cnt < __mx) {
+            int __n = __ccw_u8_seqlen((unsigned char)*__p);
+            if (__n == 0 || __end - __p < __n)
+                break;
+            __p += __n; ++__cnt;
+        }
+        return (int)(__p - __frm);
+    }
+};
+
+template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+class codecvt_utf16 : public codecvt<_Elem, char, __ccw_mbstate_t> {
+    typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __little() { return (_Mode & little_endian) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __is_bom(const char* __p, const char* __end) {
+        return __end - __p >= 2 && __ccw_u16_get(__p, __little()) == 0xFEFFUL;
+    }
+public:
+    typedef typename _Base::state_type state_type;
+    typedef typename _Base::result result;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt_utf16(size_t __refs = 0) : _Base(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~codecvt_utf16() {}
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
+                                                char* __to, char* __to_end, char*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if (_Mode & generate_header) {
+            if (__to_end - __to_nxt < 2)
+                return codecvt_base::partial;
+            __to_nxt = __ccw_u16_put(__to_nxt, 0xFEFFUL, __little());
+        }
+        for (; __frm_nxt < __frm_end; ++__frm_nxt) {
+            unsigned long __wc = (unsigned long)(_Elem)*__frm_nxt;
+            if (__wc > _Maxcode || __wc > 0x10FFFFUL)
+                return codecvt_base::error;
+            if (__wc <= 0xFFFF) {
+                if (__to_end - __to_nxt < 2)
+                    return codecvt_base::partial;
+                __to_nxt = __ccw_u16_put(__to_nxt, __wc, __little());
+            } else {
+                if (__to_end - __to_nxt < 4)
+                    return codecvt_base::partial;
+                unsigned long __v = __wc - 0x10000UL;
+                __to_nxt = __ccw_u16_put(__to_nxt, 0xD800UL + (__v >> 10), __little());
+                __to_nxt = __ccw_u16_put(__to_nxt, 0xDC00UL + (__v & 0x3FFUL), __little());
+            }
+        }
+        return codecvt_base::ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
+                                               _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if ((_Mode & consume_header) && __is_bom(__frm_nxt, __frm_end))
+            __frm_nxt += 2;
+        while (__frm_end - __frm_nxt >= 2) {
+            if (__to_nxt >= __to_end)
+                return codecvt_base::partial;
+            unsigned long __u = __ccw_u16_get(__frm_nxt, __little());
+            unsigned long __wc;
+            int           __used;
+            if (__ccw_is_hi_surrogate(__u)) {
+                if (__frm_end - __frm_nxt < 4)
+                    return codecvt_base::partial;      // the pair is cut short
+                unsigned long __lo = __ccw_u16_get(__frm_nxt + 2, __little());
+                if (!__ccw_is_lo_surrogate(__lo))
+                    return codecvt_base::error;
+                __wc = __ccw_surrogate_join(__u, __lo);
+                __used = 4;
+            } else if (__ccw_is_lo_surrogate(__u)) {
+                return codecvt_base::error;            // an unpaired low surrogate
+            } else {
+                __wc = __u;
+                __used = 2;
+            }
+            if (__wc > _Maxcode)
+                return codecvt_base::error;
+            if (sizeof(_Elem) < 4 && __wc > 0xFFFF)
+                return codecvt_base::error;
+            *__to_nxt++ = (_Elem)__wc;
+            __frm_nxt += __used;
+        }
+        return __frm_nxt == __frm_end ? codecvt_base::ok : codecvt_base::partial;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+        return (_Mode & consume_header) ? 6 : 4;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
+        const char* __p = __frm;
+        if ((_Mode & consume_header) && __is_bom(__p, __end))
+            __p += 2;
+        size_t __cnt = 0;
+        while (__end - __p >= 2 && __cnt < __mx) {
+            unsigned long __u = __ccw_u16_get(__p, __little());
+            int __used = 2;
+            if (__ccw_is_hi_surrogate(__u)) {
+                if (__end - __p < 4)
+                    break;
+                __used = 4;
+            }
+            __p += __used; ++__cnt;
+        }
+        return (int)(__p - __frm);
+    }
+};
+
+template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+class codecvt_utf8_utf16 : public codecvt<_Elem, char, __ccw_mbstate_t> {
+    typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
+public:
+    typedef typename _Base::state_type state_type;
+    typedef typename _Base::result result;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt_utf8_utf16(size_t __refs = 0) : _Base(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~codecvt_utf8_utf16() {}
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
+                                                char* __to, char* __to_end, char*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if (_Mode & generate_header) {
+            if (__to_end - __to_nxt < 3)
+                return codecvt_base::partial;
+            *__to_nxt++ = (char)(unsigned char)0xEF;
+            *__to_nxt++ = (char)(unsigned char)0xBB;
+            *__to_nxt++ = (char)(unsigned char)0xBF;
+        }
+        while (__frm_nxt < __frm_end) {
+            unsigned long __u = (unsigned long)(_Elem)*__frm_nxt & 0xFFFFUL;
+            unsigned long __wc;
+            int           __used;
+            if (__ccw_is_hi_surrogate(__u)) {
+                if (__frm_end - __frm_nxt < 2)
+                    return codecvt_base::partial;      // wait for the low surrogate
+                unsigned long __lo = (unsigned long)(_Elem)__frm_nxt[1] & 0xFFFFUL;
+                if (!__ccw_is_lo_surrogate(__lo))
+                    return codecvt_base::error;
+                __wc = __ccw_surrogate_join(__u, __lo);
+                __used = 2;
+            } else if (__ccw_is_lo_surrogate(__u)) {
+                return codecvt_base::error;            // an unpaired low surrogate
+            } else {
+                __wc = __u;
+                __used = 1;
+            }
+            if (__wc > _Maxcode)
+                return codecvt_base::error;
+            if (__to_end - __to_nxt < __ccw_u8_enclen(__wc))
+                return codecvt_base::partial;
+            __to_nxt = __ccw_u8_encode(__to_nxt, __wc);
+            __frm_nxt += __used;
+        }
+        return codecvt_base::ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
+                                               _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
+        __frm_nxt = __frm; __to_nxt = __to;
+        if ((_Mode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
+            __frm_nxt += 3;
+        while (__frm_nxt < __frm_end) {
+            unsigned long __wc;
+            int __n = __ccw_u8_decode(__frm_nxt, __frm_end, __wc);
+            if (__n == 0)  return codecvt_base::error;
+            if (__n < 0)   return codecvt_base::partial;
+            if (__wc > _Maxcode)
+                return codecvt_base::error;
+            int __need = __wc > 0xFFFF ? 2 : 1;
+            if (__to_end - __to_nxt < __need)
+                return codecvt_base::partial;
+            if (__need == 1) {
+                *__to_nxt++ = (_Elem)__wc;
+            } else {
+                unsigned long __v = __wc - 0x10000UL;
+                *__to_nxt++ = (_Elem)(0xD800UL + (__v >> 10));
+                *__to_nxt++ = (_Elem)(0xDC00UL + (__v & 0x3FFUL));
+            }
+            __frm_nxt += __n;
+        }
+        return codecvt_base::ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+        return (_Mode & consume_header) ? 7 : 4;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
+        const char* __p = __frm;
+        if ((_Mode & consume_header) && __ccw_u8_is_bom(__p, __end))
+            __p += 3;
+        size_t __cnt = 0;
+        while (__p < __end && __cnt < __mx) {
+            unsigned long __wc;
+            int __n = __ccw_u8_decode(__p, __end, __wc);
+            if (__n <= 0)
+                break;
+            size_t __need = __wc > 0xFFFF ? 2 : 1;
+            if (__cnt + __need > __mx)
+                break;
+            __p += __n; __cnt += __need;
+        }
+        return (int)(__p - __frm);
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_CODECVT

@@ -1,0 +1,11 @@
+// ccwrap watcom forwarder: pull the genuine C++ <thread> from detail/llibcxx03/include so that
+// putting only watcom/ on the include path overrides Open Watcom's native header.
+// (This door was missing, which is why the build needed detail/llibcxx03/include on the include
+// path as well; every other libcxx03 header already had one here.)
+#pragma once
+#include <ccwrap_common.h>
+
+#if !defined(_CCW_OS_WIN)
+# error "ccwrap: <thread> is Win32-only on Open Watcom -- std::thread rests on Win32 CreateThread / WaitForSingleObject."
+#endif
+#include _CCW_NATIVE_STL_HEADER_PATH(thread)

@@ -1,0 +1,9 @@
+// ccwrap <expected>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202302L
+ #include_next <expected>
+#endif
+#include <../../detail/cxx/expected.hpp>

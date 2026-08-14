@@ -1,0 +1,11 @@
+// ccwrap watcom: <cfloat>. Forward to Open Watcom's native <cfloat>, then add the
+// C11 / C23 floating-point characteristic macros it predates.
+//
+// The supplements are macro-only and shared with <float.h>, so they live in
+// ../detail/float_c11.h rather than here -- see that file for why <float.h> must not
+// reach for <cfloat> to get them.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cfloat)
+#include "../../detail/c/float_c11.h"

@@ -1,0 +1,67 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <typeinfo> for Open Watcom.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_TYPEINFO
+#define _CCW_LIBCPP_TYPEINFO
+#define _TYPEINFO_INCLUDED   // suppress Open Watcom's native <typeinfo>
+#include "__config"
+#if defined(__WATCOMC__)
+#include <_comdef.h>         // _WPRTLINK (runtime linkage/calling convention).
+#endif
+#include <cstddef>           // _CCW_STD::size_t
+#include <exception>         // llibcxx03: _CCW_STD::exception, _CCW_STD::bad_cast
+
+#if !defined(__WATCOMC__)
+#undef _TYPEINFO_INCLUDED
+#include <eh.h>
+extern "C++" void __cdecl unexpected();
+#include _CCW_NATIVE_STL_HEADER_PATH(exception)
+#include _CCW_NATIVE_STL_HEADER_PATH(typeinfo)
+#else
+
+namespace std {
+
+class _WPRTLINK type_info {
+public:
+    ~type_info();
+    bool operator==(type_info const&) const;
+    bool operator!=(type_info const&) const;
+    bool before(type_info const&) const;
+    const char* name() const;
+    const char* raw_name() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t hash_code() const _CCW_LIBCPP_NOEXCEPT {
+        const char* __s = raw_name();
+        _CCW_STD::size_t __h = 2166136261u;
+        if (__s) while (*__s) { __h ^= (_CCW_STD::size_t)(unsigned char)*__s++; __h *= 16777619u; }
+        return __h;
+    }
+private:
+    type_info(type_info const&);
+    type_info& operator=(type_info const&);
+    mutable void const* __data;
+    char const        __raw[1];
+};
+
+} // namespace std -- type_info stays in std for the native typeid ABI (typeid(x) yields
+#endif // !__WATCOMC__
+
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+#ifdef _CCW_STD_RELOCATED
+using ::std::type_info;
+#endif
+
+class bad_typeid : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_typeid() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~bad_typeid() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "std::bad_typeid"; }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+
+_CCW_EH_ANCHOR(etid, bad_typeid, bad_typeid)
+
+#endif // _CCW_LIBCPP_TYPEINFO

@@ -1,0 +1,7 @@
+"suite"	"pass"	"status"	"note"
+"assert"	"c1990:NDEBUG (compile-time disable of assert)"	"tested"	""
+"assert"	"c1990:assert(macro exists)"	"tested"	""
+"assert"	"c1990:assert(scalar expression, no abort when true)"	"tested"	""
+"assert"	"c2011:_Static_assert"	"tested"	""
+"assert"	"c2011:static_assert"	"tested"	""
+"assert"	"c2023:__STDC_VERSION_ASSERT_H__"	"tested"	""

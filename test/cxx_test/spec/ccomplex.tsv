@@ -1,0 +1,2 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"ccomplex"	"cxx11:<ccomplex> includes <complex>"	"2011"	"2017"	""	"<ccomplex> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)。<complex> を使う"

@@ -1,0 +1,187 @@
+//  ccwrap llibcxx03: <bitset> for Open Watcom -- a fixed-size sequence of _Size bits
+//  packed into an array of unsigned long words. Classic C++03 body, including the
+//  bitset::reference proxy so `b[i] = true` works.
+//
+#ifndef _CCW_LIBCPP_BITSET
+#define _CCW_LIBCPP_BITSET
+#include "__config"
+#include <string>
+#include <stdexcept>
+#include <cstddef>
+#include <climits>
+#include "__functional/hash.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <_CCW_STD::size_t _Size>
+class _CCW_LIBCPP_TEMPLATE_VIS bitset {
+public:
+    typedef _CCW_STD::size_t size_type;
+private:
+    typedef unsigned long __word;
+    enum { __bits = sizeof(__word) * 8 };
+    enum { __nwords = (_Size == 0) ? 1 : (_Size + __bits - 1) / __bits };
+    __word __w_[__nwords];
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __sanitize() {
+        size_type __rem = _Size % __bits;
+        if (__rem) __w_[__nwords - 1] &= (((__word)1 << __rem) - 1);
+    }
+
+public:
+    class reference {
+        bitset* __b_;
+        size_type __p_;
+        friend class bitset;
+        _CCW_LIBCPP_HIDE_FROM_ABI reference(bitset* __b, size_type __p) : __b_(__b), __p_(__p) {}
+    public:
+        _CCW_LIBCPP_HIDE_FROM_ABI reference& operator=(bool __x) { __b_->set(__p_, __x); return *this; }
+        _CCW_LIBCPP_HIDE_FROM_ABI reference& operator=(const reference& __x) { __b_->set(__p_, (bool)__x); return *this; }
+        _CCW_LIBCPP_HIDE_FROM_ABI operator bool() const { return __b_->test(__p_); }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator~() const { return !__b_->test(__p_); }
+        _CCW_LIBCPP_HIDE_FROM_ABI reference& flip() { __b_->flip(__p_); return *this; }
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset() { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0; }
+#ifdef LLONG_MAX
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset(unsigned long long __v) {
+        for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0;
+        for (size_type __i = 0; __i < _Size && __i < 64u; ++__i)
+            if ((__v >> __i) & 1ULL) __w_[__i / __bits] |= ((__word)1 << (__i % __bits));
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset(unsigned long __v) {
+        for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0;
+        __w_[0] = __v; __sanitize();
+    }
+#endif
+    template <class _CharT>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit bitset(const _CharT* __s, size_type __n = (size_type)-1, _CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) {
+        for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0;
+        size_type __len = 0; while (__s[__len] && __len < __n) ++__len;
+        for (size_type __i = 0; __i < __len && __i < _Size; ++__i) {
+            char __c = __s[__len - 1 - __i];
+            if (__c == __one) __w_[__i / __bits] |= ((__word)1 << (__i % __bits));
+            else if (__c != __zero) _CCW_THROW(_CCW_STD::invalid_argument("bitset::bitset"));
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit bitset(const string& __s, size_type __pos = 0,
+                                          size_type __n = (size_type)-1, char __zero = '0', char __one = '1') {
+        for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0;
+        if (__pos > __s.size()) _CCW_THROW(_CCW_STD::out_of_range("bitset::bitset"));
+        size_type __len = __s.size() - __pos;
+        if (__n < __len) __len = __n;
+        for (size_type __i = 0; __i < __len && __i < _Size; ++__i) {
+            char __c = __s[__pos + __len - 1 - __i];
+            if (__c == __one) __w_[__i / __bits] |= ((__word)1 << (__i % __bits));
+            else if (__c != __zero) _CCW_THROW(_CCW_STD::invalid_argument("bitset::bitset"));
+        }
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool test(size_type __p) const {
+        if (__p >= _Size) _CCW_THROW(_CCW_STD::out_of_range("bitset::test"));
+        return (__w_[__p / __bits] >> (__p % __bits)) & 1UL;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator[](size_type __p) const { return test(__p); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator[](size_type __p) { return reference(this, __p); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const { return _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count() const {
+        size_type __c = 0;
+        for (size_type __i = 0; __i < (size_type)__nwords; ++__i) { __word __x = __w_[__i]; while (__x) { __c += (__x & 1UL); __x >>= 1; } }
+        return __c;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool any() const  { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) if (__w_[__i]) return true; return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool none() const { return !any(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool all() const  { return count() == _Size; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& set() { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = ~(__word)0; __sanitize(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& set(size_type __p, bool __x = true) {
+        if (__p >= _Size) _CCW_THROW(_CCW_STD::out_of_range("bitset::set"));
+        if (__x) __w_[__p / __bits] |= ((__word)1 << (__p % __bits));
+        else     __w_[__p / __bits] &= ~((__word)1 << (__p % __bits));
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& reset() { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& reset(size_type __p) { return set(__p, false); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& flip() { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = ~__w_[__i]; __sanitize(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& flip(size_type __p) {
+        if (__p >= _Size) _CCW_THROW(_CCW_STD::out_of_range("bitset::flip"));
+        __w_[__p / __bits] ^= ((__word)1 << (__p % __bits)); return *this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& operator&=(const bitset& __o) { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] &= __o.__w_[__i]; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& operator|=(const bitset& __o) { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] |= __o.__w_[__i]; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& operator^=(const bitset& __o) { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] ^= __o.__w_[__i]; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset operator~() const { bitset __r(*this); __r.flip(); return __r; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& operator<<=(size_type __n) {
+        if (__n >= _Size) { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0; return *this; }
+        for (size_type __i = _Size; __i-- > 0; ) {   // high -> low; source bit __i-__n is still original
+            bool __b = (__i >= __n) && test(__i - __n);
+            if (__b) __w_[__i / __bits] |= ((__word)1 << (__i % __bits));
+            else     __w_[__i / __bits] &= ~((__word)1 << (__i % __bits));
+        }
+        __sanitize(); return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset& operator>>=(size_type __n) {
+        if (__n >= _Size) { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) __w_[__i] = 0; return *this; }
+        for (size_type __i = 0; __i < _Size; ++__i) {   // low -> high; source bit __i+__n still original
+            bool __b = (__i + __n < _Size) && test(__i + __n);
+            if (__b) __w_[__i / __bits] |= ((__word)1 << (__i % __bits));
+            else     __w_[__i / __bits] &= ~((__word)1 << (__i % __bits));
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset operator<<(size_type __n) const { bitset __r(*this); __r <<= __n; return __r; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bitset operator>>(size_type __n) const { bitset __r(*this); __r >>= __n; return __r; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const bitset& __o) const { for (size_type __i = 0; __i < (size_type)__nwords; ++__i) if (__w_[__i] != __o.__w_[__i]) return false; return true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const bitset& __o) const { return !(*this == __o); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI unsigned long to_ulong() const {
+        for (size_type __i = 1; __i < (size_type)__nwords; ++__i) if (__w_[__i]) _CCW_THROW(_CCW_STD::overflow_error("bitset::to_ulong"));
+        return __w_[0];
+    }
+#ifdef LLONG_MAX
+    _CCW_LIBCPP_HIDE_FROM_ABI unsigned long long to_ullong() const {
+        for (size_type __i = 64; __i < _Size; ++__i) if (test(__i)) _CCW_THROW(_CCW_STD::overflow_error("bitset::to_ullong"));
+        unsigned long long __r = 0;
+        for (size_type __i = 0; __i < _Size && __i < 64u; ++__i) if (test(__i)) __r |= (1ULL << __i);
+        return __r;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI string to_string() const { return to_string('0', '1'); }
+    _CCW_LIBCPP_HIDE_FROM_ABI string to_string(char __zero, char __one) const {
+        string __s;
+        __s.reserve(_Size);
+        for (size_type __i = _Size; __i > 0; --__i) __s.push_back(test(__i - 1) ? __one : __zero);
+        return __s;
+    }
+};
+
+template <_CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bitset<_Size> operator&(const bitset<_Size>& __x, const bitset<_Size>& __y) { bitset<_Size> __r(__x); __r &= __y; return __r; }
+template <_CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bitset<_Size> operator|(const bitset<_Size>& __x, const bitset<_Size>& __y) { bitset<_Size> __r(__x); __r |= __y; return __r; }
+template <_CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bitset<_Size> operator^(const bitset<_Size>& __x, const bitset<_Size>& __y) { bitset<_Size> __r(__x); __r ^= __y; return __r; }
+
+template <class _CharT, class _Traits> class basic_ostream;
+template <class _CharT, class _Traits> class basic_istream;
+template <class _CharT, class _Traits, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const bitset<_Size>& __b) { return __os << __b.to_string(); }
+template <class _CharT, class _Traits, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, bitset<_Size>& __b) {
+    string __s; __s.reserve(_Size);
+    for (_CCW_STD::size_t __i = 0; __i < _Size; ++__i) {
+        int __c = __is.peek();
+        if (__c != '0' && __c != '1') break;
+        __s.push_back((char)__is.get());
+    }
+    __b = bitset<_Size>(__s);
+    return __is;
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#include "__functional/hash_bitset.h"
+#endif // _CCW_LIBCPP_BITSET

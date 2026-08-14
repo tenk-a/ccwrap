@@ -1,0 +1,8 @@
+// ccwrap watcom/ccwstd: <clocale> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CLOCALE_
+#define _CCW_CCWSTD_CLOCALE_
+#include "../std/clocale"
+namespace _CCW_STD {
+using ::std::lconv; using ::std::setlocale; using ::std::localeconv;
+}
+#endif

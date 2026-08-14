@@ -1,0 +1,2 @@
+// ccwrap <stop_token>
+#include "../std/stop_token"

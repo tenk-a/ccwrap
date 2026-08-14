@@ -1,0 +1,60 @@
+//  ccwrap llibcxx03: <source_location> (C++20) for Open Watcom.
+//
+//  The source_location type is provided so code that names it compiles, but
+//  source_location::current() CANNOT capture the caller: it relies on
+//  __builtin_LINE()/__builtin_FILE()/__builtin_FUNCTION() usable as default
+//  arguments, which Open Watcom does not provide (its __LINE__/__FILE__ macros
+//  would expand at this header's definition site, not the call site). current()
+//  therefore returns an empty location (line 0). Classic C++03 body.
+#ifndef _CCW_LIBCPP_SOURCE_LOCATION
+#define _CCW_LIBCPP_SOURCE_LOCATION
+#include "__config"
+#include <cstdint>
+
+#if defined(__WATCOMC__)
+#warning <source_location> on Open Watcom: source_location::current() does not capture the real call site (line()==0, file_name()==""). It compiles but the location is empty.
+#endif
+
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_LINE)
+#    define _CCW_SL_HAS_BUILTINS 1
+#  endif
+#endif
+#if !defined(_CCW_SL_HAS_BUILTINS)
+#  if defined(_MSC_VER) && _MSC_VER >= 1926
+#    define _CCW_SL_HAS_BUILTINS 1
+#  else
+#    define _CCW_SL_HAS_BUILTINS 0
+#  endif
+#endif
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class source_location {
+    _CCW_STD::uint_least32_t __line_;
+    _CCW_STD::uint_least32_t __col_;
+    const char*         __file_;
+    const char*         __func_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI source_location() : __line_(0), __col_(0), __file_(""), __func_("") {}
+
+#if _CCW_SL_HAS_BUILTINS
+    _CCW_LIBCPP_HIDE_FROM_ABI static source_location current(_CCW_STD::uint_least32_t __ln = __builtin_LINE(),
+                                                             const char* __fl = __builtin_FILE(),
+                                                             const char* __fn = __builtin_FUNCTION()) {
+        source_location __s;
+        __s.__line_ = __ln; __s.__file_ = __fl; __s.__func_ = __fn;
+        return __s;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI static source_location current() { return source_location(); }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::uint_least32_t line() const   { return __line_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::uint_least32_t column() const { return __col_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* file_name() const      { return __file_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* function_name() const  { return __func_; }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SOURCE_LOCATION

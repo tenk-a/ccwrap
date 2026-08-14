@@ -1,0 +1,155 @@
+/*
+ * ccwrap: libc++ layout. classic C++03 body for Open Watcom.
+ *  Type-erased single-value container built on RTTI (typeid) + heap storage.
+ *  Classic C++03 body; copy-based (no move, no in-place emplace).
+ *  Works with -xs (only static typeid is used).
+ */
+#ifndef _CCW_LIBCPP_ANY
+#define _CCW_LIBCPP_ANY
+#include "__config"
+#include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
+#include <typeinfo>
+#include "__utility/in_place.h"   // in_place_type_t
+#include <new>
+#if _CCW_HAS_INIT_LIST
+#  include <initializer_list>
+#endif
+
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class _CCW_LIBCPP_TEMPLATE_VIS bad_any_cast : public _CCW_STD::bad_cast {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "bad_any_cast"; }
+};
+
+class _CCW_LIBCPP_TEMPLATE_VIS any {
+    struct __holder_base {
+        _CCW_LIBCPP_HIDE_FROM_ABI virtual ~__holder_base() {}
+        _CCW_LIBCPP_HIDE_FROM_ABI virtual __holder_base* __clone() const = 0;
+        _CCW_LIBCPP_HIDE_FROM_ABI virtual const _CCW_STD::type_info& __type() const = 0;
+    };
+    template <class _Tp>
+    struct __holder : __holder_base {
+        _Tp __v_;
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit __holder(const _Tp& __v) : __v_(__v) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI virtual __holder_base* __clone() const { return new __holder(__v_); }
+        _CCW_LIBCPP_HIDE_FROM_ABI virtual const _CCW_STD::type_info& __type() const { return typeid(_Tp); }
+    };
+    __holder_base* __h_;
+
+    template <class _Tp> friend _Tp* any_cast(any*) _CCW_LIBCPP_NOEXCEPT;
+    template <class _Tp> friend const _Tp* any_cast(const any*) _CCW_LIBCPP_NOEXCEPT;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI any() _CCW_LIBCPP_NOEXCEPT : __h_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI any(const any& __o) : __h_(__o.__h_ ? __o.__h_->__clone() : 0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI any(_CCW_RV_REF(any) __r) : __h_(__r.__h_) { __r.__h_ = 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI any& operator=(_CCW_RV_REF(any) __r) {
+        if (&__r != this) { delete __h_; __h_ = __r.__h_; __r.__h_ = 0; }
+        return *this;
+    }
+    template <class _Tp>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(const _Tp& __v) : __h_(new __holder<_Tp>(__v)) {}
+    template <class _Tp>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit any(in_place_type_t<_Tp>) : __h_(new __holder<_Tp>(_Tp())) {}
+    template <class _Tp, class _A0>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _A0 __a0) : __h_(new __holder<_Tp>(_Tp(__a0))) {}
+    template <class _Tp, class _A0, class _A1>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _A0 __a0, _A1 __a1) : __h_(new __holder<_Tp>(_Tp(__a0, __a1))) {}
+    template <class _Tp, class _A0, class _A1, class _A2>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _A0 __a0, _A1 __a1, _A2 __a2) : __h_(new __holder<_Tp>(_Tp(__a0, __a1, __a2))) {}
+#if _CCW_HAS_INIT_LIST
+    template <class _Tp, class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _CCW_STD::initializer_list<_Up> __il) : __h_(new __holder<_Tp>(_Tp(__il))) {}
+    template <class _Tp, class _Up, class _A0>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _CCW_STD::initializer_list<_Up> __il, _A0 __a0) : __h_(new __holder<_Tp>(_Tp(__il, __a0))) {}
+    template <class _Tp, class _Up, class _A0, class _A1>
+    _CCW_LIBCPP_HIDE_FROM_ABI any(in_place_type_t<_Tp>, _CCW_STD::initializer_list<_Up> __il, _A0 __a0, _A1 __a1) : __h_(new __holder<_Tp>(_Tp(__il, __a0, __a1))) {}
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI ~any() { delete __h_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI any& operator=(const any& __o) { any(__o).swap(*this); return *this; }
+    template <class _Tp>
+    _CCW_LIBCPP_HIDE_FROM_ABI any& operator=(const _Tp& __v) { any(__v).swap(*this); return *this; }
+
+    template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace() {
+        _Tp __v = _Tp(); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+    template <class _Tp, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_A0 __a0) {
+        _Tp __v(__a0); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+    template <class _Tp, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_A0 __a0, _A1 __a1) {
+        _Tp __v(__a0, __a1); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+    template <class _Tp, class _A0, class _A1, class _A2> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_A0 __a0, _A1 __a1, _A2 __a2) {
+        _Tp __v(__a0, __a1, __a2); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+#if _CCW_HAS_INIT_LIST
+    template <class _Tp, class _Up> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_STD::initializer_list<_Up> __il) {
+        _Tp __v(__il); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+    template <class _Tp, class _Up, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_STD::initializer_list<_Up> __il, _A0 __a0) {
+        _Tp __v(__il, __a0); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+    template <class _Tp, class _Up, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_STD::initializer_list<_Up> __il, _A0 __a0, _A1 __a1) {
+        _Tp __v(__il, __a0, __a1); reset(); __h_ = new __holder<_Tp>(__v); return static_cast<__holder<_Tp>*>(__h_)->__v_; }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() _CCW_LIBCPP_NOEXCEPT { delete __h_; __h_ = 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(any& __o) _CCW_LIBCPP_NOEXCEPT { __holder_base* __t = __h_; __h_ = __o.__h_; __o.__h_ = __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_value() const _CCW_LIBCPP_NOEXCEPT { return __h_ != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _CCW_STD::type_info& type() const _CCW_LIBCPP_NOEXCEPT { return __h_ ? __h_->__type() : typeid(void); }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(any& __a, any& __b) _CCW_LIBCPP_NOEXCEPT { __a.swap(__b); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI any make_any() { return any(_Tp()); }
+template <class _Tp, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_A0 __a0) { return any(_Tp(__a0)); }
+template <class _Tp, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_A0 __a0, _A1 __a1) { return any(_Tp(__a0, __a1)); }
+template <class _Tp, class _A0, class _A1, class _A2> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_A0 __a0, _A1 __a1, _A2 __a2) { return any(_Tp(__a0, __a1, __a2)); }
+#if _CCW_HAS_INIT_LIST
+template <class _Tp, class _Up> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_CCW_STD::initializer_list<_Up> __il) { return any(_Tp(__il)); }
+template <class _Tp, class _Up, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_CCW_STD::initializer_list<_Up> __il, _A0 __a0) { return any(_Tp(__il, __a0)); }
+template <class _Tp, class _Up, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI any make_any(_CCW_STD::initializer_list<_Up> __il, _A0 __a0, _A1 __a1) { return any(_Tp(__il, __a0, __a1)); }
+#endif
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp* any_cast(any* __a) _CCW_LIBCPP_NOEXCEPT {
+    if (__a && __a->__h_ && __a->__h_->__type() == typeid(_Tp))
+        return &static_cast<any::__holder<_Tp>*>(__a->__h_)->__v_;
+    return 0;
+}
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI const _Tp* any_cast(const any* __a) _CCW_LIBCPP_NOEXCEPT {
+    return any_cast<_Tp>(const_cast<any*>(__a));
+}
+template <class _Tp> struct __any_cast_value            { typedef _Tp type; };
+template <class _Tp> struct __any_cast_value<_Tp&>      { typedef _Tp type; };
+template <class _Tp> struct __any_cast_value<const _Tp&> { typedef _Tp type; };
+#if _CCW_HAS_REAL_RVALUE_REF
+template <class _Tp> struct __any_cast_value<_Tp&&>     { typedef _Tp type; };
+#endif
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp any_cast(const any& __a) {
+    typedef typename __any_cast_value<_Tp>::type _Vt;
+    const _Vt* __p = any_cast<_Vt>(&__a);
+    if (!__p) _CCW_THROW(bad_any_cast());
+    return *__p;
+}
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp any_cast(any& __a) {
+    typedef typename __any_cast_value<_Tp>::type _Vt;
+    _Vt* __p = any_cast<_Vt>(&__a);
+    if (!__p) _CCW_THROW(bad_any_cast());
+    return *__p;
+}
+#if _CCW_HAS_REAL_RVALUE_REF
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp any_cast(any&& __a) {
+    typedef typename __any_cast_value<_Tp>::type _Vt;
+    _Vt* __p = any_cast<_Vt>(&__a);
+    if (!__p) _CCW_THROW(bad_any_cast());
+    return static_cast<_Tp>(static_cast<_Vt&&>(*__p));
+}
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(eany, bad_any_cast, bad_any_cast)
+
+#endif // _CCW_LIBCPP_ANY

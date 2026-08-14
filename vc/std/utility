@@ -1,0 +1,55 @@
+// ccwrap <utility>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(utility)
+
+#include <../../detail/cxx/utility.hpp>
+
+#if _CCW_STD_LIB_LT(1600, 201103L)
+#include <../../detail/cxx/move03.hpp>
+namespace std {
+    using ::_ccw::move;
+    using ::_ccw::move_if_noexcept;
+}
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_variant) \
+    && (_CCW_TARGET_CXX < 2017 || !defined(_CCW_LIBCPP___UTILITY_IN_PLACE_DEFINED))
+namespace _CCW_STD17 {
+# ifndef _CCW_STD_IN_PLACE_DEFINED
+# define _CCW_STD_IN_PLACE_DEFINED
+struct in_place_t { explicit in_place_t() {} };
+static const in_place_t in_place = in_place_t();
+# endif
+# ifndef _CCW_STD_IN_PLACE_TYPE_DEFINED
+# define _CCW_STD_IN_PLACE_TYPE_DEFINED
+template <class _Tp>  struct in_place_type_t  { explicit in_place_type_t() {} };
+#  if _CCW_HAS_VAR_TEMPLATE
+template <class _Tp>  const in_place_type_t<_Tp> in_place_type = in_place_type_t<_Tp>();
+#  endif
+# endif
+# ifndef _CCW_STD_IN_PLACE_INDEX_DEFINED
+# define _CCW_STD_IN_PLACE_INDEX_DEFINED
+template <_CCW_STD::size_t _Ip> struct in_place_index_t { explicit in_place_index_t() {} };
+#  if _CCW_HAS_VAR_TEMPLATE
+template <_CCW_STD::size_t _Ip> const in_place_index_t<_Ip> in_place_index = in_place_index_t<_Ip>();
+#  endif
+# endif
+}
+/* When _CCW_STD17 IS std these are the same entities llibcxx03 would define, so claim
+   its guards too; otherwise they live in _ccw and llibcxx03 still needs its own. */
+# if _CCW_TARGET_CXX >= 2017
+#  define _CCW_LIBCPP___UTILITY_IN_PLACE_DEFINED
+#  define _CCW_LIBCPP___UTILITY_IN_PLACE_TYPE_DEFINED
+#  define _CCW_LIBCPP___UTILITY_IN_PLACE_INDEX_DEFINED
+# endif
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1700
+namespace std {
+struct piecewise_construct_t {};
+static const piecewise_construct_t piecewise_construct = piecewise_construct_t();
+}
+#endif

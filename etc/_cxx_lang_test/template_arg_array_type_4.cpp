@@ -10,7 +10,7 @@ template <class T, unsigned N>
 struct is_array<T[N]> { enum { v = 2 }; };
 
 int main() {
-	unsigned n1 = is_array<char[]>::v;
-	unsigned n2 = is_array<char[20]>::v;
-	return (n1 == 1 && n2 == 2) ? 0 : 1;
+    unsigned n1 = is_array<char[]>::v;
+    unsigned n2 = is_array<char[20]>::v;
+    return (n1 == 1 && n2 == 2) ? 0 : 1;
 }

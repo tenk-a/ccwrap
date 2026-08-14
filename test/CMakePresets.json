@@ -1,0 +1,939 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 29,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "TEST_TARGET_C": "2023",
+        "TEST_TARGET_CXX": "2023"
+      }
+    },
+    {
+      "name": "vc145",
+      "displayName": "VC 14.5 (VS2026) x64 -- c_test + cxx_test + etc_test/vc",
+      "inherits": "base",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64"
+    },
+    {
+      "name": "vc143",
+      "displayName": "VC 14.3 (VS2022) x64 -- c_test + cxx_test + etc_test/vc",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "gcc",
+      "displayName": "g++/gcc (Linux / macOS / msys2) -- c_test + cxx_test",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_STANDARD": "98",
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "binaryDir": "${sourceDir}/_build/${hostSystemName}-${presetName}"
+    },
+    {
+      "name": "gcc-latest",
+      "inherits": "gcc",
+      "displayName": "g++ -std=c++23 (the modern merged cases DO compile here)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23"
+      }
+    },
+    {
+      "name": "gcc-cxx26",
+      "inherits": "gcc",
+      "displayName": "g++ -std=c++26 / gcc -std=c23 (spec 追従の主軸。最新規格を最も広く実装する構成)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26",
+        "CMAKE_C_STANDARD": "23",
+        "TEST_TARGET_CXX": "2026",
+        "TEST_TARGET_C": "2023"
+      }
+    },
+    {
+      "name": "clang",
+      "inherits": "gcc",
+      "displayName": "clang++/clang (Linux / macOS)",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "clang-latest",
+      "inherits": "clang",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23"
+      }
+    },
+    {
+      "name": "clang-cxx26",
+      "inherits": "clang",
+      "displayName": "clang++ -std=c++26 / clang -std=c23",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26",
+        "CMAKE_C_STANDARD": "23"
+      }
+    },
+    {
+      "name": "pcc",
+      "displayName": "pcc (WSL / Linux) -- native C library, c_test only",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "pcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-U__GNUC__",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "c_test"
+      },
+      "binaryDir": "${sourceDir}/_build/${hostSystemName}-${presetName}"
+    },
+    {
+      "name": "tcc",
+      "displayName": "TinyCC (WSL / Linux) -- native C library, c_test only",
+      "inherits": "pcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "tcc",
+        "CMAKE_C_FLAGS": ""
+      }
+    },
+    {
+      "name": "dmc",
+      "displayName": "Digital Mars C 8.x (Ninja, native C library)",
+      "description": "dmc.exe is invoked directly; no dmc-cc or ccwrap is used. The selected suites are the tests that link against the DMC 8.x runtime.",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/toolchains/dmc.cmake",
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "c_test",
+        "TST_ONLY": "assert;ctype;fenv;float;iso646;limits;locale;setjmp;signal;stdarg;stdbool;stdlib;stdnoreturn;time"
+      }
+    },
+    {
+      "name": "orangec",
+      "displayName": "Orange C/C++ 7.x (Ninja, native C library)",
+      "description": "occ.exe is invoked directly through CMake's native OrangeC support; no ccwrap is used. Compile/link-unsupported suites are excluded, and known OrangeC 7.10.59 fatal library calls are conditionally skipped so CTest completes.",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/toolchains/orangec.cmake",
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "c_test",
+        "TST_ONLY": "assert;complex;ctype;errno;fenv;float;inttypes;iso646;locale;setjmp;signal;stdalign;stdarg;stdatomic;stdbool;stddef;stdio;stdlib;stdnoreturn;string;time;uchar;wchar;wctype"
+      }
+    },
+    {
+      "name": "watcom",
+      "displayName": "Open Watcom 2.0 (win32) -- c_test + cxx_test + etc_test/watcom",
+      "inherits": "base",
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat",
+        "INCLUDE": "$env{WATCOM}/h;$env{WATCOM}/h/nt"
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_C_COMPILER": "wcl386",
+        "CMAKE_CXX_COMPILER": "wcl386",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "CMAKE_CXX_FLAGS_DEBUG": "-d1",
+        "CMAKE_WATCOM_RUNTIME_LIBRARY": "MultiThreaded",
+        "TEST_TARGET_C": "2026",
+        "TEST_TARGET_CXX": "2026"
+      }
+    },
+    {
+      "name": "watcom-noeh",
+      "inherits": "watcom",
+      "displayName": "Open Watcom (no exceptions and no RTTI) -- pairs with the -noeh lib; cxx_test only",
+      "cacheVariables": {
+        "TEST_NO_EH": "ON",
+        "TEST_WATCOM_RTTI": "OFF",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "watcom-xst",
+      "inherits": "watcom",
+      "displayName": "Open Watcom (-xst only, no RTTI) -- pairs with the -xst lib; needs `gen full`",
+      "cacheVariables": {
+        "TEST_WATCOM_RTTI": "OFF",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "watcom-xrxs",
+      "inherits": "watcom",
+      "displayName": "Open Watcom 2.0 (win32), -xs exception model -- test only (A1''); pairs with the -xrxs lib",
+      "cacheVariables": {
+        "TEST_WATCOM_XS": "ON"
+      }
+    },
+    {
+      "name": "watcom-fs-char",
+      "displayName": "Open Watcom 2.0 (win32), filesystem::path forced to char -- needs lib/ built with the -fs-char variants",
+      "inherits": "watcom",
+      "cacheVariables": {
+        "TEST_FS_CHAR": "ON",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "watcom-ccwstd",
+      "inherits": "watcom",
+      "displayName": "Open Watcom (ccwstd relocation) -- cxx_test only",
+      "description": "libcxx03 を ccwstd 名前空間へ再配置した環境。C スイートは std/ccwstd の区別が無いので cxx_test だけを回す。",
+      "cacheVariables": {
+        "TST_NS": "ccwstd",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "watcom-std",
+      "inherits": "watcom",
+      "displayName": "Open Watcom, native C library only (no ccwrap) -- c_test only",
+      "description": "ccwrap を一切通さない素の Open Watcom ベースライン。C++ 側は純正ライブラリが貧弱すぎて成立しないので c_test だけ。ここで落ちる分が ccwrap の補充分そのもの。",
+      "cacheVariables": {
+        "TST_SUITES": "c_test",
+        "TEST_TARGET_C": ""
+      }
+    },
+    {
+      "name": "gcc-std",
+      "hidden": true,
+      "inherits": "gcc",
+      "displayName": "g++ 素の libstdc++ (ccwrap 無し) -- C++ 規格別スイープの土台",
+      "cacheVariables": {
+        "TEST_TARGET_CXX": "",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "gcc-std-cxx03",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++98 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "98"
+      }
+    },
+    {
+      "name": "gcc-std-cxx11",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++11 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "11"
+      }
+    },
+    {
+      "name": "gcc-std-cxx14",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++14 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "14"
+      }
+    },
+    {
+      "name": "gcc-std-cxx17",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++17 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17"
+      }
+    },
+    {
+      "name": "gcc-std-cxx20",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++20 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20"
+      }
+    },
+    {
+      "name": "gcc-std-cxx23",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++23 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23"
+      }
+    },
+    {
+      "name": "gcc-std-cxx26",
+      "inherits": "gcc-std",
+      "displayName": "g++ -std=c++26 / 素の libstdc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26"
+      }
+    },
+    {
+      "name": "gcc-cstd",
+      "hidden": true,
+      "inherits": "gcc",
+      "displayName": "gcc 素の glibc (ccwrap 無し) -- C 規格別スイープの土台",
+      "cacheVariables": {
+        "TEST_TARGET_CXX": "",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "c_test"
+      }
+    },
+    {
+      "name": "gcc-std-c90",
+      "inherits": "gcc-cstd",
+      "displayName": "gcc -std=c90 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "90"
+      }
+    },
+    {
+      "name": "gcc-std-c99",
+      "inherits": "gcc-cstd",
+      "displayName": "gcc -std=c99 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "99"
+      }
+    },
+    {
+      "name": "gcc-std-c11",
+      "inherits": "gcc-cstd",
+      "displayName": "gcc -std=c11 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "11"
+      }
+    },
+    {
+      "name": "gcc-std-c17",
+      "inherits": "gcc-cstd",
+      "displayName": "gcc -std=c17 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "17"
+      }
+    },
+    {
+      "name": "gcc-std-c23",
+      "inherits": "gcc-cstd",
+      "displayName": "gcc -std=c23 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "23"
+      }
+    },
+    {
+      "name": "clang-libcxx",
+      "hidden": true,
+      "inherits": "clang",
+      "displayName": "clang++ -stdlib=libc++ (ccwrap 無し) -- C++ 規格別スイープの土台",
+      "cacheVariables": {
+        "TEST_TARGET_CXX": "",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "cxx_test",
+        "TST_STDLIB": "libcxx",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx03",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++98 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "98"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx11",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++11 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "11"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx14",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++14 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "14"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx17",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++17 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx20",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++20 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx23",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++23 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23"
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx26",
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -std=c++26 -stdlib=libc++",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26"
+      }
+    },
+    {
+      "name": "clang-cstd",
+      "hidden": true,
+      "inherits": "clang",
+      "displayName": "clang 素の glibc (ccwrap 無し) -- C 規格別スイープの土台",
+      "cacheVariables": {
+        "TEST_TARGET_CXX": "",
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "c_test"
+      }
+    },
+    {
+      "name": "clang-std-c90",
+      "inherits": "clang-cstd",
+      "displayName": "clang -std=c90 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "90"
+      }
+    },
+    {
+      "name": "clang-std-c99",
+      "inherits": "clang-cstd",
+      "displayName": "clang -std=c99 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "99"
+      }
+    },
+    {
+      "name": "clang-std-c11",
+      "inherits": "clang-cstd",
+      "displayName": "clang -std=c11 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "11"
+      }
+    },
+    {
+      "name": "clang-std-c17",
+      "inherits": "clang-cstd",
+      "displayName": "clang -std=c17 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "17"
+      }
+    },
+    {
+      "name": "clang-std-c23",
+      "inherits": "clang-cstd",
+      "displayName": "clang -std=c23 / 素の glibc",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "23"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug"
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc"
+    },
+    {
+      "name": "gcc-latest",
+      "configurePreset": "gcc-latest"
+    },
+    {
+      "name": "gcc-cxx26",
+      "configurePreset": "gcc-cxx26"
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang"
+    },
+    {
+      "name": "clang-latest",
+      "configurePreset": "clang-latest"
+    },
+    {
+      "name": "clang-cxx26",
+      "configurePreset": "clang-cxx26"
+    },
+    {
+      "name": "pcc",
+      "configurePreset": "pcc"
+    },
+    {
+      "name": "tcc",
+      "configurePreset": "tcc"
+    },
+    {
+      "name": "dmc",
+      "configurePreset": "dmc"
+    },
+    {
+      "name": "orangec",
+      "configurePreset": "orangec"
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom"
+    },
+    {
+      "name": "watcom-xrxs",
+      "configurePreset": "watcom-xrxs"
+    },
+    {
+      "name": "watcom-xst",
+      "configurePreset": "watcom-xst"
+    },
+    {
+      "name": "watcom-noeh",
+      "configurePreset": "watcom-noeh"
+    },
+    {
+      "name": "watcom-fs-char",
+      "configurePreset": "watcom-fs-char"
+    },
+    {
+      "name": "watcom-ccwstd",
+      "configurePreset": "watcom-ccwstd"
+    },
+    {
+      "name": "watcom-std",
+      "configurePreset": "watcom-std"
+    },
+    {
+      "name": "gcc-std-cxx03",
+      "configurePreset": "gcc-std-cxx03"
+    },
+    {
+      "name": "gcc-std-cxx11",
+      "configurePreset": "gcc-std-cxx11"
+    },
+    {
+      "name": "gcc-std-cxx14",
+      "configurePreset": "gcc-std-cxx14"
+    },
+    {
+      "name": "gcc-std-cxx17",
+      "configurePreset": "gcc-std-cxx17"
+    },
+    {
+      "name": "gcc-std-cxx20",
+      "configurePreset": "gcc-std-cxx20"
+    },
+    {
+      "name": "gcc-std-cxx23",
+      "configurePreset": "gcc-std-cxx23"
+    },
+    {
+      "name": "gcc-std-cxx26",
+      "configurePreset": "gcc-std-cxx26"
+    },
+    {
+      "name": "gcc-std-c90",
+      "configurePreset": "gcc-std-c90"
+    },
+    {
+      "name": "gcc-std-c99",
+      "configurePreset": "gcc-std-c99"
+    },
+    {
+      "name": "gcc-std-c11",
+      "configurePreset": "gcc-std-c11"
+    },
+    {
+      "name": "gcc-std-c17",
+      "configurePreset": "gcc-std-c17"
+    },
+    {
+      "name": "gcc-std-c23",
+      "configurePreset": "gcc-std-c23"
+    },
+    {
+      "name": "clang-libcxx-cxx03",
+      "configurePreset": "clang-libcxx-cxx03"
+    },
+    {
+      "name": "clang-libcxx-cxx11",
+      "configurePreset": "clang-libcxx-cxx11"
+    },
+    {
+      "name": "clang-libcxx-cxx14",
+      "configurePreset": "clang-libcxx-cxx14"
+    },
+    {
+      "name": "clang-libcxx-cxx17",
+      "configurePreset": "clang-libcxx-cxx17"
+    },
+    {
+      "name": "clang-libcxx-cxx20",
+      "configurePreset": "clang-libcxx-cxx20"
+    },
+    {
+      "name": "clang-libcxx-cxx23",
+      "configurePreset": "clang-libcxx-cxx23"
+    },
+    {
+      "name": "clang-libcxx-cxx26",
+      "configurePreset": "clang-libcxx-cxx26"
+    },
+    {
+      "name": "clang-std-c90",
+      "configurePreset": "clang-std-c90"
+    },
+    {
+      "name": "clang-std-c99",
+      "configurePreset": "clang-std-c99"
+    },
+    {
+      "name": "clang-std-c11",
+      "configurePreset": "clang-std-c11"
+    },
+    {
+      "name": "clang-std-c17",
+      "configurePreset": "clang-std-c17"
+    },
+    {
+      "name": "clang-std-c23",
+      "configurePreset": "clang-std-c23"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-latest",
+      "configurePreset": "gcc-latest",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-latest",
+      "configurePreset": "clang-latest",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-cxx26",
+      "configurePreset": "gcc-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-cxx26",
+      "configurePreset": "clang-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "pcc",
+      "configurePreset": "pcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "tcc",
+      "configurePreset": "tcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "dmc",
+      "configurePreset": "dmc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "orangec",
+      "configurePreset": "orangec",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-xrxs",
+      "configurePreset": "watcom-xrxs",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-xst",
+      "configurePreset": "watcom-xst",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-noeh",
+      "configurePreset": "watcom-noeh",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-fs-char",
+      "configurePreset": "watcom-fs-char",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-ccwstd",
+      "configurePreset": "watcom-ccwstd",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-std",
+      "configurePreset": "watcom-std",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx03",
+      "configurePreset": "gcc-std-cxx03",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx11",
+      "configurePreset": "gcc-std-cxx11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx14",
+      "configurePreset": "gcc-std-cxx14",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx17",
+      "configurePreset": "gcc-std-cxx17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx20",
+      "configurePreset": "gcc-std-cxx20",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx23",
+      "configurePreset": "gcc-std-cxx23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-cxx26",
+      "configurePreset": "gcc-std-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-c90",
+      "configurePreset": "gcc-std-c90",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-c99",
+      "configurePreset": "gcc-std-c99",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-c11",
+      "configurePreset": "gcc-std-c11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-c17",
+      "configurePreset": "gcc-std-c17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-std-c23",
+      "configurePreset": "gcc-std-c23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx03",
+      "configurePreset": "clang-libcxx-cxx03",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx11",
+      "configurePreset": "clang-libcxx-cxx11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx14",
+      "configurePreset": "clang-libcxx-cxx14",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx17",
+      "configurePreset": "clang-libcxx-cxx17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx20",
+      "configurePreset": "clang-libcxx-cxx20",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx23",
+      "configurePreset": "clang-libcxx-cxx23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-cxx26",
+      "configurePreset": "clang-libcxx-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-std-c90",
+      "configurePreset": "clang-std-c90",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-std-c99",
+      "configurePreset": "clang-std-c99",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-std-c11",
+      "configurePreset": "clang-std-c11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-std-c17",
+      "configurePreset": "clang-std-c17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-std-c23",
+      "configurePreset": "clang-std-c23",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

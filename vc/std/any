@@ -1,0 +1,11 @@
+// ccwrap <any>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include _CCW_NATIVE_STL_HEADER_PATH(any)
+ namespace _ccw { using std::any; using std::bad_any_cast; using std::any_cast; }
+#else
+ #include <../../detail/llibcxx03/include/any>
+#endif

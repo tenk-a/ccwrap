@@ -1,0 +1,138 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 29,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "TEST_TARGET_C": "2023",
+        "TEST_TARGET_CXX": "2023"
+      }
+    },
+    {
+      "name": "vc145",
+      "displayName": "VC 14.5 (VS2026), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64"
+    },
+    {
+      "name": "vc143",
+      "displayName": "VC 14.3 (VS2022), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "gcc",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "binaryDir": "${sourceDir}/_build/${hostSystemName}-${presetName}"
+    },
+    {
+      "name": "clang",
+      "inherits": "gcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "watcom",
+      "displayName": "Open Watcom 2.0 (win32)",
+      "inherits": "base",
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat",
+        "INCLUDE": "$env{WATCOM}/h;$env{WATCOM}/h/nt"
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_C_COMPILER": "wcl386",
+        "CMAKE_CXX_COMPILER": "wcl386",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "CMAKE_CXX_FLAGS_DEBUG": "-d1",
+        "CMAKE_WATCOM_RUNTIME_LIBRARY": "MultiThreaded",
+        "TEST_TARGET_C": "2026",
+        "TEST_TARGET_CXX": "2026"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug"
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc"
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang"
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

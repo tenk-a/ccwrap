@@ -1,0 +1,5 @@
+"suite"	"pass"	"status"	"note"
+"stdbool"	"c1999:__bool_true_false_are_defined"	"tested"	""
+"stdbool"	"c1999:bool"	"tested"	""
+"stdbool"	"c1999:false"	"tested"	""
+"stdbool"	"c1999:true"	"tested"	""

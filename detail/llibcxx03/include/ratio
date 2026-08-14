@@ -1,0 +1,112 @@
+//  ccwrap llibcxx03: <ratio> for Open Watcom -- compile-time rational constants
+//  (num/den) used by <chrono>. Classic C++03 body.
+//
+//  num/den ARE reduced to lowest terms, and the sign is normalised onto num, as the
+//  standard requires. Getting a compile-time gcd past Open Watcom takes two dodges;
+//  see __static_gcd below.
+#ifndef _CCW_LIBCPP_RATIO
+#define _CCW_LIBCPP_RATIO
+#include "__config"
+#include "__type_traits/integral_constant.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <long long _Vp>
+struct __ratio_val { static const long long value = _Vp; };
+
+template <bool _BIsZero, class _Ap, class _Bp>
+struct __static_gcd_impl;
+
+template <class _Ap, class _Bp>
+struct __static_gcd_impl<true, _Ap, _Bp> { static const long long value = _Ap::value; };
+
+template <class _Ap, class _Bp>
+struct __static_gcd_impl<false, _Ap, _Bp> {
+    static const long long value =
+        __static_gcd_impl<(_Ap::value % _Bp::value) == 0, _Bp,
+                          __ratio_val<_Ap::value % _Bp::value> >::value;
+};
+
+template <long long _Xp, long long _Yp>
+struct __static_gcd {
+    static const long long value =
+        __static_gcd_impl<(_Yp + 0) == 0, __ratio_val<_Xp + 0>, __ratio_val<_Yp + 0> >::value;
+};
+
+template <long long _Num, long long _Den = 1>
+struct ratio {
+    typedef char __ratio_den_must_not_be_zero[_Den != 0 ? 1 : -1];
+    typedef char __ratio_abs_must_be_representable[
+        (_Num != (-9223372036854775807LL - 1) && _Den != (-9223372036854775807LL - 1)) ? 1 : -1];
+
+    static const long long __da  = _Den < 0 ? -_Den : _Den;
+    static const long long __gcd = __static_gcd<(_Num < 0 ? -_Num : _Num) + 0, __da + 0>::value;
+
+    static const long long num = (_Den < 0 ? -_Num : _Num) / __gcd;
+    static const long long den = __da / __gcd;
+    typedef ratio<num + 0, den + 0> type;      // the canonical (reduced) type
+};
+
+template <class _R1, class _R2>
+struct ratio_add
+    : ratio< _R1::num * _R2::den + _R2::num * _R1::den, _R1::den * _R2::den > {};
+
+template <class _R1, class _R2>
+struct ratio_subtract
+    : ratio< _R1::num * _R2::den - _R2::num * _R1::den, _R1::den * _R2::den > {};
+
+template <class _R1, class _R2>
+struct ratio_multiply
+    : ratio< _R1::num * _R2::num, _R1::den * _R2::den > {};
+
+template <class _R1, class _R2>
+struct ratio_divide
+    : ratio< _R1::num * _R2::den, _R1::den * _R2::num > {};
+
+template <class _R1, class _R2>
+struct ratio_equal
+    : integral_constant<bool, (_R1::num * _R2::den == _R2::num * _R1::den)> {};
+
+template <class _R1, class _R2>
+struct ratio_not_equal
+    : integral_constant<bool, (_R1::num * _R2::den != _R2::num * _R1::den)> {};
+
+template <class _R1, class _R2>
+struct __ccw_ratio_lt {
+    static const bool value = _R1::num * _R2::den < _R2::num * _R1::den;
+};
+
+template <class _R1, class _R2>
+struct ratio_less
+    : integral_constant<bool, __ccw_ratio_lt<_R1, _R2>::value> {};
+
+template <class _R1, class _R2>
+struct ratio_less_equal
+    : integral_constant<bool, !__ccw_ratio_lt<_R2, _R1>::value> {};
+
+template <class _R1, class _R2>
+struct ratio_greater
+    : integral_constant<bool, (_R1::num * _R2::den > _R2::num * _R1::den)> {};
+
+template <class _R1, class _R2>
+struct ratio_greater_equal
+    : integral_constant<bool, (_R1::num * _R2::den >= _R2::num * _R1::den)> {};
+
+typedef ratio<1LL, 1000000000000000000LL> atto;
+typedef ratio<1LL, 1000000000000000LL>    femto;
+typedef ratio<1LL, 1000000000000LL>       pico;
+typedef ratio<1, 1000000000> nano;
+typedef ratio<1, 1000000>    micro;
+typedef ratio<1, 1000>       milli;
+typedef ratio<1, 100>        centi;
+typedef ratio<1, 10>         deci;
+typedef ratio<10, 1>         deca;
+typedef ratio<100, 1>        hecto;
+typedef ratio<1000, 1>       kilo;
+typedef ratio<1000000, 1>    mega;
+typedef ratio<1000000000, 1> giga;
+typedef ratio<1000000000000LL, 1LL>       tera;
+typedef ratio<1000000000000000LL, 1LL>    peta;
+typedef ratio<1000000000000000000LL, 1LL> exa;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_RATIO

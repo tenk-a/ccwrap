@@ -1,0 +1,13 @@
+// ccwrap watcom: <cstdbool> (C++11). Open Watcom's C++03 library predates this
+// header, so instead of forwarding to a possibly-absent native <cstdbool> we pull the
+// C <stdbool.h> and expose __bool_true_false_are_defined, matching the standard's
+// contract. In C++, bool/true/false are keywords, so <stdbool.h> itself defines no
+// macros.
+#pragma once
+
+#include <ccwrap_common.h>
+#include <stdbool.h>
+
+#ifndef __bool_true_false_are_defined
+#define __bool_true_false_are_defined 1
+#endif

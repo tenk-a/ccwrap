@@ -1,0 +1,9 @@
+// ccwrap watcom forwarder: pull the genuine C++ <mutex> from detail/llibcxx03/include so that
+// putting only watcom/ on the include path overrides Open Watcom's native header.
+#pragma once
+#include <ccwrap_common.h>
+
+#if !defined(_CCW_OS_WIN)
+# error "ccwrap: <mutex> is Win32-only on Open Watcom -- std::mutex rests on Win32 critical sections / WaitForSingleObject."
+#endif
+#include _CCW_NATIVE_STL_HEADER_PATH(mutex)

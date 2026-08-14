@@ -1,0 +1,2 @@
+// ccwrap <locale>
+#include "../std/locale"

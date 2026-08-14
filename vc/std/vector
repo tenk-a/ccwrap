@@ -1,0 +1,37 @@
+// ccwrap vc forwarder for <vector>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(vector)
+
+#if defined(__cplusplus) && !defined(__cpp_lib_erase_if)
+#include <algorithm>
+namespace _CCW_STD20 {
+
+template <class _Tp, class _Alloc, class _Up>
+inline typename std::vector<_Tp, _Alloc>::size_type erase(std::vector<_Tp, _Alloc>& __c, const _Up& __v) {
+    typename std::vector<_Tp, _Alloc>::iterator __it = std::remove(__c.begin(), __c.end(), __v);
+    typename std::vector<_Tp, _Alloc>::size_type __n =
+        static_cast<typename std::vector<_Tp, _Alloc>::size_type>(__c.end() - __it);
+    __c.erase(__it, __c.end());
+    return __n;
+}
+
+template <class _Tp, class _Alloc, class _Pred>
+inline typename std::vector<_Tp, _Alloc>::size_type erase_if(std::vector<_Tp, _Alloc>& __c, _Pred __p) {
+    typename std::vector<_Tp, _Alloc>::iterator __it = std::remove_if(__c.begin(), __c.end(), __p);
+    typename std::vector<_Tp, _Alloc>::size_type __n =
+        static_cast<typename std::vector<_Tp, _Alloc>::size_type>(__c.end() - __it);
+    __c.erase(__it, __c.end());
+    return __n;
+}
+
+}   // _CCW_STD20
+#endif
+
+// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
+#include <iterator>

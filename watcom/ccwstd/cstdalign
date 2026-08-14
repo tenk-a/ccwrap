@@ -1,0 +1,2 @@
+// ccwrap <cstdalign>
+#include "../std/cstdalign"

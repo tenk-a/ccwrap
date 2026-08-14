@@ -11,7 +11,7 @@ struct is_array<T*> { enum { v = 3 }; };
 
 
 int main() {
-	unsigned n1 = is_array<char[]>::v;
-	unsigned n3 = is_array<char*>::v;
-	return (n1 == 1 && n3 == 3) ? 0 : 1;
+    unsigned n1 = is_array<char[]>::v;
+    unsigned n3 = is_array<char*>::v;
+    return (n1 == 1 && n3 == 3) ? 0 : 1;
 }

@@ -1,0 +1,2 @@
+// ccwrap <thread>
+#include "../std/thread"

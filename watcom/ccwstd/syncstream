@@ -1,0 +1,2 @@
+// ccwrap <syncstream>
+#include "../std/syncstream"

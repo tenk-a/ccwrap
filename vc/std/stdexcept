@@ -1,0 +1,13 @@
+// ccwrap vc forwarder for <stdexcept>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(stdexcept)
+
+// the sto* family lands here, not in <string>: the native <stdexcept> includes
+// <string> while invalid_argument / out_of_range are still incomplete
+#include <../../detail/cxx/string_stox.hpp>

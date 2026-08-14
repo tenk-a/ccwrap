@@ -1,0 +1,11 @@
+// ccwrap <cstring>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cstring)
+
+#include <string.h>
+namespace std {
+    using ::memccpy;
+}

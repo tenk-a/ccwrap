@@ -1,1 +1,0 @@
-call mk.bat g++ %*

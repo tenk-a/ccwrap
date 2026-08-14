@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+  Make the process's ANSI code page UTF-8 (Windows 10 1903 and later).
+
+  Without this the ACP is whatever the machine is set to (CP932 on a Japanese
+  install), so the CRT's multibyte side (setlocale, mbrtowc, mbrtoc16, mbrtoc32,
+  wcstombs, the console) is not UTF-8, and every test that converts UTF-8 has to
+  be skipped. Embedding this changes the API only; it does NOT change how the
+  compiler encodes narrow string literals (that is what /utf-8 does, and vc90
+  has no such switch). Tests must therefore still build UTF-8 byte sequences by
+  hand, or convert from a wide literal, instead of typing UTF-8 into a char
+  literal.
+
+  Note for editors: an XML comment may not contain two consecutive hyphens.
+  mt.exe rejects the whole manifest if it does.
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="ccwrap.test" version="1.0.0.0"/>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings xmlns:ws2019="http://schemas.microsoft.com/SMI/2019/WindowsSettings">
+      <ws2019:activeCodePage>UTF-8</ws2019:activeCodePage>
+    </windowsSettings>
+  </application>
+</assembly>

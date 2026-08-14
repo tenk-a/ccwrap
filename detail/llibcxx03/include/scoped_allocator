@@ -1,0 +1,286 @@
+//  ccwrap llibcxx03: <scoped_allocator> (C++11) for Open Watcom -- a SUBSET.
+//
+//  scoped_allocator_adaptor<OuterAlloc, InnerAllocs...> is a VARIADIC class template.
+//  Open Watcom has no variadic templates, and the __fnctmpl.h emulation covers
+//  function templates, not class ones. So the adaptor is spelled with a fixed arity:
+//  up to TWO inner allocators, via defaulted parameters.
+#ifndef _CCW_LIBCPP_SCOPED_ALLOCATOR
+#define _CCW_LIBCPP_SCOPED_ALLOCATOR
+
+#include "__config"
+#include "__fnctmpl.h"
+#include "__memory/allocator_arg_t.h"
+#include "__memory/allocator_traits.h"
+#include "__memory/misc.h"          // uses_allocator
+#include "__type_traits/integral_constant.h"
+#include "__utility/pair.h"
+#include "__utility/piecewise_construct.h"
+#include "tuple"                    // the fixed-arity tuple + __ccw_tup_ctor
+#include <cstddef>
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct __sa_nil {};
+
+template <class _Tp>            struct __sa_is_pair                    { static const bool value = false; };
+template <class _T1, class _T2> struct __sa_is_pair<pair<_T1, _T2> >   { static const bool value = true; };
+
+template <class _Elem, class _IAlloc, bool _Uses> struct __sa_elem_ctor;
+template <class _Elem, class _IAlloc>
+struct __sa_elem_ctor<_Elem, _IAlloc, false> {
+    template <class _Tup>
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __go(void* __q, const _IAlloc&, const _Tup& __t) {
+        __ccw_tup_ctor<(_CCW_STD::size_t)tuple_size<_Tup>::value, _Elem>::ctor(__q, __t);
+    }
+};
+template <class _Elem, class _IAlloc>
+struct __sa_elem_ctor<_Elem, _IAlloc, true> {
+    template <class _Tup>
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __go(void* __q, const _IAlloc& __a, const _Tup& __t) {
+        __ccw_tup_ctor<(_CCW_STD::size_t)tuple_size<_Tup>::value, _Elem>::ctor2(__q, allocator_arg, __a, __t);
+    }
+};
+
+template <bool _Bp> struct __sa_bool          { typedef false_type type; };
+template <>         struct __sa_bool<true>    { typedef true_type  type; };
+
+template <class _A1, class _A2> struct __sa_inner_of;
+
+template <class _OuterAlloc, class _Inner1 = __sa_nil, class _Inner2 = __sa_nil>
+class scoped_allocator_adaptor;
+
+template <class _O, class _I1, class _I2>
+struct __sa_inner_type { typedef scoped_allocator_adaptor<_I1, _I2> type; };
+template <class _O>
+struct __sa_inner_type<_O, __sa_nil, __sa_nil> { typedef scoped_allocator_adaptor<_O> type; };
+
+template <class _OuterAlloc, class _Inner1, class _Inner2>
+class scoped_allocator_adaptor : public _OuterAlloc {
+    typedef allocator_traits<_OuterAlloc> __outer_traits;
+public:
+    typedef _OuterAlloc                                  outer_allocator_type;
+    typedef typename __sa_inner_type<_OuterAlloc, _Inner1, _Inner2>::type
+                                                         inner_allocator_type;
+    typedef typename __outer_traits::value_type          value_type;
+    typedef typename __outer_traits::size_type           size_type;
+    typedef typename __outer_traits::difference_type     difference_type;
+    typedef typename __outer_traits::pointer             pointer;
+    typedef typename __outer_traits::const_pointer       const_pointer;
+    typedef typename __outer_traits::void_pointer        void_pointer;
+    typedef typename __outer_traits::const_void_pointer  const_void_pointer;
+    typedef value_type&                                  reference;
+    typedef const value_type&                            const_reference;
+
+    typedef typename __sa_bool<(bool)__outer_traits::propagate_on_container_copy_assignment::value
+                            || (bool)inner_allocator_type::propagate_on_container_copy_assignment::value>::type
+                                                         propagate_on_container_copy_assignment;
+    typedef typename __sa_bool<(bool)__outer_traits::propagate_on_container_move_assignment::value
+                            || (bool)inner_allocator_type::propagate_on_container_move_assignment::value>::type
+                                                         propagate_on_container_move_assignment;
+    typedef typename __sa_bool<(bool)__outer_traits::propagate_on_container_swap::value
+                            || (bool)inner_allocator_type::propagate_on_container_swap::value>::type
+                                                         propagate_on_container_swap;
+    typedef typename __sa_bool<(bool)__outer_traits::is_always_equal::value
+                            && (bool)inner_allocator_type::is_always_equal::value>::type
+                                                         is_always_equal;
+
+    template <class _Up>
+    struct rebind {
+        typedef scoped_allocator_adaptor<
+            typename __outer_traits::template rebind_alloc<_Up>::type, _Inner1, _Inner2> other;
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor() : _OuterAlloc(), __inner_() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit scoped_allocator_adaptor(const _OuterAlloc& __o)
+        : _OuterAlloc(__o), __inner_() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const _OuterAlloc& __o, const inner_allocator_type& __i)
+        : _OuterAlloc(__o), __inner_(__i) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const scoped_allocator_adaptor& __o)
+        : _OuterAlloc(__o.outer_allocator()), __inner_(__o.__inner_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const _OuterAlloc& __o, const _Inner1& __i1)
+        : _OuterAlloc(__o), __inner_(__i1) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const _OuterAlloc& __o, const _Inner1& __i1, const _Inner2& __i2)
+        : _OuterAlloc(__o), __inner_(__i1, __i2) {}
+    template <class _OuterA2>
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const scoped_allocator_adaptor<_OuterA2, _Inner1, _Inner2>& __o)
+        : _OuterAlloc(__o.outer_allocator()), __inner_(__o.inner_allocator()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor select_on_container_copy_construction() const {
+        return scoped_allocator_adaptor(__outer_traits::select_on_container_copy_construction(outer_allocator()),
+                                        __inner_);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI outer_allocator_type&       outer_allocator()       { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const outer_allocator_type& outer_allocator() const { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI inner_allocator_type&       inner_allocator()       { return __inner_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const inner_allocator_type& inner_allocator() const { return __inner_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer allocate(size_type __n) { return __outer_traits::allocate(outer_allocator(), __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer allocate(size_type __n, const_pointer __hint) {
+        return __outer_traits::allocate(outer_allocator(), __n, __hint); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void deallocate(pointer __p, size_type __n) {
+        __outer_traits::deallocate(outer_allocator(), __p, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __outer_traits::max_size(outer_allocator()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void destroy(value_type* __p) { __p->~value_type(); }
+
+    template <class _Ot>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __ccw_equal_to(const _Ot& __o) const {
+        return outer_allocator() == __o.outer_allocator()
+            && inner_allocator().__ccw_equal_to(__o.inner_allocator());
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(value_type* __p) {
+        __construct_pd(__p, integral_constant<bool, __sa_is_pair<value_type>::value>());
+    }
+#define _CCW_SA_CONSTRUCT(N)                                                        \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N)) { \
+        __construct_pd(__p _CCW_FNCTMPL_CM_FNCARG(N),                               \
+                       integral_constant<bool, __sa_is_pair<_Tp>::value>());        \
+    }
+    _CCW_FNCTMPL_GENERATE(_CCW_SA_CONSTRUCT)
+#undef _CCW_SA_CONSTRUCT
+
+private:
+#define _CCW_SA_PD(N)                                                          \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pd(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), false_type) { \
+        __construct_disp(__p _CCW_FNCTMPL_CM_FNCARG(N),                             \
+                         integral_constant<bool, uses_allocator<_Tp, inner_allocator_type>::value>()); \
+    }
+    _CCW_FNCTMPL_GENERATE(_CCW_SA_PD)
+#undef _CCW_SA_PD
+
+    template <class _T1, class _T2, class _Tup1, class _Tup2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pair(pair<_T1, _T2>* __p, const _Tup1& __t1, const _Tup2& __t2) {
+        __sa_elem_ctor<_T1, inner_allocator_type,
+                       uses_allocator<_T1, inner_allocator_type>::value>::__go(
+            (void*)&__p->first, inner_allocator(), __t1);
+        __sa_elem_ctor<_T2, inner_allocator_type,
+                       uses_allocator<_T2, inner_allocator_type>::value>::__go(
+            (void*)&__p->second, inner_allocator(), __t2);
+    }
+    template <class _T1, class _T2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pd(pair<_T1, _T2>* __p, true_type) {
+        __construct_pair(__p, tuple<>(), tuple<>());
+    }
+    template <class _T1, class _T2, class _U1, class _U2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pd(pair<_T1, _T2>* __p, const pair<_U1, _U2>& __pr, true_type) {
+        __construct_pair(__p, tuple<_U1>(__pr.first), tuple<_U2>(__pr.second));
+    }
+    template <class _T1, class _T2, class _U1, class _U2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pd(pair<_T1, _T2>* __p, const _U1& __x, const _U2& __y, true_type) {
+        __construct_pair(__p, tuple<_U1>(__x), tuple<_U2>(__y));
+    }
+    template <class _T1, class _T2, class _Tup1, class _Tup2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_pd(pair<_T1, _T2>* __p, piecewise_construct_t,
+                                                  const _Tup1& __t1, const _Tup2& __t2, true_type) {
+        __construct_pair(__p, __t1, __t2);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(value_type* __p, false_type) {
+        value_type __z = value_type();
+        ::new ((void*)__p) value_type(__z);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(value_type* __p, true_type) {
+        ::new ((void*)__p) value_type(allocator_arg, inner_allocator()); }
+
+#define _CCW_SA_DISP(N)                                                             \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), false_type) { \
+        ::new ((void*)__p) _Tp(_CCW_FNCTMPL_FNCARG(N));                             \
+    }                                                                               \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), true_type) { \
+        ::new ((void*)__p) _Tp(allocator_arg, inner_allocator() _CCW_FNCTMPL_CM_FNCARG(N)); \
+    }
+    _CCW_FNCTMPL_GENERATE(_CCW_SA_DISP)
+#undef _CCW_SA_DISP
+
+    inner_allocator_type __inner_;
+};
+
+template <class _OuterAlloc>
+class scoped_allocator_adaptor<_OuterAlloc, __sa_nil, __sa_nil> : public _OuterAlloc {
+    typedef allocator_traits<_OuterAlloc> __outer_traits;
+public:
+    typedef _OuterAlloc                              outer_allocator_type;
+    typedef scoped_allocator_adaptor                 inner_allocator_type;
+    typedef typename __outer_traits::value_type      value_type;
+    typedef typename __outer_traits::size_type       size_type;
+    typedef typename __outer_traits::difference_type difference_type;
+    typedef typename __outer_traits::pointer         pointer;
+    typedef typename __outer_traits::const_pointer   const_pointer;
+    typedef typename __outer_traits::void_pointer    void_pointer;
+    typedef typename __outer_traits::const_void_pointer const_void_pointer;
+    typedef value_type&                              reference;
+    typedef const value_type&                        const_reference;
+
+    typedef typename __outer_traits::propagate_on_container_copy_assignment
+                                                     propagate_on_container_copy_assignment;
+    typedef typename __outer_traits::propagate_on_container_move_assignment
+                                                     propagate_on_container_move_assignment;
+    typedef typename __outer_traits::propagate_on_container_swap
+                                                     propagate_on_container_swap;
+    typedef typename __outer_traits::is_always_equal  is_always_equal;
+
+    template <class _Up>
+    struct rebind {
+        typedef scoped_allocator_adaptor<typename __outer_traits::template rebind_alloc<_Up>::type> other;
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor() : _OuterAlloc() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit scoped_allocator_adaptor(const _OuterAlloc& __o) : _OuterAlloc(__o) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const scoped_allocator_adaptor& __o)
+        : _OuterAlloc(__o.outer_allocator()) {}
+    template <class _OuterA2>
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor(const scoped_allocator_adaptor<_OuterA2>& __o)
+        : _OuterAlloc(__o.outer_allocator()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor select_on_container_copy_construction() const {
+        return scoped_allocator_adaptor(__outer_traits::select_on_container_copy_construction(outer_allocator()));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI outer_allocator_type&       outer_allocator()       { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const outer_allocator_type& outer_allocator() const { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_allocator_adaptor&       inner_allocator()       { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const scoped_allocator_adaptor& inner_allocator() const { return *this; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer allocate(size_type __n) { return __outer_traits::allocate(outer_allocator(), __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer allocate(size_type __n, const_pointer __hint) {
+        return __outer_traits::allocate(outer_allocator(), __n, __hint); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void deallocate(pointer __p, size_type __n) {
+        __outer_traits::deallocate(outer_allocator(), __p, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __outer_traits::max_size(outer_allocator()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void destroy(value_type* __p) { __p->~value_type(); }
+
+    template <class _Ot>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __ccw_equal_to(const _Ot& __o) const {
+        return outer_allocator() == __o.outer_allocator();
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(value_type* __p) {
+        value_type __z = value_type();          // see the note in the primary template
+        ::new ((void*)__p) value_type(__z);
+    }
+#define _CCW_SA1_CONSTRUCT(N)                                                       \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N)) { \
+        ::new ((void*)__p) _Tp(_CCW_FNCTMPL_FNCARG(N));                             \
+    }
+    _CCW_FNCTMPL_GENERATE(_CCW_SA1_CONSTRUCT)
+#undef _CCW_SA1_CONSTRUCT
+};
+
+template <class _O1, class _I1a, class _I2a, class _O2, class _I1b, class _I2b>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const scoped_allocator_adaptor<_O1, _I1a, _I2a>& __x,
+                                          const scoped_allocator_adaptor<_O2, _I1b, _I2b>& __y) {
+    return __x.__ccw_equal_to(__y);
+}
+template <class _O1, class _I1a, class _I2a, class _O2, class _I1b, class _I2b>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const scoped_allocator_adaptor<_O1, _I1a, _I2a>& __x,
+                                          const scoped_allocator_adaptor<_O2, _I1b, _I2b>& __y) {
+    return !(__x == __y);
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SCOPED_ALLOCATOR

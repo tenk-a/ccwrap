@@ -1,0 +1,7 @@
+"suite"	"pass"	"status"	"note"
+"priority_queue"	"cxx03:priority_queue::reference"	"tested"	""
+"priority_queue"	"cxx03:priority_queue::size_type"	"tested"	""
+"priority_queue"	"cxx03:priority_queue::value_type"	"tested"	""
+"priority_queue"	"cxx11:priority_queue::const_reference"	"tested"	""
+"priority_queue"	"cxx11:priority_queue::container_type"	"tested"	""
+"priority_queue"	"cxx17:priority_queue::value_compare"	"tested"	""

@@ -1,0 +1,2 @@
+// ccwrap <condition_variable>
+#include "../std/condition_variable"

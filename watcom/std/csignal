@@ -1,0 +1,7 @@
+// ccwrap watcom: <csignal>. Thin forwarder to Open Watcom's native <csignal>
+// (signal/raise, sig_atomic_t, the SIG* macros), guaranteeing ccwrap_common.h is
+// pulled in first. No supplements are needed.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(csignal)

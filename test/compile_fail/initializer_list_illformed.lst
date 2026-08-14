@@ -1,0 +1,6 @@
+# std::initializer_list: cases the standard requires to be ill-formed.
+# Each macro must make initializer_list_illformed.cpp fail to compile.
+REJ_EXPLICIT_SPECIALIZATION
+REJ_PARTIAL_SPECIALIZATION
+REJ_NARROWING_DOUBLE_TO_INT
+REJ_NARROWING_CONSTANT_OUT_OF_RANGE

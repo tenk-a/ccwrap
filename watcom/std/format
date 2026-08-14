@@ -1,0 +1,5 @@
+// ccwrap watcom: <format> (C++20). Placeholder: a subset implementation is planned
+// but not yet written. Including this header is a hard error so accidental use is
+// caught at compile time rather than silently pulling nothing.
+#pragma once
+#error "ccwrap: <format> is not implemented for Open Watcom yet (subset planned)."

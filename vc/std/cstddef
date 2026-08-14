@@ -1,0 +1,34 @@
+// ccwrap <cstddef>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cstddef)
+
+#if _MSC_VER >= 1700 && __cplusplus < 201703L
+namespace _CCW_STD17 {
+
+enum class byte : unsigned char {};
+
+template<class IntType>
+inline IntType to_integer(byte b) noexcept { return IntType(static_cast<unsigned char>(b)); }
+
+template<class IntType> inline byte& operator<<=(byte& b, IntType s) noexcept { return b = byte((unsigned char)(static_cast<unsigned int>(b) << s)); }
+template<class IntType> inline byte& operator>>=(byte& b, IntType s) noexcept { return b = byte((unsigned char)(static_cast<unsigned int>(b) >> s)); }
+template<class IntType> inline byte operator<<(byte b, IntType s) noexcept { return byte((unsigned char)(static_cast<unsigned int>(b) << s)); }
+template<class IntType> inline byte operator>>(byte b, IntType s) noexcept { return byte((unsigned char)(static_cast<unsigned int>(b) >> s)); }
+
+inline byte  operator|(byte l, byte r) noexcept { return byte((unsigned char)(static_cast<unsigned int>(l) | static_cast<unsigned int>(r))); }
+inline byte  operator&(byte l, byte r) noexcept { return byte((unsigned char)(static_cast<unsigned int>(l) & static_cast<unsigned int>(r))); }
+inline byte  operator^(byte l, byte r) noexcept { return byte((unsigned char)(static_cast<unsigned int>(l) ^ static_cast<unsigned int>(r))); }
+inline byte  operator~(byte b)         noexcept { return byte((unsigned char)(~static_cast<unsigned int>(b))); }
+inline byte& operator|=(byte& l, byte r) noexcept { return l = l | r; }
+inline byte& operator&=(byte& l, byte r) noexcept { return l = l & r; }
+inline byte& operator^=(byte& l, byte r) noexcept { return l = l ^ r; }
+
+}   // _CCW_STD17
+#elif _MSC_VER < 1700
+namespace _CCW_STD17 {
+#include "../../detail/cxx/byte_cxx03.hpp"
+}
+#endif

@@ -1,0 +1,25 @@
+// ccwrap <cuchar>
+#pragma once
+#include <ccwrap_common.h>
+#include <wchar.h>          /* mbstate_t, size_t */
+#include <stddef.h>
+
+#ifndef _CCW_WCOM_CUCHAR
+#define _CCW_WCOM_CUCHAR
+
+#ifndef __CCW_HAS_CHAR8_T
+ #define __CCW_HAS_CHAR8_T 1
+ typedef unsigned char   char8_t;
+#endif
+
+#include "../../detail/c/uchar_impl.h"
+
+namespace std {
+    using ::mbstate_t;
+    using ::size_t;
+    using ::mbrtoc8;   using ::c8rtomb;
+    using ::mbrtoc16;  using ::c16rtomb;
+    using ::mbrtoc32;  using ::c32rtomb;
+}
+
+#endif  /* _CCW_WCOM_CUCHAR */

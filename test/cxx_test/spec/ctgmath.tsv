@@ -1,0 +1,4 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"ctgmath"	"cxx11:<ctgmath> provides <cmath> and <complex>"	"2011"	"2017"	""	"<ctgmath> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)。<cmath>/<complex> を使う"
+"ctgmath"	"cxx11:cmath declarations via <ctgmath>"	"2011"	"2017"	""	"<ctgmath> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)。<cmath>/<complex> を使う"
+"ctgmath"	"cxx11:complex declarations via <ctgmath>"	"2011"	"2017"	""	"<ctgmath> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)。<cmath>/<complex> を使う"

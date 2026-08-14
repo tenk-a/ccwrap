@@ -1,0 +1,28 @@
+// ccwrap vc forwarder for <ostream>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(ostream)
+
+#if defined(__cplusplus) && __cplusplus < 201703L && (!defined(_MSC_VER) || _MSC_VER >= 1600)
+#include <cstddef>
+namespace std {
+template <class _CharT, class _Traits>
+inline basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, _CCW_STD::nullptr_t) {
+    return __os << "nullptr";
+}
+}   // namespace std
+#endif
+
+#if !defined(_HAS_CXX23) || !_HAS_CXX23
+namespace std {
+template <class _CharT, class _Traits>
+inline basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const volatile void* __p) {
+    return __os << const_cast<const void*>(__p);
+}
+}   // namespace std
+#endif

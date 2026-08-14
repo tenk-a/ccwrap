@@ -1,0 +1,8 @@
+// ccwrap <algorithm>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <algorithm>
+
+#include <../../detail/cxx/algorithm.hpp>

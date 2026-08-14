@@ -1,0 +1,24 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <iosfwd> for Open Watcom. Forward declarations for the string
+//  and iostream class templates and their char typedefs. Following libc++, the
+//  default template arguments live in the __fwd/*.h headers only, so this header and
+//  the real definition headers never repeat (and never conflict on) them.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_IOSFWD
+#define _CCW_LIBCPP_IOSFWD
+#include "__config"
+#include "__fwd/memory.h"
+#include "__fwd/string.h"
+#include "__fwd/string_view.h"
+#include "__fwd/ios.h"
+#include "__fwd/streambuf.h"
+#include "__fwd/istream.h"
+#include "__fwd/ostream.h"
+#include "__fwd/sstream.h"
+#include "__fwd/fstream.h"
+#include "__fwd/syncstream.h"
+#include "__fwd/spanstream.h"
+#include "__iterator/streambuf_iterators.h"
+#endif // _CCW_LIBCPP_IOSFWD

@@ -1,0 +1,11 @@
+// ccwrap watcom/ccwstd: <cuchar> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CUCHAR_
+#define _CCW_CCWSTD_CUCHAR_
+#include "../std/cuchar"
+namespace _CCW_STD {
+using ::std::mbstate_t;
+using ::std::mbrtoc8; using ::std::c8rtomb;
+using ::std::mbrtoc16; using ::std::c16rtomb;
+using ::std::mbrtoc32; using ::std::c32rtomb;
+}
+#endif

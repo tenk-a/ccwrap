@@ -1,0 +1,43 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <typeindex> for Open Watcom. Thin wrapper over type_info that
+//  is copyable / assignable / orderable, so it can key a map or unordered_map.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_TYPEINDEX
+#define _CCW_LIBCPP_TYPEINDEX
+#include "__config"
+#include <typeinfo>
+#include <cstddef>
+#include "__functional/hash.h"
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class _CCW_LIBCPP_TEMPLATE_VIS type_index {
+    const _CCW_STD::type_info* __t_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI type_index(const _CCW_STD::type_info& __t) _CCW_LIBCPP_NOEXCEPT : __t_(&__t) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return *__t_ == *__o.__t_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return *__t_ != *__o.__t_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator< (const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return __t_->before(*__o.__t_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return !__o.__t_->before(*__t_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator> (const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return __o.__t_->before(*__t_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const type_index& __o) const _CCW_LIBCPP_NOEXCEPT { return !__t_->before(*__o.__t_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const _CCW_LIBCPP_NOEXCEPT { return __t_->name(); }
+#if (defined(_MSC_VER) && _MSC_VER < 1600) \
+    || (_CCW_LIBCPP_NATIVE_STD && !_CCW_LIBCPP_HAS_NATIVE_CXX11_LIB)
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t hash_code() const _CCW_LIBCPP_NOEXCEPT {
+        return reinterpret_cast<_CCW_STD::size_t>(__t_);
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t hash_code() const _CCW_LIBCPP_NOEXCEPT { return __t_->hash_code(); }
+#endif
+};
+
+template <>
+struct _CCW_LIBCPP_TEMPLATE_VIS hash<type_index> {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const type_index& __t) const _CCW_LIBCPP_NOEXCEPT { return __t.hash_code(); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_TYPEINDEX

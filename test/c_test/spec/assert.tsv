@@ -1,0 +1,7 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"assert"	"c1990:NDEBUG (compile-time disable of assert)"	"1990"	"*"	""	""
+"assert"	"c1990:assert(macro exists)"	"1990"	"*"	""	""
+"assert"	"c1990:assert(scalar expression, no abort when true)"	"1990"	"*"	""	""
+"assert"	"c2011:_Static_assert"	"2011"	"*"	""	"元々 <assert.h> の提供物ではなく言語キーワード (C11 6.7.10 / C23 6.7.11)。C23 でも代替綴りとして残る"
+"assert"	"c2011:static_assert"	"2011"	"2017"	""	"C23 で <assert.h> のマクロ定義は削除 (7.2 は assert と __STDC_VERSION_ASSERT_H__ のみ)。C23 では static_assert 自体がキーワードなので綴りは使えるが、ヘッダの提供物ではない"
+"assert"	"c2023:__STDC_VERSION_ASSERT_H__"	"2023"	"*"	""	""

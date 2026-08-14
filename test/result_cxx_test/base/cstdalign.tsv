@@ -1,0 +1,4 @@
+"suite"	"pass"	"status"	"note"
+"cstdalign"	"cxx11:<cstdalign> header compiles"	"tested"	""
+"cstdalign"	"cxx11:__alignas_is_defined"	"tested"	""
+"cstdalign"	"cxx11:__alignof_is_defined"	"tested"	""

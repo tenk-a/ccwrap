@@ -1,0 +1,171 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <streambuf> for Open Watcom -- the real basic_streambuf<char>
+//  (get/put areas, the public sget*/sput* interface, and the overridable virtuals
+//  underflow/uflow/overflow/sync/xsgetn/xsputn/pbackfail, and the positioning
+//  virtuals seekoff/seekpos/setbuf). Classic C++03 body; the iostream tower
+//  (<ios>/<ostream>/<istream>/<sstream>/<fstream>) builds on it. char only.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STREAMBUF
+#define _CCW_LIBCPP_STREAMBUF
+#include "__config"
+#include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
+#include "__fwd/streambuf.h"
+#include "__string/char_traits.h"
+#include <ios>          // ios_base::seekdir / openmode (for seekoff/seekpos)
+#include <locale>
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits >
+class basic_streambuf {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+private:
+    char_type* __gbeg_; char_type* __gcur_; char_type* __gend_;   // get area
+    char_type* __pbeg_; char_type* __pcur_; char_type* __pend_;   // put area
+    locale     __loc_;
+public:
+    virtual ~basic_streambuf() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI streamsize in_avail() {
+        if (__gcur_ < __gend_) return (streamsize)(__gend_ - __gcur_);
+        return showmanyc();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type sgetc() {
+        if (__gcur_ < __gend_) return _Traits::to_int_type(*__gcur_);
+        return underflow();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type sbumpc() {
+        if (__gcur_ < __gend_) { int_type __c = _Traits::to_int_type(*__gcur_); ++__gcur_; return __c; }
+        return uflow();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type snextc() { if (sbumpc() == _Traits::eof()) return _Traits::eof(); return sgetc(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type sputbackc(char_type __c) {
+        if (__gcur_ > __gbeg_ && _Traits::eq(__c, __gcur_[-1])) { --__gcur_; return _Traits::to_int_type(__c); }
+        return pbackfail(_Traits::to_int_type(__c));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type sungetc() {
+        if (__gcur_ > __gbeg_) { --__gcur_; return _Traits::to_int_type(*__gcur_); }
+        return pbackfail();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI streamsize sgetn(char_type* __s, streamsize __n) { return xsgetn(__s, __n); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int_type sputc(char_type __c) {
+        if (__pcur_ < __pend_) { *__pcur_ = __c; ++__pcur_; return _Traits::to_int_type(__c); }
+        return overflow(_Traits::to_int_type(__c));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI streamsize sputn(const char_type* __s, streamsize __n) { return xsputn(__s, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int pubsync() { return sync(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pos_type pubseekoff(off_type __off, ios_base::seekdir __way,
+                                              ios_base::openmode __which = ios_base::in | ios_base::out) {
+        return seekoff(__off, __way, __which);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pos_type pubseekpos(pos_type __pos,
+                                              ios_base::openmode __which = ios_base::in | ios_base::out) {
+        return seekpos(__pos, __which);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_streambuf* pubsetbuf(char_type* __s, streamsize __n) { return setbuf(__s, __n); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI locale pubimbue(const locale& __loc) {
+        locale __old = __loc_;
+        imbue(__loc);
+        __loc_ = __loc;
+        return __old;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale getloc() const { return __loc_; }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_streambuf() : __gbeg_(0), __gcur_(0), __gend_(0), __pbeg_(0), __pcur_(0), __pend_(0) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_streambuf(_CCW_RV_REF_BEG basic_streambuf _CCW_RV_REF_END __rr) {
+        basic_streambuf& __r = _CCW_MOVED_OBJ(__rr);
+        __gbeg_ = __r.__gbeg_; __gcur_ = __r.__gcur_; __gend_ = __r.__gend_;
+        __pbeg_ = __r.__pbeg_; __pcur_ = __r.__pcur_; __pend_ = __r.__pend_;
+        __loc_  = __r.__loc_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_streambuf& operator=(_CCW_RV_REF_BEG basic_streambuf _CCW_RV_REF_END __rr) {
+        basic_streambuf& __r = _CCW_MOVED_OBJ(__rr);
+        __gbeg_ = __r.__gbeg_; __gcur_ = __r.__gcur_; __gend_ = __r.__gend_;
+        __pbeg_ = __r.__pbeg_; __pcur_ = __r.__pcur_; __pend_ = __r.__pend_;
+        __loc_  = __r.__loc_;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_streambuf& operator=(const basic_streambuf& __r) {
+        __gbeg_ = __r.__gbeg_; __gcur_ = __r.__gcur_; __gend_ = __r.__gend_;
+        __pbeg_ = __r.__pbeg_; __pcur_ = __r.__pcur_; __pend_ = __r.__pend_;
+        __loc_  = __r.__loc_;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_streambuf& __r) {
+        char_type* __t;
+        __t = __gbeg_; __gbeg_ = __r.__gbeg_; __r.__gbeg_ = __t;
+        __t = __gcur_; __gcur_ = __r.__gcur_; __r.__gcur_ = __t;
+        __t = __gend_; __gend_ = __r.__gend_; __r.__gend_ = __t;
+        __t = __pbeg_; __pbeg_ = __r.__pbeg_; __r.__pbeg_ = __t;
+        __t = __pcur_; __pcur_ = __r.__pcur_; __r.__pcur_ = __t;
+        __t = __pend_; __pend_ = __r.__pend_; __r.__pend_ = __t;
+        locale __l = __loc_; __loc_ = __r.__loc_; __r.__loc_ = __l;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* eback() const { return __gbeg_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* gptr()  const { return __gcur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* egptr() const { return __gend_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void gbump(int __n) { __gcur_ += __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void setg(char_type* __b, char_type* __c, char_type* __e) { __gbeg_ = __b; __gcur_ = __c; __gend_ = __e; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* pbase() const { return __pbeg_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* pptr()  const { return __pcur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type* epptr() const { return __pend_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void pbump(int __n) { __pcur_ += __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void setp(char_type* __b, char_type* __e) { __pbeg_ = __pcur_ = __b; __pend_ = __e; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual streamsize showmanyc() { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type underflow() { return _Traits::eof(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type uflow() {
+        if (underflow() == _Traits::eof()) return _Traits::eof();
+        int_type __c = _Traits::to_int_type(*__gcur_); ++__gcur_; return __c;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type pbackfail(int_type = _Traits::eof()) { return _Traits::eof(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual streamsize xsgetn(char_type* __s, streamsize __n) {
+        streamsize __i = 0;
+        while (__i < __n) {
+            if (__gcur_ < __gend_) { *__s++ = *__gcur_++; ++__i; }
+            else { int_type __c = uflow(); if (__c == _Traits::eof()) break; *__s++ = _Traits::to_char_type(__c); ++__i; }
+        }
+        return __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type = _Traits::eof()) { return _Traits::eof(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual streamsize xsputn(const char_type* __s, streamsize __n) {
+        streamsize __i = 0;
+        while (__i < __n) {
+            if (__pcur_ < __pend_) { *__pcur_++ = *__s++; ++__i; }
+            else { if (overflow(_Traits::to_int_type(*__s)) == _Traits::eof()) break; ++__s; ++__i; }
+        }
+        return __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int sync() { return 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekoff(off_type, ios_base::seekdir,
+                                                   ios_base::openmode = ios_base::in | ios_base::out) {
+        return pos_type(-1);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekpos(pos_type,
+                                                   ios_base::openmode = ios_base::in | ios_base::out) {
+        return pos_type(-1);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual basic_streambuf* setbuf(char_type*, streamsize) { return this; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual void imbue(const locale&) {}
+};
+
+typedef basic_streambuf<char> streambuf;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STREAMBUF

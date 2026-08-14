@@ -1,0 +1,313 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <iomanip> for Open Watcom. The parameterised stream
+//  manipulators, applied to the llibcxx03 iostream tower via small tag structs +
+//  operator<< / operator>> overloads. Classic C++03.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_IOMANIP
+#define _CCW_LIBCPP_IOMANIP
+#include "__config"
+#include <ios>
+#include <string>
+#include <string_view>
+#include <ctime>
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits> class basic_ostream;
+template <class _CharT, class _Traits> class basic_istream;
+
+struct __iom_setw { _CCW_STD::streamsize __n; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_setw setw(int __n) { __iom_setw __m; __m.__n = __n; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_setw __m) { __os.width(__m.__n); return __os; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_setw __m) { __is.width(__m.__n); return __is; }
+
+struct __iom_setprecision { _CCW_STD::streamsize __n; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_setprecision setprecision(int __n) { __iom_setprecision __m; __m.__n = __n; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_setprecision __m) { __os.precision(__m.__n); return __os; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_setprecision __m) { __is.precision(__m.__n); return __is; }
+
+template <class _CharT> struct __iom_setfill { _CharT __c; };
+template <class _CharT>
+_CCW_LIBCPP_HIDE_FROM_ABI __iom_setfill<_CharT> setfill(_CharT __c) { __iom_setfill<_CharT> __m; __m.__c = __c; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_setfill<_CharT> __m) { __os.fill(__m.__c); return __os; }
+
+struct __iom_setbase { int __b; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_setbase setbase(int __b) { __iom_setbase __m; __m.__b = __b; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_setbase __m) {
+    __os.setf(__m.__b == 8 ? ios_base::oct : __m.__b == 16 ? ios_base::hex : ios_base::dec, ios_base::basefield);
+    return __os;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_setbase __m) {
+    __is.setf(__m.__b == 8 ? ios_base::oct : __m.__b == 16 ? ios_base::hex : ios_base::dec, ios_base::basefield);
+    return __is;
+}
+
+struct __iom_setiosflags   { ios_base::fmtflags __f; };
+struct __iom_resetiosflags { ios_base::fmtflags __f; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_setiosflags   setiosflags(ios_base::fmtflags __f)   { __iom_setiosflags __m;   __m.__f = __f; return __m; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_resetiosflags resetiosflags(ios_base::fmtflags __f) { __iom_resetiosflags __m; __m.__f = __f; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_setiosflags __m) { __os.setf(__m.__f); return __os; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_resetiosflags __m) { __os.unsetf(__m.__f); return __os; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_setiosflags __m) { __is.setf(__m.__f); return __is; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_resetiosflags __m) { __is.unsetf(__m.__f); return __is; }
+
+struct __iom_put_time { const tm* __t; const char* __fmt; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_put_time put_time(const tm* __t, const char* __fmt) { __iom_put_time __m; __m.__t = __t; __m.__fmt = __fmt; return __m; }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_put_time __m) {
+    char __buf[256];
+    size_t __k = _CCW_STD::strftime(__buf, sizeof(__buf), __m.__fmt, __m.__t);
+    __buf[__k] = '\0';
+    return __os << __buf;
+}
+
+struct __iom_get_time { tm* __t; const char* __fmt; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_get_time get_time(tm* __t, const char* __fmt) {
+    __iom_get_time __m; __m.__t = __t; __m.__fmt = __fmt; return __m;
+}
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI bool __iom_get_num(basic_istream<_CharT, _Traits>& __is, int __maxw, int& __out_) {
+    int __v = 0, __n = 0;
+    typename _Traits::int_type __c;
+    while (__n < __maxw && !_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {
+        char __ch = static_cast<char>(_Traits::to_char_type(__c));
+        if (__ch < '0' || __ch > '9') break;
+        __v = __v * 10 + (__ch - '0'); ++__n;
+        __is.rdbuf()->sbumpc();
+    }
+    if (__n == 0) return false;
+    __out_ = __v;
+    return true;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __iom_tm_name_len(const char* __s) {
+    int __n = 0; while (__s[__n]) ++__n; return __n;
+}
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI bool __iom_get_name(basic_istream<_CharT, _Traits>& __is,
+                                              const char* const* __names, int __cnt, int& __idx) {
+    char __got[32];
+    int  __len = 0;
+    for (;;) {
+        typename _Traits::int_type __c = __is.rdbuf()->sgetc();
+        if (_Traits::eq_int_type(__c, _Traits::eof())) break;
+        char __ch = static_cast<char>(_Traits::to_char_type(__c));
+        if (!((__ch >= 'a' && __ch <= 'z') || (__ch >= 'A' && __ch <= 'Z'))) break;
+        if (__len == 31) break;
+        __got[__len++] = (__ch >= 'A' && __ch <= 'Z') ? static_cast<char>(__ch - 'A' + 'a') : __ch;
+        __is.rdbuf()->sbumpc();
+    }
+    __got[__len] = '\0';
+    if (__len == 0) return false;
+    for (int __i = 0; __i < __cnt; ++__i) {
+        int __nl = __iom_tm_name_len(__names[__i]);
+        int __k = 0;
+        while (__k < __len && __k < __nl) {
+            char __a = __names[__i][__k];
+            if (__a >= 'A' && __a <= 'Z') __a = static_cast<char>(__a - 'A' + 'a');
+            if (__a != __got[__k]) break;
+            ++__k;
+        }
+        if (__k == __len) { __idx = __i; return true; }
+    }
+    return false;
+}
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_get_time __m) {
+    static const char* const __wd[7] = { "Sunday", "Monday", "Tuesday", "Wednesday",
+                                         "Thursday", "Friday", "Saturday" };
+    static const char* const __mo[12] = { "January", "February", "March", "April", "May",
+                                          "June", "July", "August", "September",
+                                          "October", "November", "December" };
+    static const char* const __ampm[2] = { "AM", "PM" };
+    bool __ok = true;
+    bool __pm = false, __has_ampm = false;
+    const char* __f = __m.__fmt;
+    for (; __ok && *__f; ++__f) {
+        if (*__f != '%') {
+            if (*__f == ' ' || *__f == '\t' || *__f == '\n') {
+                typename _Traits::int_type __c;
+                while (!_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {
+                    char __ch = static_cast<char>(_Traits::to_char_type(__c));
+                    if (__ch != ' ' && __ch != '\t' && __ch != '\n' && __ch != '\r') break;
+                    __is.rdbuf()->sbumpc();
+                }
+                continue;
+            }
+            typename _Traits::int_type __c = __is.rdbuf()->sgetc();
+            if (_Traits::eq_int_type(__c, _Traits::eof()) ||
+                static_cast<char>(_Traits::to_char_type(__c)) != *__f) { __ok = false; break; }
+            __is.rdbuf()->sbumpc();
+            continue;
+        }
+        ++__f;
+        if (!*__f) { __ok = false; break; }
+        int __v = 0, __i = 0;
+        switch (*__f) {
+        case 'Y': __ok = __iom_get_num(__is, 4, __v); if (__ok) __m.__t->tm_year = __v - 1900; break;
+        case 'y': __ok = __iom_get_num(__is, 2, __v);
+                  if (__ok) __m.__t->tm_year = (__v < 69 ? __v + 100 : __v); break;
+        case 'C': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_year = __v * 100 - 1900; break;
+        case 'm': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_mon = __v - 1; break;
+        case 'd': case 'e': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_mday = __v; break;
+        case 'H': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_hour = __v; break;
+        case 'I': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_hour = __v; break;
+        case 'M': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_min = __v; break;
+        case 'S': __ok = __iom_get_num(__is, 2, __v); if (__ok) __m.__t->tm_sec = __v; break;
+        case 'j': __ok = __iom_get_num(__is, 3, __v); if (__ok) __m.__t->tm_yday = __v - 1; break;
+        case 'a': case 'A': __ok = __iom_get_name(__is, __wd, 7, __i); if (__ok) __m.__t->tm_wday = __i; break;
+        case 'b': case 'B': case 'h': __ok = __iom_get_name(__is, __mo, 12, __i); if (__ok) __m.__t->tm_mon = __i; break;
+        case 'p': __ok = __iom_get_name(__is, __ampm, 2, __i);
+                  if (__ok) { __has_ampm = true; __pm = (__i == 1); } break;
+        case 'n': case 't': {
+                  typename _Traits::int_type __c;
+                  while (!_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {
+                      char __ch = static_cast<char>(_Traits::to_char_type(__c));
+                      if (__ch != ' ' && __ch != '\t' && __ch != '\n' && __ch != '\r') break;
+                      __is.rdbuf()->sbumpc();
+                  }
+                  break; }
+        case '%': {
+                  typename _Traits::int_type __c = __is.rdbuf()->sgetc();
+                  if (_Traits::eq_int_type(__c, _Traits::eof()) ||
+                      static_cast<char>(_Traits::to_char_type(__c)) != '%') __ok = false;
+                  else __is.rdbuf()->sbumpc();
+                  break; }
+        default: __ok = false; break;      // unsupported specifier: report failure
+        }
+    }
+    if (__ok && __has_ampm) {
+        int __h = __m.__t->tm_hour % 12;
+        __m.__t->tm_hour = __pm ? __h + 12 : __h;
+    }
+    if (!__ok) __is.setstate(ios_base::failbit);
+    return __is;
+}
+
+struct __iom_put_money { long double __v; bool __intl; };
+struct __iom_get_money { long double* __v; bool __intl; };
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_put_money put_money(long double __v, bool __intl = false) {
+    __iom_put_money __m; __m.__v = __v; __m.__intl = __intl; return __m;
+}
+template <class _Mt>
+_CCW_LIBCPP_HIDE_FROM_ABI __iom_get_money get_money(_Mt& __v, bool __intl = false) {
+    __iom_get_money __m; __m.__v = &__v; __m.__intl = __intl; return __m;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_put_money __m) {
+    char __buf[64];
+    long double __v = __m.__v;
+    bool __neg = __v < 0;
+    if (__neg) __v = -__v;
+    unsigned long __u = static_cast<unsigned long>(__v + 0.5L);
+    int __k = 0;
+    if (__u == 0) __buf[__k++] = '0';
+    while (__u) { __buf[__k++] = static_cast<char>('0' + (__u % 10)); __u /= 10; }
+    if (__neg) __buf[__k++] = '-';
+    for (int __i = 0; __i < __k / 2; ++__i) {
+        char __t = __buf[__i]; __buf[__i] = __buf[__k - 1 - __i]; __buf[__k - 1 - __i] = __t;
+    }
+    __buf[__k] = '\0';
+    return __os << __buf;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_get_money __m) {
+    typename _Traits::int_type __c;
+    if (__is.flags() & ios_base::skipws) {
+        while (!_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {
+            char __ch = static_cast<char>(_Traits::to_char_type(__c));
+            if (__ch != ' ' && __ch != '\t' && __ch != '\n' && __ch != '\r') break;
+            __is.rdbuf()->sbumpc();
+        }
+    }
+    bool __neg = false;
+    __c = __is.rdbuf()->sgetc();
+    if (!_Traits::eq_int_type(__c, _Traits::eof())) {
+        char __ch = static_cast<char>(_Traits::to_char_type(__c));
+        if (__ch == '-' || __ch == '+') { __neg = (__ch == '-'); __is.rdbuf()->sbumpc(); }
+    }
+    long double __v = 0;
+    int __n = 0;
+    while (!_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {
+        char __ch = static_cast<char>(_Traits::to_char_type(__c));
+        if (__ch < '0' || __ch > '9') break;
+        __v = __v * 10 + (__ch - '0'); ++__n;
+        __is.rdbuf()->sbumpc();
+    }
+    if (__n == 0) { __is.setstate(ios_base::failbit); return __is; }
+    *__m.__v = __neg ? -__v : __v;
+    return __is;
+}
+
+struct __iom_quoted { const char* __cs; size_t __n; basic_string<char>* __ws; char __d; char __e; };
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_quoted __m) {
+    __os << __m.__d;
+    for (size_t __i = 0; __i < __m.__n; ++__i) {
+        if (_Traits::eq(__m.__cs[__i], __m.__d) || _Traits::eq(__m.__cs[__i], __m.__e)) __os << __m.__e;
+        __os << __m.__cs[__i];
+    }
+    __os << __m.__d;
+    return __os;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_quoted __m) {
+    _CharT __c;
+    __is >> __c;                      // skips whitespace, reads opening char
+    if (!__is) return __is;
+    if (!_Traits::eq(__c, __m.__d)) { // not quoted: read a single word
+        __is.putback(__c);
+        __is >> *__m.__ws;
+        return __is;
+    }
+    __m.__ws->clear();
+    ios_base::fmtflags __fl = __is.flags();
+    __is.unsetf(ios_base::skipws);    // read every char verbatim inside quotes
+    for (;;) {
+        if (!(__is >> __c)) break;
+        if (_Traits::eq(__c, __m.__e)) {          // escape: take next char literally
+            if (!(__is >> __c)) break;
+        } else if (_Traits::eq(__c, __m.__d)) {   // closing delimiter
+            break;
+        }
+        __m.__ws->push_back(__c);
+    }
+    __is.flags(__fl);
+    return __is;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline __iom_quoted quoted(const char* __s, char __d = '"', char __e = '\\') {
+    __iom_quoted __m; __m.__cs = __s; __m.__n = char_traits<char>::length(__s); __m.__ws = 0; __m.__d = __d; __m.__e = __e; return __m;
+}
+template <class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI __iom_quoted quoted(const basic_string<char, _Traits, _Alloc>& __s, char __d = '"', char __e = '\\') {
+    __iom_quoted __m; __m.__cs = __s.data(); __m.__n = __s.size(); __m.__ws = 0; __m.__d = __d; __m.__e = __e; return __m;
+}
+template <class _Traits, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI __iom_quoted quoted(basic_string<char, _Traits, _Alloc>& __s, char __d = '"', char __e = '\\') {
+    __iom_quoted __m; __m.__cs = __s.data(); __m.__n = __s.size(); __m.__ws = &__s; __m.__d = __d; __m.__e = __e; return __m;
+}
+template <class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI __iom_quoted quoted(basic_string_view<char, _Traits> __s, char __d = '"', char __e = '\\') {
+    __iom_quoted __m; __m.__cs = __s.data(); __m.__n = __s.size(); __m.__ws = 0; __m.__d = __d; __m.__e = __e; return __m;
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_IOMANIP

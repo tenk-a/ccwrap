@@ -1,0 +1,2 @@
+// ccwrap <stacktrace>
+#include "../std/stacktrace"

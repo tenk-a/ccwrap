@@ -1,0 +1,4 @@
+# C の static_assert (= ccwrap が _Static_assert に落としたもの) が偽を弾くこと
+REJ_STATIC_ASSERT_FALSE
+REJ_STATIC_ASSERT_ZERO
+REJ_STATIC_ASSERT_LOCAL

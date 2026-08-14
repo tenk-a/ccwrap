@@ -1,0 +1,2 @@
+// ccwrap <stdexcept>
+#include "../std/stdexcept"

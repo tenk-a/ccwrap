@@ -1,0 +1,10 @@
+// ccwrap <stop_token>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1929
+ #include _CCW_NATIVE_STL_HEADER_PATH(stop_token)
+#else
+ #include <../../detail/llibcxx03/include/stop_token>
+#endif

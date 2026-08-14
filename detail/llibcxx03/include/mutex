@@ -1,0 +1,351 @@
+//  ccwrap llibcxx03: <mutex> for Open Watcom.
+//
+//  On Open Watcom (Windows/nt target) mutex and recursive_mutex are REAL: each wraps
+//  a Win32 CRITICAL_SECTION (recursive by nature), so they provide genuine mutual
+//  exclusion across the real Win32 threads from <thread>. native_handle() exposes the
+//  CRITICAL_SECTION for <condition_variable>. Off Open Watcom they fall back to a
+//  no-op single-threaded stub. Also provides lock_guard / unique_lock / scoped_lock,
+//  once_flag / call_once, and the lock tag types.
+#ifndef _CCW_LIBCPP_MUTEX
+#define _CCW_LIBCPP_MUTEX
+#include "__config"
+
+#if defined(__WATCOMC__) && !defined(_CCW_OS_WIN)
+# error "ccwrap llibcxx03: <mutex> is Win32-only on Open Watcom -- std::mutex needs Win32 critical sections."
+#endif
+#include <chrono>   // timed_mutex / recursive_timed_mutex
+#include "../../c/win/win32_fwd.h"
+
+#define _CCW_LIBCPP_WIN32_THREADS 1
+#if defined(__WATCOMC__) || defined(_MSC_VER) || defined(_MSC_VER)
+extern "C" {
+__declspec(dllimport) void __stdcall InitializeCriticalSection(__ccw_pcritical_section);
+__declspec(dllimport) void __stdcall EnterCriticalSection(__ccw_pcritical_section);
+__declspec(dllimport) void __stdcall LeaveCriticalSection(__ccw_pcritical_section);
+__declspec(dllimport) int  __stdcall TryEnterCriticalSection(__ccw_pcritical_section);
+__declspec(dllimport) void __stdcall DeleteCriticalSection(__ccw_pcritical_section);
+__declspec(dllimport) void __stdcall Sleep(unsigned long);
+}
+#endif
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct defer_lock_t {};
+struct try_to_lock_t {};
+struct adopt_lock_t {};
+static const defer_lock_t  defer_lock  = defer_lock_t();
+static const try_to_lock_t try_to_lock = try_to_lock_t();
+static const adopt_lock_t  adopt_lock  = adopt_lock_t();
+
+class mutex {
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+    struct __cs { void* __opaque_[8]; } __cs_;   // opaque RTL_CRITICAL_SECTION storage (24B needed)
+public:
+    typedef void* native_handle_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI mutex() { InitializeCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~mutex() { DeleteCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() { EnterCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return TryEnterCriticalSection((__ccw_pcritical_section)&__cs_) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() { LeaveCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() { return &__cs_; }
+#else
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI mutex() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() {}
+#endif
+private:
+    mutex(const mutex&);
+    mutex& operator=(const mutex&);
+};
+
+class recursive_mutex {
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+    struct __cs { void* __opaque_[8]; } __cs_;   // CRITICAL_SECTION is recursive
+public:
+    typedef void* native_handle_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_mutex() { InitializeCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~recursive_mutex() { DeleteCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() { EnterCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return TryEnterCriticalSection((__ccw_pcritical_section)&__cs_) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() { LeaveCriticalSection((__ccw_pcritical_section)&__cs_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() { return &__cs_; }
+#else
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_mutex() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() {}
+#endif
+private:
+    recursive_mutex(const recursive_mutex&);
+    recursive_mutex& operator=(const recursive_mutex&);
+};
+
+template <class _Base>
+class __timed_mutex_impl {
+    _Base __m_;
+    __timed_mutex_impl(const __timed_mutex_impl&);
+    __timed_mutex_impl& operator=(const __timed_mutex_impl&);
+public:
+    typedef typename _Base::native_handle_type native_handle_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI __timed_mutex_impl() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() { return __m_.native_handle(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() { __m_.lock(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return __m_.try_lock(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() { __m_.unlock(); }
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock_for(const chrono::duration<_Rep, _Period>& __rt) {
+        if (__m_.try_lock()) return true;
+        chrono::steady_clock::time_point __dl = chrono::steady_clock::now() + __rt;
+        while (chrono::steady_clock::now() < __dl) {
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+            Sleep(0);
+#endif
+            if (__m_.try_lock()) return true;
+        }
+        return false;
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __tp) {
+        if (__m_.try_lock()) return true;
+        while (_Clock::now() < __tp) {
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+            Sleep(0);
+#endif
+            if (__m_.try_lock()) return true;
+        }
+        return false;
+    }
+};
+class timed_mutex : public __timed_mutex_impl<mutex> {};
+class recursive_timed_mutex : public __timed_mutex_impl<recursive_mutex> {};
+
+template <class _Mutex>
+class lock_guard {
+    _Mutex& __m_;
+public:
+    typedef _Mutex mutex_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit lock_guard(_Mutex& __m) : __m_(__m) { __m_.lock(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI lock_guard(_Mutex& __m, adopt_lock_t) : __m_(__m) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~lock_guard() { __m_.unlock(); }
+private:
+    lock_guard(const lock_guard&);
+    lock_guard& operator=(const lock_guard&);
+};
+
+template <class _Mutex>
+class unique_lock {
+    _Mutex* __m_;
+    bool    __owns_;
+public:
+    typedef _Mutex mutex_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock() : __m_(0), __owns_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unique_lock(_Mutex& __m) : __m_(&__m), __owns_(true) { __m_->lock(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_Mutex& __m, defer_lock_t) : __m_(&__m), __owns_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_Mutex& __m, try_to_lock_t) : __m_(&__m), __owns_(__m.try_lock()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_Mutex& __m, adopt_lock_t) : __m_(&__m), __owns_(true) {}
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_Mutex& __m, const chrono::duration<_Rep, _Period>& __rt)
+        : __m_(&__m), __owns_(__m.try_lock_for(__rt)) {}
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_Mutex& __m, const chrono::time_point<_Clock, _Duration>& __tp)
+        : __m_(&__m), __owns_(__m.try_lock_until(__tp)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~unique_lock() { if (__owns_ && __m_) __m_->unlock(); }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(_CCW_RV_REF(unique_lock) __r) : __m_(0), __owns_(false) {
+        unique_lock& __o = _CCW_MOVED_OBJ(__r);
+        __m_ = __o.__m_; __owns_ = __o.__owns_;
+        __o.__m_ = 0; __o.__owns_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock& operator=(_CCW_RV_REF(unique_lock) __r) {
+        unique_lock& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            if (__owns_ && __m_) __m_->unlock();
+            __m_ = __o.__m_; __owns_ = __o.__owns_;
+            __o.__m_ = 0; __o.__owns_ = false;
+        }
+        return *this;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock(unique_lock&& __o) : __m_(__o.__m_), __owns_(__o.__owns_) {
+        __o.__m_ = 0; __o.__owns_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI unique_lock& operator=(unique_lock&& __o) {
+        if (this != &__o) {
+            if (__owns_ && __m_) __m_->unlock();
+            __m_ = __o.__m_; __owns_ = __o.__owns_;
+            __o.__m_ = 0; __o.__owns_ = false;
+        }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock()   { if (__m_) { __m_->lock(); __owns_ = true; } }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { if (__m_) __owns_ = __m_->try_lock(); return __owns_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() { if (__m_ && __owns_) { __m_->unlock(); __owns_ = false; } }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool owns_lock() const { return __owns_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Mutex* mutex() const { return __m_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Mutex* release() { _Mutex* __m = __m_; __m_ = 0; __owns_ = false; return __m; }
+
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock_for(const chrono::duration<_Rep, _Period>& __rt) {
+        if (__m_) __owns_ = __m_->try_lock_for(__rt); return __owns_;
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock_until(const chrono::time_point<_Clock, _Duration>& __tp) {
+        if (__m_) __owns_ = __m_->try_lock_until(__tp); return __owns_;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(unique_lock& __u) {
+        _Mutex* __tm = __m_; __m_ = __u.__m_; __u.__m_ = __tm;
+        bool __to = __owns_; __owns_ = __u.__owns_; __u.__owns_ = __to;
+    }
+    typedef _Mutex* unique_lock::*__bool_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const { return __owns_ ? &unique_lock::__m_ : 0; }
+private:
+    unique_lock(const unique_lock&);
+    unique_lock& operator=(const unique_lock&);
+};
+
+#if !defined(__WATCOMC__)
+template <class _Mutex>
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(unique_lock<_Mutex>& __x, unique_lock<_Mutex>& __y) { __x.swap(__y); }
+#endif
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_lock_yield() {
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+    Sleep(0);
+#endif
+}
+
+template <class _L0, class _L1>
+_CCW_LIBCPP_HIDE_FROM_ABI inline int try_lock(_L0& __l0, _L1& __l1) {
+    if (!__l0.try_lock()) return 0;
+    if (!__l1.try_lock()) { __l0.unlock(); return 1; }
+    return -1;
+}
+template <class _L0, class _L1, class _L2>
+_CCW_LIBCPP_HIDE_FROM_ABI inline int try_lock(_L0& __l0, _L1& __l1, _L2& __l2) {
+    if (!__l0.try_lock()) return 0;
+    if (!__l1.try_lock()) { __l0.unlock(); return 1; }
+    if (!__l2.try_lock()) { __l1.unlock(); __l0.unlock(); return 2; }
+    return -1;
+}
+template <class _L0, class _L1, class _L2, class _L3>
+_CCW_LIBCPP_HIDE_FROM_ABI inline int try_lock(_L0& __l0, _L1& __l1, _L2& __l2, _L3& __l3) {
+    if (!__l0.try_lock()) return 0;
+    if (!__l1.try_lock()) { __l0.unlock(); return 1; }
+    if (!__l2.try_lock()) { __l1.unlock(); __l0.unlock(); return 2; }
+    if (!__l3.try_lock()) { __l2.unlock(); __l1.unlock(); __l0.unlock(); return 3; }
+    return -1;
+}
+
+template <class _L0, class _L1>
+_CCW_LIBCPP_HIDE_FROM_ABI inline void lock(_L0& __l0, _L1& __l1) {
+    for (;;) {
+        __l0.lock();
+        if (__l1.try_lock()) return;
+        __l0.unlock();
+        __ccw_lock_yield();
+        __l1.lock();
+        if (__l0.try_lock()) return;
+        __l1.unlock();
+        __ccw_lock_yield();
+    }
+}
+template <class _L0, class _L1, class _L2>
+_CCW_LIBCPP_HIDE_FROM_ABI inline void lock(_L0& __l0, _L1& __l1, _L2& __l2) {
+    for (;;) {
+        __l0.lock();
+        if (__l1.try_lock()) {
+            if (__l2.try_lock()) return;
+            __l1.unlock();
+        }
+        __l0.unlock();
+        __ccw_lock_yield();
+    }
+}
+template <class _L0, class _L1, class _L2, class _L3>
+_CCW_LIBCPP_HIDE_FROM_ABI inline void lock(_L0& __l0, _L1& __l1, _L2& __l2, _L3& __l3) {
+    for (;;) {
+        __l0.lock();
+        if (__l1.try_lock()) {
+            if (__l2.try_lock()) {
+                if (__l3.try_lock()) return;
+                __l2.unlock();
+            }
+            __l1.unlock();
+        }
+        __l0.unlock();
+        __ccw_lock_yield();
+    }
+}
+
+class __sl_nil {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI void lock() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_lock() { return true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unlock() {}
+};
+
+template <class _M0 = __sl_nil, class _M1 = __sl_nil, class _M2 = __sl_nil, class _M3 = __sl_nil>
+class scoped_lock {
+    _M0* __p0_; _M1* __p1_; _M2* __p2_; _M3* __p3_;
+public:
+    typedef _M0 mutex_type;      // only when there is exactly one, per the standard
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock() : __p0_(0), __p1_(0), __p2_(0), __p3_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit scoped_lock(_M0& __m0)
+        : __p0_(&__m0), __p1_(0), __p2_(0), __p3_(0) { __p0_->lock(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(_M0& __m0, _M1& __m1)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(0), __p3_(0) { _CCW_STD::lock(__m0, __m1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(_M0& __m0, _M1& __m1, _M2& __m2)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(0) { _CCW_STD::lock(__m0, __m1, __m2); }
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(_M0& __m0, _M1& __m1, _M2& __m2, _M3& __m3)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(&__m3) { _CCW_STD::lock(__m0, __m1, __m2, __m3); }
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(adopt_lock_t, _M0& __m0)
+        : __p0_(&__m0), __p1_(0), __p2_(0), __p3_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(adopt_lock_t, _M0& __m0, _M1& __m1)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(0), __p3_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(adopt_lock_t, _M0& __m0, _M1& __m1, _M2& __m2)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI scoped_lock(adopt_lock_t, _M0& __m0, _M1& __m1, _M2& __m2, _M3& __m3)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(&__m3) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~scoped_lock() {
+        if (__p3_) __p3_->unlock();
+        if (__p2_) __p2_->unlock();
+        if (__p1_) __p1_->unlock();
+        if (__p0_) __p0_->unlock();
+    }
+private:
+    scoped_lock(const scoped_lock&);
+    scoped_lock& operator=(const scoped_lock&);
+};
+
+class once_flag {
+    int __state_;   // 0 = not yet run, 1 = done
+    template <class _F> friend void call_once(once_flag&, _F);
+    template <class _F, class _A0> friend void call_once(once_flag&, _F, _A0);
+    template <class _F, class _A0, class _A1> friend void call_once(once_flag&, _F, _A0, _A1);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI once_flag() : __state_(0) {}
+private:
+    once_flag(const once_flag&);
+    once_flag& operator=(const once_flag&);
+};
+
+template <class _F>
+_CCW_LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __f, _F __func) {
+    if (__f.__state_ == 0) { __func(); __f.__state_ = 1; }
+}
+template <class _F, class _A0>
+_CCW_LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __f, _F __func, _A0 __a0) {
+    if (__f.__state_ == 0) { __func(__a0); __f.__state_ = 1; }
+}
+template <class _F, class _A0, class _A1>
+_CCW_LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __f, _F __func, _A0 __a0, _A1 __a1) {
+    if (__f.__state_ == 0) { __func(__a0, __a1); __f.__state_ = 1; }
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_MUTEX

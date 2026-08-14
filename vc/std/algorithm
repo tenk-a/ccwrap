@@ -1,0 +1,39 @@
+// ccwrap <algorithm>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(algorithm)
+
+#include <../../detail/cxx/algorithm.hpp>
+
+#if defined(__cplusplus) && (!defined(_MSC_VER) || _MSC_VER < 1914)
+#include <execution>
+#include <../../detail/llibcxx03/include/__algorithm/execution_overloads.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#include <../../detail/llibcxx03/include/__algorithm/in_fun_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_in_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_out_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_in_out_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_out_out_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/min_max_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_found_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/in_value_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/out_value_result.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_util.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_nonmodifying.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_modifying.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_sorting.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_setops.h>
+#include <../../detail/llibcxx03/include/__algorithm/ranges_minmax.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_boyer_moore_searcher)
+#include <functional>
+namespace _CCW_STD17 {
+template <class _FwdIt, class _Searcher>
+inline _FwdIt search(_FwdIt __f, _FwdIt __l, const _Searcher& __s) { return __s(__f, __l).first; }
+}
+#endif

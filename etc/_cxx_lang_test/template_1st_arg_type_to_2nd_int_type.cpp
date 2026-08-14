@@ -8,5 +8,5 @@ struct integral_constant {
 };
 
 int main() {
-	return integral_constant<long, 10>::value != 10;
+    return integral_constant<long, 10>::value != 10;
 }

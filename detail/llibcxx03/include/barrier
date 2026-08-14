@@ -1,0 +1,63 @@
+/*
+ * ccwrap: libc++ layout. classic C++03 body for Open Watcom.
+ *
+ * a reusable thread barrier built on <mutex> + <condition_variable>.
+ * Classic C++03 body. arrival_token is simplified to the (copyable)
+ * phase number rather than a move-only handle.
+ */
+#ifndef _CCW_LIBCPP_BARRIER
+#define _CCW_LIBCPP_BARRIER
+#include "__config"
+#include <mutex>
+#include <condition_variable>
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct __barrier_noop_cf { _CCW_LIBCPP_HIDE_FROM_ABI void operator()() {} };
+
+template <class _CF = __barrier_noop_cf>
+class barrier {
+    ptrdiff_t                  __expected_;
+    ptrdiff_t                  __count_;
+    _CF                        __cf_;
+    mutable unsigned           __phase_;
+    mutable mutex              __m_;
+    mutable condition_variable __cv_;
+
+    struct __changed { unsigned* __ph; unsigned __seen; _CCW_LIBCPP_HIDE_FROM_ABI bool operator()() const { return *__ph != __seen; } };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __complete_phase() { __cf_(); __count_ = __expected_; ++__phase_; __cv_.notify_all(); }
+
+    barrier(const barrier&);
+    barrier& operator=(const barrier&);
+public:
+    typedef unsigned arrival_token;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit barrier(ptrdiff_t __expected) : __expected_(__expected), __count_(__expected), __cf_(), __phase_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI barrier(ptrdiff_t __expected, _CF __cf) : __expected_(__expected), __count_(__expected), __cf_(__cf), __phase_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~barrier() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI arrival_token arrive(ptrdiff_t __n = 1) {
+        unique_lock<mutex> __lk(__m_);
+        unsigned __ph = __phase_;
+        __count_ -= __n;
+        if (__count_ <= 0) __complete_phase();
+        return __ph;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait(arrival_token __ph) const {
+        unique_lock<mutex> __lk(__m_);
+        __changed __p; __p.__ph = &__phase_; __p.__seen = __ph;
+        __cv_.wait(__lk, __p);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void arrive_and_wait() { wait(arrive()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void arrive_and_drop() {
+        unique_lock<mutex> __lk(__m_);
+        --__expected_;
+        --__count_;
+        if (__count_ <= 0) __complete_phase();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static ptrdiff_t max() { return ~(ptrdiff_t(1) << (sizeof(ptrdiff_t) * 8 - 1)); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_BARRIER

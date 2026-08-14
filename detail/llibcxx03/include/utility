@@ -1,0 +1,21 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <utility> for Open Watcom. libc++ layout; classic C++03
+//  body. move is emulated Boost.Move-style (explicit move only, see
+//  __utility/move.h); forward is not provided (no reference collapsing).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_UTILITY
+#define _CCW_LIBCPP_UTILITY
+#include "__config"
+#include "__utility/move.h"
+#include "__utility/swap.h"
+#include "__utility/pair.h"
+#include "__utility/exchange.h"
+#include "__utility/as_const.h"
+#include "__utility/cmp.h"
+#include "__utility/in_place.h"
+#include "__utility/piecewise_construct.h"
+#include "__utility/rel_ops.h"
+#include "__utility/unreachable.h"
+#endif // _CCW_LIBCPP_UTILITY

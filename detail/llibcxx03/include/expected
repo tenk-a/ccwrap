@@ -1,0 +1,290 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <expected> (C++23) for Open Watcom -- _CCW_STD::expected<T,E>,
+//  _CCW_STD::unexpected<E>, _CCW_STD::bad_expected_access. Classic C++03 body: a raw aligned
+//  buffer holding either the value or the error (only one is live), placement-new
+//  construction, copy semantics only (Open Watcom has no move / rvalue refs).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_EXPECTED
+#define _CCW_LIBCPP_EXPECTED
+#include "__config"
+#include "__utility/in_place.h"   // in_place_t / in_place_type_t / in_place_index_t
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include <new>
+#include <cstddef>
+#include <exception>
+#include <utility>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct unexpect_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpect_t() {} };
+static const unexpect_t unexpect = unexpect_t();
+
+template <class _Ep>
+class unexpected {
+    _Ep __e_;
+public:
+    typedef _Ep error_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI unexpected(const unexpected& __o) : __e_(__o.__e_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpected(const _Ep& __e) : __e_(__e) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI unexpected(_CCW_RV_REF(unexpected) __r) : __e_(_ccw::move(_CCW_MOVED_OBJ(__r).__e_)) {}
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpected(::_ccw::rv<_Up>& __e) : __e_(__e) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unexpected& operator=(_CCW_RV_REF(unexpected) __r) {
+        unexpected& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) __e_ = _ccw::move(__o.__e_);
+        return *this;
+    }
+#endif
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpected(in_place_t) : __e_() {}
+#  define _CCW_GEN_UNEX_CTOR(N)                                                  \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                           \
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpected(in_place_t _CCW_FNCTMPL_CM_DECLARG(N)) : __e_(_CCW_FNCTMPL_FNCARG(N)) {}
+    _CCW_GEN_UNEX_CTOR(1) _CCW_GEN_UNEX_CTOR(2) _CCW_GEN_UNEX_CTOR(3) _CCW_GEN_UNEX_CTOR(4)
+#  undef _CCW_GEN_UNEX_CTOR
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpected(in_place_t, _Args&&... __a) : __e_(static_cast<_Args&&>(__a)...) {}
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep& error() const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep&       error()       { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(unexpected& __o) { _Ep __t = __e_; __e_ = __o.__e_; __o.__e_ = __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI unexpected& operator=(const unexpected& __o) { __e_ = __o.__e_; return *this; }
+};
+template <class _Ep> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const unexpected<_Ep>& __x, const unexpected<_Ep>& __y) { return __x.error() == __y.error(); }
+template <class _Ep> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const unexpected<_Ep>& __x, const unexpected<_Ep>& __y) { return !(__x == __y); }
+template <class _Ep> _CCW_LIBCPP_HIDE_FROM_ABI void swap(unexpected<_Ep>& __x, unexpected<_Ep>& __y) { __x.swap(__y); }
+
+template <class _Ep>
+class bad_expected_access;
+
+template <>
+class bad_expected_access<void> : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_expected_access() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&) _CCW_LIBCPP_NOEXCEPT {}
+    virtual ~bad_expected_access() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "bad_expected_access"; }
+};
+
+template <class _Ep>
+class bad_expected_access : public bad_expected_access<void> {
+    _Ep __e_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit bad_expected_access(const _Ep& __e) : __e_(__e) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_expected_access(const bad_expected_access& __o) : bad_expected_access<void>(__o), __e_(__o.__e_) {}
+    virtual ~bad_expected_access() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep& error() const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep&       error()       { return __e_; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_throw_bad_expected_access() { _CCW_THROW(bad_expected_access<void>()); }
+
+template <class _Tp, class _Ep>
+class expected {
+    union __storage_t {
+        char   __b_[sizeof(_Tp) > sizeof(_Ep) ? sizeof(_Tp) : sizeof(_Ep)];
+        double __d_; void* __p_; long __l_;
+    } __s_;
+    bool __has_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       __val()       { return reinterpret_cast<_Tp*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* __val() const { return reinterpret_cast<const _Tp*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep*       __unx()       { return reinterpret_cast<_Ep*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep* __unx() const { return reinterpret_cast<const _Ep*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __destroy() { if (__has_) __val()->~_Tp(); else __unx()->~_Ep(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __mk_val(const _Tp& __v) { ::new (static_cast<void*>(__val())) _Tp(__v); __has_ = true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __mk_err(const _Ep& __e) { ::new (static_cast<void*>(__unx())) _Ep(__e); __has_ = false; }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __mk_val_moved(_Up& __v) { ::new (static_cast<void*>(__val())) _Tp(__v); __has_ = true; }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __mk_err_moved(_Up& __e) { ::new (static_cast<void*>(__unx())) _Ep(__e); __has_ = false; }
+#endif
+
+public:
+    typedef _Tp             value_type;
+    typedef _Ep             error_type;
+    typedef unexpected<_Ep> unexpected_type;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI expected() { __mk_val(_Tp()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const expected& __o) {
+        if (__o.__has_) __mk_val(*__o.__val()); else __mk_err(*__o.__unx());
+    }
+    template <class _Up, class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const expected<_Up, _Gp>& __o) {
+        if (__o.has_value()) __mk_val(_Tp(*__o)); else __mk_err(_Ep(__o.error()));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const _Tp& __v) { __mk_val(__v); }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const unexpected<_Gp>& __u) { __mk_err(_Ep(__u.error())); }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(_CCW_RV_REF(expected) __r) {
+        expected& __o = _CCW_MOVED_OBJ(__r);
+        if (__o.__has_) __mk_val_moved(_ccw::move(*__o.__val()));
+        else            __mk_err_moved(_ccw::move(*__o.__unx()));
+    }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(::_ccw::rv<_Up>& __v) { __mk_val_moved(__v); }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(_CCW_RV_REF(unexpected<_Gp>) __r) {
+        __mk_err_moved(_ccw::move(_CCW_MOVED_OBJ(__r).error()));
+    }
+#endif
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(in_place_t) { __mk_val(_Tp()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t) { __mk_err(_Ep()); }
+#  define _CCW_GEN_EXP_CTOR(N)                                                                                     \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(in_place_t _CCW_FNCTMPL_CM_DECLARG(N)) { ::new (static_cast<void*>(__val())) _Tp(_CCW_FNCTMPL_FNCARG(N)); __has_ = true; } \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t _CCW_FNCTMPL_CM_DECLARG(N)) { ::new (static_cast<void*>(__unx())) _Ep(_CCW_FNCTMPL_FNCARG(N)); __has_ = false; }
+    _CCW_GEN_EXP_CTOR(1) _CCW_GEN_EXP_CTOR(2) _CCW_GEN_EXP_CTOR(3) _CCW_GEN_EXP_CTOR(4)
+#  undef _CCW_GEN_EXP_CTOR
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(in_place_t, _Args&&... __a) { ::new (static_cast<void*>(__val())) _Tp(static_cast<_Args&&>(__a)...); __has_ = true; }
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t, _Args&&... __a) { ::new (static_cast<void*>(__unx())) _Ep(static_cast<_Args&&>(__a)...); __has_ = false; }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI ~expected() { __destroy(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(const expected& __o) {
+        if (this != &__o) { __destroy(); if (__o.__has_) __mk_val(*__o.__val()); else __mk_err(*__o.__unx()); }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(const _Tp& __v) { __destroy(); __mk_val(__v); return *this; }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(const unexpected<_Gp>& __u) { __destroy(); __mk_err(_Ep(__u.error())); return *this; }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(_CCW_RV_REF(expected) __r) {
+        expected& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            __destroy();
+            if (__o.__has_) __mk_val_moved(_ccw::move(*__o.__val()));
+            else            __mk_err_moved(_ccw::move(*__o.__unx()));
+        }
+        return *this;
+    }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(::_ccw::rv<_Up>& __v) { __destroy(); __mk_val_moved(__v); return *this; }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(_CCW_RV_REF(unexpected<_Gp>) __r) {
+        __destroy(); __mk_err_moved(_ccw::move(_CCW_MOVED_OBJ(__r).error()));
+        return *this;
+    }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(expected& __o) { expected __t(*this); *this = __o; __o = __t; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* operator->() const { return __val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       operator->()       { return __val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& operator*() const  { return *__val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       operator*()        { return *__val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool       has_value() const  { return __has_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator   bool() const       { return __has_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& value() const { if (!__has_) __ccw_throw_bad_expected_access(); return *__val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       value()       { if (!__has_) __ccw_throw_bad_expected_access(); return *__val(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep& error() const { return *__unx(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep&       error()       { return *__unx(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp        value_or(const _Tp& __d) const { return __has_ ? *__val() : __d; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep        error_or(const _Ep& __d) const { return __has_ ? __d : *__unx(); }
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace() { __destroy(); __mk_val(_Tp()); return *__val(); }
+#  define _CCW_GEN_EXP_EMPLACE(N)                                                                            \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                       \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_FNCTMPL_DECLARG(N)) { __destroy(); ::new (static_cast<void*>(__val())) _Tp(_CCW_FNCTMPL_FNCARG(N)); __has_ = true; return *__val(); }
+    _CCW_GEN_EXP_EMPLACE(1) _CCW_GEN_EXP_EMPLACE(2) _CCW_GEN_EXP_EMPLACE(3) _CCW_GEN_EXP_EMPLACE(4)
+#  undef _CCW_GEN_EXP_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_Args&&... __a) { __destroy(); ::new (static_cast<void*>(__val())) _Tp(static_cast<_Args&&>(__a)...); __has_ = true; return *__val(); }
+#endif
+};
+
+template <class _Ep>
+class expected<void, _Ep> {
+    union __storage_t { char __b_[sizeof(_Ep)]; double __d_; void* __p_; long __l_; } __s_;
+    bool __has_;
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep*       __unx()       { return reinterpret_cast<_Ep*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep* __unx() const { return reinterpret_cast<const _Ep*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __destroy() { if (!__has_) __unx()->~_Ep(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __mk_err(const _Ep& __e) { ::new (static_cast<void*>(__unx())) _Ep(__e); __has_ = false; }
+public:
+    typedef void            value_type;
+    typedef _Ep             error_type;
+    typedef unexpected<_Ep> unexpected_type;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI expected() : __has_(true) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const expected& __o) { if (__o.__has_) __has_ = true; else __mk_err(*__o.__unx()); }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected(const unexpected<_Gp>& __u) { __mk_err(_Ep(__u.error())); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(in_place_t) : __has_(true) {}
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t) { __mk_err(_Ep()); }
+#  define _CCW_GEN_EXPV_CTOR(N)                                                                            \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t _CCW_FNCTMPL_CM_DECLARG(N)) { ::new (static_cast<void*>(__unx())) _Ep(_CCW_FNCTMPL_FNCARG(N)); __has_ = false; }
+    _CCW_GEN_EXPV_CTOR(1) _CCW_GEN_EXPV_CTOR(2) _CCW_GEN_EXPV_CTOR(3) _CCW_GEN_EXPV_CTOR(4)
+#  undef _CCW_GEN_EXPV_CTOR
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit expected(unexpect_t, _Args&&... __a) { ::new (static_cast<void*>(__unx())) _Ep(static_cast<_Args&&>(__a)...); __has_ = false; }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ~expected() { __destroy(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(const expected& __o) {
+        if (this != &__o) { __destroy(); if (__o.__has_) __has_ = true; else __mk_err(*__o.__unx()); }
+        return *this;
+    }
+    template <class _Gp>
+    _CCW_LIBCPP_HIDE_FROM_ABI expected& operator=(const unexpected<_Gp>& __u) { __destroy(); __mk_err(_Ep(__u.error())); return *this; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(expected& __o) { expected __t(*this); *this = __o; __o = __t; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_value() const { return __has_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator bool() const  { return __has_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void value() const { if (!__has_) __ccw_throw_bad_expected_access(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator*() const {}
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Ep& error() const { return *__unx(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep&       error()       { return *__unx(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Ep        error_or(const _Ep& __d) const { return __has_ ? __d : *__unx(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace() { __destroy(); __has_ = true; }
+};
+
+template <class _Tp, class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const expected<_Tp, _Ep>& __x, const expected<_Tp, _Ep>& __y) {
+    if (__x.has_value() != __y.has_value()) return false;
+    return __x.has_value() ? (*__x == *__y) : (__x.error() == __y.error());
+}
+template <class _Tp, class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const expected<_Tp, _Ep>& __x, const expected<_Tp, _Ep>& __y) { return !(__x == __y); }
+
+template <class _Tp, class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const expected<_Tp, _Ep>& __x, const _Tp& __v) {
+    return __x.has_value() && static_cast<bool>(*__x == __v);
+}
+template <class _Tp, class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const expected<_Tp, _Ep>& __x, const _Tp& __v) { return !(__x == __v); }
+
+template <class _Tp, class _Ep, class _E2>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const expected<_Tp, _Ep>& __x, const unexpected<_E2>& __u) {
+    return !__x.has_value() && static_cast<bool>(__x.error() == __u.error());
+}
+template <class _Tp, class _Ep, class _E2>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const expected<_Tp, _Ep>& __x, const unexpected<_E2>& __u) { return !(__x == __u); }
+
+#if !defined(__WATCOMC__)
+template <class _Tp, class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(expected<_Tp, _Ep>& __x, expected<_Tp, _Ep>& __y) { __x.swap(__y); }
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_EXPECTED

@@ -9,9 +9,9 @@
 #else
 #include __CCWRAP_NATIVE_C_HEADER_PATH(limits.h)
 #if __BORLANDC__ < 0x560
-#define LLONG_MIN   	    (-9223372036854775807-1)
-#define LLONG_MAX   	      9223372036854775807
-#define ULLONG_MAX  	      0xFFFFFFFFFFFFFFFF
+#define LLONG_MIN           (-9223372036854775807-1)
+#define LLONG_MAX             9223372036854775807
+#define ULLONG_MAX            0xFFFFFFFFFFFFFFFF
 #endif
 #endif
 

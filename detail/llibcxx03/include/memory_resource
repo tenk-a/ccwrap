@@ -1,0 +1,163 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <memory_resource> (C++17) for Open Watcom -- the pmr core:
+//  memory_resource, polymorphic_allocator, new_delete_resource /
+//  null_memory_resource, the default-resource accessors, and
+//  monotonic_buffer_resource. Classic C++03 body. The pool resources
+//  ((un)synchronized_pool_resource) are not provided.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_MEMORY_RESOURCE
+#define _CCW_LIBCPP_MEMORY_RESOURCE
+#include "__config"
+#include "__fnctmpl.h"
+#include <new>
+#include <cstddef>
+#include <exception>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+namespace pmr {
+
+union __ccw_pmr_max_align { long double __ld; void* __p; long __l; };
+
+class memory_resource {
+    static const size_t __max_align = sizeof(__ccw_pmr_max_align);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~memory_resource() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void* allocate(size_t __bytes, size_t __align = __max_align) { return do_allocate(__bytes, __align); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void  deallocate(void* __p, size_t __bytes, size_t __align = __max_align) { do_deallocate(__p, __bytes, __align); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool  is_equal(const memory_resource& __o) const { return do_is_equal(__o); }
+private:
+    virtual void* do_allocate(size_t __bytes, size_t __align) = 0;
+    virtual void  do_deallocate(void* __p, size_t __bytes, size_t __align) = 0;
+    virtual bool  do_is_equal(const memory_resource& __o) const = 0;
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const memory_resource& __a, const memory_resource& __b) { return &__a == &__b || __a.is_equal(__b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const memory_resource& __a, const memory_resource& __b) { return !(__a == __b); }
+
+class __new_delete_resource : public memory_resource {
+    virtual void* do_allocate(size_t __bytes, size_t) { return ::operator new(__bytes); }
+    virtual void  do_deallocate(void* __p, size_t, size_t) { ::operator delete(__p); }
+    virtual bool  do_is_equal(const memory_resource& __o) const { return this == &__o; }
+};
+class __null_memory_resource : public memory_resource {
+    virtual void* do_allocate(size_t, size_t) { _CCW_THROW(bad_alloc()); return 0; }
+    virtual void  do_deallocate(void*, size_t, size_t) {}
+    virtual bool  do_is_equal(const memory_resource& __o) const { return this == &__o; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline memory_resource* new_delete_resource() { static __new_delete_resource __r; return &__r; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline memory_resource* null_memory_resource() { static __null_memory_resource __r; return &__r; }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline memory_resource*& __default_resource() { static memory_resource* __r = new_delete_resource(); return __r; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline memory_resource* get_default_resource() { return __default_resource(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline memory_resource* set_default_resource(memory_resource* __r) {
+    memory_resource* __old = __default_resource();
+    __default_resource() = __r ? __r : new_delete_resource();
+    return __old;
+}
+
+template <class _Tp>
+class polymorphic_allocator {
+    memory_resource* __res_;
+public:
+    typedef _Tp        value_type;
+    typedef _Tp*       pointer;
+    typedef const _Tp* const_pointer;
+    typedef _Tp&       reference;
+    typedef const _Tp& const_reference;
+    typedef size_t     size_type;
+    typedef ptrdiff_t  difference_type;
+    template <class _Up> struct rebind { typedef polymorphic_allocator<_Up> other; };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI polymorphic_allocator() : __res_(get_default_resource()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI polymorphic_allocator(memory_resource* __r) : __res_(__r) {}
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI polymorphic_allocator(const polymorphic_allocator<_Up>& __o) : __res_(__o.resource()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* allocate(size_t __n) { return static_cast<_Tp*>(__res_->allocate(__n * sizeof(_Tp), sizeof(__ccw_pmr_max_align))); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* allocate(size_t __n, const void*) { return allocate(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void deallocate(_Tp* __p, size_t __n) { __res_->deallocate(__p, __n * sizeof(_Tp), sizeof(__ccw_pmr_max_align)); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer       address(reference __x) const       { return &__x; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_pointer address(const_reference __x) const { return &__x; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type     max_size() const { return (size_type)(-1) / sizeof(_Tp); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(_Tp* __p) { ::new (static_cast<void*>(__p)) _Tp(); }
+#if _CCW_NO_VARIADIC_TEMPLATES
+#  define _CCW_GEN_PMR_CONSTRUCT(N)                                                          \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                       \
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N)) { ::new (static_cast<void*>(__p)) _Tp(_CCW_FNCTMPL_FNCARG(N)); }
+    _CCW_GEN_PMR_CONSTRUCT(1) _CCW_GEN_PMR_CONSTRUCT(2) _CCW_GEN_PMR_CONSTRUCT(3) _CCW_GEN_PMR_CONSTRUCT(4)
+#  undef _CCW_GEN_PMR_CONSTRUCT
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI void construct(_Tp* __p, _Args&&... __a) { ::new (static_cast<void*>(__p)) _Tp(static_cast<_Args&&>(__a)...); }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void destroy(_Tp* __p) { __p->~_Tp(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI memory_resource* resource() const { return __res_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI polymorphic_allocator select_on_container_copy_construction() const { return polymorphic_allocator(); }
+};
+template <class _T1, class _T2>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const polymorphic_allocator<_T1>& __a, const polymorphic_allocator<_T2>& __b) { return *__a.resource() == *__b.resource(); }
+template <class _T1, class _T2>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const polymorphic_allocator<_T1>& __a, const polymorphic_allocator<_T2>& __b) { return !(__a == __b); }
+
+class monotonic_buffer_resource : public memory_resource {
+    struct __chunk { __chunk* __next; size_t __size; };
+    memory_resource* __upstream_;
+    __chunk*         __chunks_;
+    char*            __cur_;
+    size_t           __avail_;
+    size_t           __next_size_;
+    char*            __ibuf_;
+    size_t           __isize_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static size_t __align_up(size_t __n, size_t __a) { return (__n + __a - 1) & ~(__a - 1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __new_chunk(size_t __need) {
+        size_t __sz = __next_size_ > __need ? __next_size_ : __need;
+        void* __raw = __upstream_->allocate(sizeof(__chunk) + __sz, sizeof(__ccw_pmr_max_align));
+        __chunk* __c = static_cast<__chunk*>(__raw);
+        __c->__next = __chunks_; __c->__size = sizeof(__chunk) + __sz; __chunks_ = __c;
+        __cur_ = static_cast<char*>(__raw) + sizeof(__chunk);
+        __avail_ = __sz;
+        __next_size_ *= 2;
+    }
+    virtual void* do_allocate(size_t __bytes, size_t __align) {
+        size_t __pad = __align_up(reinterpret_cast<size_t>(__cur_), __align) - reinterpret_cast<size_t>(__cur_);
+        if (__bytes + __pad > __avail_) { __new_chunk(__bytes + __align); __pad = __align_up(reinterpret_cast<size_t>(__cur_), __align) - reinterpret_cast<size_t>(__cur_); }
+        char* __p = __cur_ + __pad;
+        __cur_ = __p + __bytes;
+        __avail_ -= (__bytes + __pad);
+        return __p;
+    }
+    virtual void do_deallocate(void*, size_t, size_t) {}
+    virtual bool do_is_equal(const memory_resource& __o) const { return this == &__o; }
+
+    monotonic_buffer_resource(const monotonic_buffer_resource&);
+    monotonic_buffer_resource& operator=(const monotonic_buffer_resource&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit monotonic_buffer_resource(memory_resource* __up)
+        : __upstream_(__up), __chunks_(0), __cur_(0), __avail_(0), __next_size_(256), __ibuf_(0), __isize_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI monotonic_buffer_resource(size_t __initial, memory_resource* __up)
+        : __upstream_(__up), __chunks_(0), __cur_(0), __avail_(0), __next_size_(__initial ? __initial : 256), __ibuf_(0), __isize_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI monotonic_buffer_resource()
+        : __upstream_(get_default_resource()), __chunks_(0), __cur_(0), __avail_(0), __next_size_(256), __ibuf_(0), __isize_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI monotonic_buffer_resource(void* __buf, size_t __size, memory_resource* __up)
+        : __upstream_(__up), __chunks_(0), __cur_(static_cast<char*>(__buf)), __avail_(__size),
+          __next_size_(__size ? __size : 256), __ibuf_(static_cast<char*>(__buf)), __isize_(__size) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI monotonic_buffer_resource(void* __buf, size_t __size)
+        : __upstream_(get_default_resource()), __chunks_(0), __cur_(static_cast<char*>(__buf)), __avail_(__size),
+          __next_size_(__size ? __size : 256), __ibuf_(static_cast<char*>(__buf)), __isize_(__size) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~monotonic_buffer_resource() { release(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void release() {
+        while (__chunks_) { __chunk* __n = __chunks_->__next; __upstream_->deallocate(__chunks_, __chunks_->__size, sizeof(__ccw_pmr_max_align)); __chunks_ = __n; }
+        __cur_ = __ibuf_; __avail_ = __ibuf_ ? __isize_ : 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI memory_resource* upstream_resource() const { return __upstream_; }
+};
+
+} // namespace pmr
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_MEMORY_RESOURCE

@@ -1,0 +1,24 @@
+// ccwrap <type_traits>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <type_traits>
+#else
+ #include <../../detail/llibcxx03/include/type_traits>
+#endif
+
+#if __cplusplus >= 201103L && !defined(__cpp_lib_is_scoped_enum)
+namespace _CCW_STD23 {
+template <class _Tp, bool = std::is_enum<_Tp>::value>
+struct __ccw_is_scoped_enum : std::integral_constant<bool,
+    !std::is_convertible<_Tp, typename std::underlying_type<_Tp>::type>::value> {};
+template <class _Tp>
+struct __ccw_is_scoped_enum<_Tp, false> : std::false_type {};
+template <class _Tp> struct is_scoped_enum : __ccw_is_scoped_enum<_Tp> {};
+# if __cplusplus >= 201402L
+template <class _Tp> _ccw_constexpr_or_const bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
+# endif
+}   // _CCW_STD23
+#endif

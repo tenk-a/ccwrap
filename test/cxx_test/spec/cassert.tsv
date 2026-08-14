@@ -1,0 +1,7 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"cassert"	"cxx03:<cassert> header compiles"	"2003"	"*"	""	""
+"cassert"	"cxx03:assert"	"2003"	"*"	""	""
+"cassert"	"cxx03:assert is a macro"	"2003"	"*"	""	""
+"cassert"	"cxx03:NDEBUG disables assert"	"2003"	"*"	""	""
+"cassert"	"cxx26:assert variadic macro"	"2026"	"*"	""	"P2264R7: カンマを含む式を余分な括弧なしで受理"
+"cassert"	"cxx26:assert variadic macro with NDEBUG"	"2026"	"*"	""	"NDEBUG 定義時も可変引数を評価せず void 式になる"

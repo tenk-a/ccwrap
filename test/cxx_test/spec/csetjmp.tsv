@@ -1,0 +1,8 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"csetjmp"	"cxx03:jmp_buf"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:jmp_buf reuse"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:longjmp"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:longjmp delivers the value to setjmp"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:longjmp value 0 is replaced by 1"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:setjmp"	"2003"	"*"	""	""
+"csetjmp"	"cxx03:setjmp direct return is 0"	"2003"	"*"	""	""

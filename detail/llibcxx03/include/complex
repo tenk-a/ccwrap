@@ -1,0 +1,248 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <complex> for Open Watcom -- _CCW_STD::complex<T>. Self-contained
+//  (over <cmath> only), deliberately NOT the native <complex>, which pulls
+//  <istream>/<ostream> and would entangle the owned string/ios machinery. Classic
+//  C++03 body: value type + arithmetic + the common free functions. The stream
+//  operators (<<, >>) are omitted (no iostream tower yet).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_COMPLEX
+#define _CCW_LIBCPP_COMPLEX
+#include "__config"
+#include <cmath>
+#include <cstddef>       // size_t (the tuple interface below)
+#include <type_traits>   // integral_constant (tuple_size)
+#if !defined(__WATCOMC__) || __WATCOMC__ >= 1300
+#  define _CCW_COMPLEX_HAS_STREAMS 1
+#  include <ostream>
+#  include <istream>
+#endif
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+class _CCW_LIBCPP_TEMPLATE_VIS complex {
+    _Tp __re_;
+    _Tp __im_;
+public:
+    typedef _Tp value_type;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI complex(const _Tp& __re = _Tp(), const _Tp& __im = _Tp()) : __re_(__re), __im_(__im) {}
+    template <class _Xp>
+    _CCW_LIBCPP_HIDE_FROM_ABI complex(const complex<_Xp>& __c) : __re_(__c.real()), __im_(__c.imag()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp real() const { return __re_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp imag() const { return __im_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       __get_re()       { return __re_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& __get_re() const { return __re_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       __get_im()       { return __im_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& __get_im() const { return __im_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void real(_Tp __v) { __re_ = __v; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void imag(_Tp __v) { __im_ = __v; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI complex& operator=(const _Tp& __v) { __re_ = __v; __im_ = _Tp(); return *this; }
+    template <class _Xp> _CCW_LIBCPP_HIDE_FROM_ABI complex& operator=(const complex<_Xp>& __c) { __re_ = (_Tp)__c.real(); __im_ = (_Tp)__c.imag(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI complex& operator+=(const _Tp& __v) { __re_ += __v; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI complex& operator-=(const _Tp& __v) { __re_ -= __v; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI complex& operator*=(const _Tp& __v) { __re_ *= __v; __im_ *= __v; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI complex& operator/=(const _Tp& __v) { __re_ /= __v; __im_ /= __v; return *this; }
+
+    template <class _Xp> _CCW_LIBCPP_HIDE_FROM_ABI complex& operator+=(const complex<_Xp>& __c) { __re_ += __c.real(); __im_ += __c.imag(); return *this; }
+    template <class _Xp> _CCW_LIBCPP_HIDE_FROM_ABI complex& operator-=(const complex<_Xp>& __c) { __re_ -= __c.real(); __im_ -= __c.imag(); return *this; }
+    template <class _Xp> _CCW_LIBCPP_HIDE_FROM_ABI complex& operator*=(const complex<_Xp>& __c) {
+        _Tp __r = __re_ * __c.real() - __im_ * __c.imag();
+        _Tp __i = __re_ * __c.imag() + __im_ * __c.real();
+        __re_ = __r; __im_ = __i; return *this;
+    }
+    template <class _Xp> _CCW_LIBCPP_HIDE_FROM_ABI complex& operator/=(const complex<_Xp>& __c) {
+        _Tp __d = __c.real() * __c.real() + __c.imag() * __c.imag();
+        _Tp __r = (__re_ * __c.real() + __im_ * __c.imag()) / __d;
+        _Tp __i = (__im_ * __c.real() - __re_ * __c.imag()) / __d;
+        __re_ = __r; __im_ = __i; return *this;
+    }
+};
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator+(const complex<_Tp>& __x) { return __x; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator-(const complex<_Tp>& __x) { return complex<_Tp>(-__x.real(), -__x.imag()); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator+(const complex<_Tp>& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r += __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator+(const complex<_Tp>& __x, const _Tp& __y) { complex<_Tp> __r(__x); __r += __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator+(const _Tp& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__y); __r += __x; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator-(const complex<_Tp>& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r -= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator-(const complex<_Tp>& __x, const _Tp& __y) { complex<_Tp> __r(__x); __r -= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator-(const _Tp& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r -= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator*(const complex<_Tp>& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r *= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator*(const complex<_Tp>& __x, const _Tp& __y) { complex<_Tp> __r(__x); __r *= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator*(const _Tp& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__y); __r *= __x; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator/(const complex<_Tp>& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r /= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator/(const complex<_Tp>& __x, const _Tp& __y) { complex<_Tp> __r(__x); __r /= __y; return __r; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y) { complex<_Tp> __r(__x); __r /= __y; return __r; }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const complex<_Tp>& __x, const complex<_Tp>& __y) { return __x.real() == __y.real() && __x.imag() == __y.imag(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const complex<_Tp>& __x, const _Tp& __y) { return __x.real() == __y && __x.imag() == _Tp(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const _Tp& __x, const complex<_Tp>& __y) { return __x == __y.real() && __y.imag() == _Tp(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y) { return !(__x == __y); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const complex<_Tp>& __x, const _Tp& __y) { return !(__x == __y); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const _Tp& __x, const complex<_Tp>& __y) { return !(__x == __y); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp real(const complex<_Tp>& __c) { return __c.real(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp imag(const complex<_Tp>& __c) { return __c.imag(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp abs(const complex<_Tp>& __c)  { return _CCW_STD::sqrt(__c.real() * __c.real() + __c.imag() * __c.imag()); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp arg(const complex<_Tp>& __c)  { return _CCW_STD::atan2(__c.imag(), __c.real()); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp norm(const complex<_Tp>& __c) { return __c.real() * __c.real() + __c.imag() * __c.imag(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> conj(const complex<_Tp>& __c) { return complex<_Tp>(__c.real(), -__c.imag()); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> polar(const _Tp& __r, const _Tp& __theta = _Tp()) { return complex<_Tp>(__r * _CCW_STD::cos(__theta), __r * _CCW_STD::sin(__theta)); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> exp(const complex<_Tp>& __c) {
+    _Tp __e = _CCW_STD::exp(__c.real());
+    return complex<_Tp>(__e * _CCW_STD::cos(__c.imag()), __e * _CCW_STD::sin(__c.imag()));
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> log(const complex<_Tp>& __c)  { return complex<_Tp>(_CCW_STD::log(_CCW_STD::abs(__c)), _CCW_STD::arg(__c)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> log10(const complex<_Tp>& __c) { return _CCW_STD::log(__c) / _Tp(_CCW_STD::log((_Tp)10)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> sqrt(const complex<_Tp>& __c)  { return _CCW_STD::polar((_Tp)_CCW_STD::sqrt(_CCW_STD::abs(__c)), (_Tp)(_CCW_STD::arg(__c) / 2)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y) { return _CCW_STD::exp(__y * _CCW_STD::log(__x)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> pow(const complex<_Tp>& __x, const _Tp& __y) { return _CCW_STD::exp(complex<_Tp>(__y) * _CCW_STD::log(__x)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> pow(const _Tp& __x, const complex<_Tp>& __y) { return _CCW_STD::exp(__y * _CCW_STD::log(complex<_Tp>(__x))); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> sinh(const complex<_Tp>& __c) { return complex<_Tp>(_CCW_STD::sinh(__c.real()) * _CCW_STD::cos(__c.imag()), _CCW_STD::cosh(__c.real()) * _CCW_STD::sin(__c.imag())); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> cosh(const complex<_Tp>& __c) { return complex<_Tp>(_CCW_STD::cosh(__c.real()) * _CCW_STD::cos(__c.imag()), _CCW_STD::sinh(__c.real()) * _CCW_STD::sin(__c.imag())); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> tanh(const complex<_Tp>& __c) { return _CCW_STD::sinh(__c) / _CCW_STD::cosh(__c); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> sin(const complex<_Tp>& __c)  { return complex<_Tp>(_CCW_STD::sin(__c.real()) * _CCW_STD::cosh(__c.imag()), _CCW_STD::cos(__c.real()) * _CCW_STD::sinh(__c.imag())); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> cos(const complex<_Tp>& __c)  { return complex<_Tp>(_CCW_STD::cos(__c.real()) * _CCW_STD::cosh(__c.imag()), -_CCW_STD::sin(__c.real()) * _CCW_STD::sinh(__c.imag())); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __c)  { return _CCW_STD::sin(__c) / _CCW_STD::cos(__c); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> proj(const complex<_Tp>& __c) { return __c; }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> asinh(const complex<_Tp>& __z) { return _CCW_STD::log(__z + _CCW_STD::sqrt(__z * __z + complex<_Tp>(1))); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> acosh(const complex<_Tp>& __z) { return _CCW_STD::log(__z + _CCW_STD::sqrt(__z * __z - complex<_Tp>(1))); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> atanh(const complex<_Tp>& __z) { return (_CCW_STD::log(complex<_Tp>(1) + __z) - _CCW_STD::log(complex<_Tp>(1) - __z)) / _Tp(2); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> asin(const complex<_Tp>& __z) { return complex<_Tp>(0, -1) * _CCW_STD::asinh(complex<_Tp>(0, 1) * __z); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> acos(const complex<_Tp>& __z) { return complex<_Tp>(0, -1) * _CCW_STD::log(__z + complex<_Tp>(0, 1) * _CCW_STD::sqrt(complex<_Tp>(1) - __z * __z)); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI complex<_Tp> atan(const complex<_Tp>& __z) { return complex<_Tp>(0, -1) * _CCW_STD::atanh(complex<_Tp>(0, 1) * __z); }
+
+#if defined(_CCW_COMPLEX_HAS_STREAMS)
+template <class _CharT, class _Traits, class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __c) {
+    return __os << '(' << __c.real() << ',' << __c.imag() << ')';
+}
+template <class _CharT, class _Traits, class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __c) {
+    _Tp __re = _Tp(), __im = _Tp(); _CharT __ch = 0;
+    __is >> __ch;
+    if (__ch == '(') {
+        __is >> __re >> __ch;
+        if (__ch == ',') { __is >> __im >> __ch; }   // __ch should be ')'
+    } else { __is.putback(__ch); __is >> __re; }
+    if (!__is.fail()) __c = complex<_Tp>(__re, __im);
+    return __is;
+}
+#endif // _CCW_COMPLEX_HAS_STREAMS
+
+#define _CCW_CX_OVER_FP(_Tp)                                                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline _Tp          real(_Tp __x) { return __x; }                  \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline _Tp          imag(_Tp)     { return (_Tp)0; }                \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline _Tp          norm(_Tp __x) { return __x * __x; }            \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline _Tp          arg(_Tp __x)  { return _CCW_STD::atan2((_Tp)0, __x); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Tp> conj(_Tp __x) { return complex<_Tp>(__x, (_Tp)0); }   \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Tp> proj(_Tp __x) { return complex<_Tp>(__x, (_Tp)0); }
+
+#define _CCW_CX_OVER_INT(_Tp)                                                                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline double          real(_Tp __x) { return (double)__x; }       \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline double          imag(_Tp)     { return 0.0; }               \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline double          norm(_Tp __x) { return (double)__x * (double)__x; } \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline double          arg(_Tp __x)  { return _CCW_STD::atan2(0.0, (double)__x); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> conj(_Tp __x) { return complex<double>((double)__x, 0.0); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> proj(_Tp __x) { return complex<double>((double)__x, 0.0); }
+
+_CCW_CX_OVER_FP(float)
+_CCW_CX_OVER_FP(double)
+_CCW_CX_OVER_FP(long double)
+
+_CCW_CX_OVER_INT(int)
+_CCW_CX_OVER_INT(unsigned int)
+_CCW_CX_OVER_INT(long)
+_CCW_CX_OVER_INT(unsigned long)
+_CCW_CX_OVER_INT(_ccw_llong)
+_CCW_CX_OVER_INT(_ccw_ullong)
+
+#undef _CCW_CX_OVER_FP
+#undef _CCW_CX_OVER_INT
+
+#define _CCW_CX_POW_MIX(_Lo, _Hi)                                                                \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const complex<_Lo>& __x, const _Hi& __y)    \
+        { return _CCW_STD::pow(complex<_Hi>((_Hi)__x.real(), (_Hi)__x.imag()), __y); }           \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const complex<_Hi>& __x, const _Lo& __y)    \
+        { return _CCW_STD::pow(__x, (_Hi)__y); }                                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const _Lo& __x, const complex<_Hi>& __y)    \
+        { return _CCW_STD::pow((_Hi)__x, __y); }                                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const _Hi& __x, const complex<_Lo>& __y)    \
+        { return _CCW_STD::pow(__x, complex<_Hi>((_Hi)__y.real(), (_Hi)__y.imag())); }           \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const complex<_Lo>& __x, const complex<_Hi>& __y) \
+        { return _CCW_STD::pow(complex<_Hi>((_Hi)__x.real(), (_Hi)__x.imag()), __y); }           \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<_Hi> pow(const complex<_Hi>& __x, const complex<_Lo>& __y) \
+        { return _CCW_STD::pow(__x, complex<_Hi>((_Hi)__y.real(), (_Hi)__y.imag())); }
+
+_CCW_CX_POW_MIX(float,  double)
+_CCW_CX_POW_MIX(float,  long double)
+_CCW_CX_POW_MIX(double, long double)
+
+#undef _CCW_CX_POW_MIX
+
+#define _CCW_CX_POW_INT(_Ip)                                                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> pow(const complex<double>& __x, _Ip __y)     \
+        { return _CCW_STD::pow(__x, (double)__y); }                                              \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> pow(const complex<float>& __x, _Ip __y)      \
+        { return _CCW_STD::pow(complex<double>((double)__x.real(), (double)__x.imag()), (double)__y); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> pow(_Ip __x, const complex<double>& __y)     \
+        { return _CCW_STD::pow((double)__x, __y); }                                              \
+    _CCW_LIBCPP_HIDE_FROM_ABI inline complex<double> pow(_Ip __x, const complex<float>& __y)      \
+        { return _CCW_STD::pow((double)__x, complex<double>((double)__y.real(), (double)__y.imag())); }
+
+_CCW_CX_POW_INT(int)
+_CCW_CX_POW_INT(unsigned int)
+_CCW_CX_POW_INT(long)
+_CCW_CX_POW_INT(unsigned long)
+_CCW_CX_POW_INT(_ccw_llong)
+_CCW_CX_POW_INT(_ccw_ullong)
+
+#undef _CCW_CX_POW_INT
+
+#define _CCW_LIB_COMPLEX_TUPLE_TRAITS 1
+#define _CCW_LIB_COMPLEX_TUPLE_GET 1
+
+template <class _Tup>                       struct tuple_size;
+template <_CCW_STD::size_t _Ip, class _Tup> struct tuple_element;
+
+template <class _Tp> struct tuple_size<complex<_Tp> >
+    : public integral_constant<_CCW_STD::size_t, 2> {};
+template <class _Tp> struct tuple_size<const complex<_Tp> >
+    : public integral_constant<_CCW_STD::size_t, 2> {};
+template <class _Tp> struct tuple_size<volatile complex<_Tp> >
+    : public integral_constant<_CCW_STD::size_t, 2> {};
+template <class _Tp> struct tuple_size<const volatile complex<_Tp> >
+    : public integral_constant<_CCW_STD::size_t, 2> {};
+
+template <_CCW_STD::size_t _Ip, class _Tp> struct tuple_element<_Ip, complex<_Tp> >
+    { typedef _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp> struct tuple_element<_Ip, const complex<_Tp> >
+    { typedef const _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp> struct tuple_element<_Ip, volatile complex<_Tp> >
+    { typedef volatile _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp> struct tuple_element<_Ip, const volatile complex<_Tp> >
+    { typedef const volatile _Tp type; };
+
+template <_CCW_STD::size_t _Ip> struct __cx_get;
+template <> struct __cx_get<0> {
+    template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI static _Tp&       __g(complex<_Tp>& __z)       { return __z.__get_re(); }
+    template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI static const _Tp& __g(const complex<_Tp>& __z) { return __z.__get_re(); }
+};
+template <> struct __cx_get<1> {
+    template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI static _Tp&       __g(complex<_Tp>& __z)       { return __z.__get_im(); }
+    template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI static const _Tp& __g(const complex<_Tp>& __z) { return __z.__get_im(); }
+};
+
+template <_CCW_STD::size_t _Ip, class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp& get(complex<_Tp>& __z) { return __cx_get<_Ip>::__g(__z); }
+template <_CCW_STD::size_t _Ip, class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI const _Tp& get(const complex<_Tp>& __z) { return __cx_get<_Ip>::__g(__z); }
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_COMPLEX

@@ -1,0 +1,6 @@
+# C++26 のサチュレート演算: bool を弾くこと (numeric_bool.lst の続き)。
+REJ_ADD_SAT
+REJ_SUB_SAT
+REJ_MUL_SAT
+REJ_DIV_SAT
+REJ_SAT_CAST

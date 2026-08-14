@@ -1,0 +1,2 @@
+// ccwrap <array>
+#include "../std/array"

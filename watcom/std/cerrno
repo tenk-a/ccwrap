@@ -1,0 +1,11 @@
+// ccwrap watcom: <cerrno>. Forward to Open Watcom's native <cerrno> (errno and the E*
+// error-number macros), then add the C11 / POSIX numbers it lacks.
+//
+// The supplements are macro-only and shared with <errno.h>, so they live in
+// ../detail/errno_c11.h -- see that file for why the values start at 100, and why an
+// errno value must never be hard-coded on this target.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cerrno)
+#include "../../detail/c/errno_c11.h"

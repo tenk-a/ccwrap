@@ -1,0 +1,23 @@
+// ccwrap watcom: <cstring>. Forward to Open Watcom's native <cstring> (which
+// declares the C string functions in namespace std), then add the pieces the
+// Watcom runtime lacks -- currently strnlen -- in namespace std, exactly where the
+// standard C string functions live. The matching <string.h> re-exports it into the
+// global namespace for C++ (and defines it globally for C).
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstring)
+
+#ifndef _CCW_CSTRING_STRNLEN_DEFINED
+#define _CCW_CSTRING_STRNLEN_DEFINED
+namespace std {
+    inline size_t strnlen(const char* __s, size_t __n) {
+        size_t __i = 0;
+        while (__i < __n && __s[__i]) ++__i;
+        return __i;
+    }
+}
+#if !defined(_NO_EXT_KEYS)
+namespace std { using ::memccpy; }
+#endif
+#endif  /* _CCW_CSTRING_STRNLEN_DEFINED */

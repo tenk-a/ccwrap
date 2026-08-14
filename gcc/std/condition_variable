@@ -1,0 +1,15 @@
+// ccwrap <condition_variable>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <condition_variable>
+#else
+#if defined(_WIN32)
+ #include <../../detail/cxx/win/condition_variable.hpp>
+#else
+ // the C++03 stand-in is Win32-only; elsewhere the native header decides
+ #include_next <condition_variable>
+#endif
+#endif

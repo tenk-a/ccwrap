@@ -1,0 +1,61 @@
+// ccwrap <atomic>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1700
+ #include _CCW_NATIVE_STL_HEADER_PATH(atomic)
+#else
+ #include <../../detail/llibcxx03/include/atomic>
+#endif
+
+#if _MSC_VER >= 1700 && !defined(__cpp_lib_atomic_ref)
+ #include <../../detail/llibcxx03/include/__atomic/atomic_ref.h>
+#endif
+
+#if _CCW_TARGET_CXX >= 2020
+ #include <../../detail/cxx/atomic_shared_ptr.hpp>
+#endif
+
+#if _MSC_VER >= 1700
+#include <cstring>
+
+#ifndef ATOMIC_CHAR8_T_LOCK_FREE
+# define ATOMIC_CHAR8_T_LOCK_FREE ATOMIC_CHAR_LOCK_FREE
+#endif
+#endif
+
+// The C++20 waiting / flag-test free functions. MSVC gained them with
+// __cpp_lib_atomic_wait / __cpp_lib_atomic_flag_test, so key on those, not on a version.
+#if _MSC_VER >= 1700 && !defined(__cpp_lib_atomic_wait) && !defined(__cpp_lib_atomic_flag_test)
+namespace std {
+
+inline bool atomic_flag_test(const atomic_flag* __f) { return (__f->_My_flag & 1) != 0; }
+inline bool atomic_flag_test(const volatile atomic_flag* __f) { return (__f->_My_flag & 1) != 0; }
+inline bool atomic_flag_test_explicit(const atomic_flag* __f, memory_order) { return atomic_flag_test(__f); }
+inline bool atomic_flag_test_explicit(const volatile atomic_flag* __f, memory_order) { return atomic_flag_test(__f); }
+
+inline void atomic_flag_wait(const atomic_flag* __f, bool __old) { while (atomic_flag_test(__f) == __old) {} }
+inline void atomic_flag_wait_explicit(const atomic_flag* __f, bool __old, memory_order) { atomic_flag_wait(__f, __old); }
+inline void atomic_flag_notify_one(atomic_flag*) {}
+inline void atomic_flag_notify_all(atomic_flag*) {}
+
+template <class _Tp>
+inline void atomic_wait(const atomic<_Tp>* __a, _Tp __old) {
+    for (;;) {
+        _Tp __cur = __a->load();
+        if (::memcmp(&__cur, &__old, sizeof(_Tp)) != 0) return;
+    }
+}
+template <class _Tp>
+inline void atomic_wait_explicit(const atomic<_Tp>* __a, _Tp __old, memory_order __o) {
+    for (;;) {
+        _Tp __cur = __a->load(__o);
+        if (::memcmp(&__cur, &__old, sizeof(_Tp)) != 0) return;
+    }
+}
+template <class _Tp> inline void atomic_notify_one(atomic<_Tp>*) {}
+template <class _Tp> inline void atomic_notify_all(atomic<_Tp>*) {}
+
+}  // namespace std
+#endif  // _MSC_VER >= 1700 && no native atomic wait

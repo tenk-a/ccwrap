@@ -1,0 +1,281 @@
+//  ccwrap llibcxx03: <system_error> for Open Watcom -- error_category, error_code,
+//  error_condition, the system_error exception and _CCW_STD::errc.
+//
+//  Open Watcom has no enum class, so errc (and <ios>'s io_errc) follow the ccwrap
+//  scoped-enum idiom: a struct wrapping a plain `enum enum_type`, so `errc::io_error`
+//  still has to be spelled with the scope and an errc value converts to its
+//  enumerator (see detail/system_error.hpp).
+#ifndef _CCW_LIBCPP_SYSTEM_ERROR
+#define _CCW_LIBCPP_SYSTEM_ERROR
+#include "__config"
+#include <cerrno>
+#include <cstring>
+#include "__fwd/ostream.h"   // NOT <iosfwd>: that reaches <streambuf> -> <ios> -> here
+#include <stdexcept>
+#include <string>
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct errc {
+    enum enum_type {
+        __success                          = 0,
+        address_family_not_supported       = EAFNOSUPPORT,
+        address_in_use                     = EADDRINUSE,
+        address_not_available              = EADDRNOTAVAIL,
+        already_connected                  = EISCONN,
+        argument_list_too_long             = E2BIG,
+        argument_out_of_domain             = EDOM,
+        bad_address                        = EFAULT,
+        bad_file_descriptor                = EBADF,
+        bad_message                        = EBADMSG,
+        broken_pipe                        = EPIPE,
+        connection_aborted                 = ECONNABORTED,
+        connection_already_in_progress     = EALREADY,
+        connection_refused                 = ECONNREFUSED,
+        connection_reset                   = ECONNRESET,
+        cross_device_link                  = EXDEV,
+        destination_address_required       = EDESTADDRREQ,
+        device_or_resource_busy            = EBUSY,
+        directory_not_empty                = ENOTEMPTY,
+        executable_format_error            = ENOEXEC,
+        file_exists                        = EEXIST,
+        file_too_large                     = EFBIG,
+        filename_too_long                  = ENAMETOOLONG,
+        function_not_supported             = ENOSYS,
+        host_unreachable                   = EHOSTUNREACH,
+        identifier_removed                 = EIDRM,
+        illegal_byte_sequence              = EILSEQ,
+        inappropriate_io_control_operation = ENOTTY,
+        interrupted                        = EINTR,
+        invalid_argument                   = EINVAL,
+        invalid_seek                       = ESPIPE,
+        io_error                           = EIO,
+        is_a_directory                     = EISDIR,
+        message_size                       = EMSGSIZE,
+        network_down                       = ENETDOWN,
+        network_reset                      = ENETRESET,
+        network_unreachable                = ENETUNREACH,
+        no_buffer_space                    = ENOBUFS,
+        no_child_process                   = ECHILD,
+        no_link                            = ENOLINK,
+        no_lock_available                  = ENOLCK,
+        no_message                         = ENOMSG,
+        no_message_available               = ENODATA,
+        no_protocol_option                 = ENOPROTOOPT,
+        no_space_on_device                 = ENOSPC,
+        no_stream_resources                = ENOSR,
+        no_such_device                     = ENODEV,
+        no_such_device_or_address          = ENXIO,
+        no_such_file_or_directory          = ENOENT,
+        no_such_process                    = ESRCH,
+        not_a_directory                    = ENOTDIR,
+        not_a_socket                       = ENOTSOCK,
+        not_a_stream                       = ENOSTR,
+        not_connected                      = ENOTCONN,
+        not_enough_memory                  = ENOMEM,
+        not_supported                      = ENOTSUP,
+        operation_canceled                 = ECANCELED,
+        operation_in_progress              = EINPROGRESS,
+        operation_not_permitted            = EPERM,
+        operation_not_supported            = EOPNOTSUPP,
+        operation_would_block              = EWOULDBLOCK,
+        owner_dead                         = EOWNERDEAD,
+        permission_denied                  = EACCES,
+        protocol_error                     = EPROTO,
+        protocol_not_supported             = EPROTONOSUPPORT,
+        read_only_file_system              = EROFS,
+        resource_deadlock_would_occur      = EDEADLK,
+        resource_unavailable_try_again     = EAGAIN,
+        result_out_of_range                = ERANGE,
+        state_not_recoverable              = ENOTRECOVERABLE,
+        stream_timeout                     = ETIME,
+        text_file_busy                     = ETXTBSY,
+        timed_out                          = ETIMEDOUT,
+        too_many_files_open                = EMFILE,
+        too_many_files_open_in_system      = ENFILE,
+        too_many_links                     = EMLINK,
+        too_many_symbolic_link_levels      = ELOOP,
+        value_too_large                    = EOVERFLOW,
+        wrong_protocol_type                = EPROTOTYPE
+    };
+    _CCW_LIBCPP_HIDE_FROM_ABI errc() : __v_(__success) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI errc(enum_type __v) : __v_(__v) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
+private:
+    enum_type __v_;
+};
+
+template <class _Tp> struct is_error_code_enum      { static const bool value = false; };
+template <class _Tp> struct is_error_condition_enum { static const bool value = false; };
+template <> struct is_error_condition_enum<errc>            { static const bool value = true; };
+template <> struct is_error_condition_enum<errc::enum_type> { static const bool value = true; };
+
+class error_condition;
+class error_code;
+
+class error_category {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~error_category() {}
+    virtual const char* name() const = 0;
+    virtual _CCW_STD::string message(int __ev) const = 0;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual error_condition default_error_condition(int __ev) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool equivalent(int __code, const error_condition& __cond) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool equivalent(const error_code& __code, int __cond) const;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const error_category& __o) const { return this == &__o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const error_category& __o) const { return this != &__o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const error_category& __o) const { return this < &__o; }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI error_category() {}
+private:
+    error_category(const error_category&);
+    error_category& operator=(const error_category&);
+};
+
+class __generic_error_category : public error_category {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const { return "generic"; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message(int __ev) const {
+        const char* __m = _CCW_STD::strerror(__ev);
+        return __m ? _CCW_STD::string(__m) : _CCW_STD::string("unknown error");
+    }
+};
+
+class __system_error_category : public error_category {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const { return "system"; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message(int __ev) const {
+        const char* __m = _CCW_STD::strerror(__ev);
+        return __m ? _CCW_STD::string(__m) : _CCW_STD::string("unknown error");
+    }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline const error_category& generic_category() {
+    static __generic_error_category __c;
+    return __c;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline const error_category& system_category() {
+    static __system_error_category __c;
+    return __c;
+}
+
+class error_condition {
+    int                   __v_;
+    const error_category* __cat_;
+    typedef int error_condition::*__bool_type;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI error_condition() : __v_(0), __cat_(&generic_category()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI error_condition(int __v, const error_category& __c) : __v_(__v), __cat_(&__c) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(int __v, const error_category& __c) { __v_ = __v; __cat_ = &__c; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { __v_ = 0; __cat_ = &generic_category(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int value() const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const error_category& category() const { return *__cat_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message() const { return __cat_->message(__v_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const { return __v_ ? &error_condition::__v_ : (__bool_type)0; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_condition& __x, const error_condition& __y) {
+    return __x.category() == __y.category() && __x.value() == __y.value();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_condition& __x, const error_condition& __y) { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<(const error_condition& __x, const error_condition& __y) {
+    return __x.category() < __y.category() || (__x.category() == __y.category() && __x.value() < __y.value());
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>(const error_condition& __x, const error_condition& __y)  { return __y < __x; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<=(const error_condition& __x, const error_condition& __y) { return !(__y < __x); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>=(const error_condition& __x, const error_condition& __y) { return !(__x < __y); }
+
+class error_code {
+    int                   __v_;
+    const error_category* __cat_;
+    typedef int error_code::*__bool_type;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI error_code() : __v_(0), __cat_(&system_category()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI error_code(int __v, const error_category& __c) : __v_(__v), __cat_(&__c) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(int __v, const error_category& __c) { __v_ = __v; __cat_ = &__c; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { __v_ = 0; __cat_ = &system_category(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int value() const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const error_category& category() const { return *__cat_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI error_condition default_error_condition() const { return __cat_->default_error_condition(__v_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message() const { return __cat_->message(__v_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const { return __v_ ? &error_code::__v_ : (__bool_type)0; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_code& __x, const error_code& __y) {
+    return __x.category() == __y.category() && __x.value() == __y.value();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_code& __x, const error_code& __y) { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<(const error_code& __x, const error_code& __y) {
+    return __x.category() < __y.category() || (__x.category() == __y.category() && __x.value() < __y.value());
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>(const error_code& __x, const error_code& __y)  { return __y < __x; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<=(const error_code& __x, const error_code& __y) { return !(__y < __x); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>=(const error_code& __x, const error_code& __y) { return !(__x < __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_code& __x, const error_condition& __y) {
+    return __x.category().equivalent(__x.value(), __y) || __y.category().equivalent(__x, __y.value());
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_condition& __x, const error_code& __y) { return __y == __x; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_code& __x, const error_condition& __y) { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_condition& __x, const error_code& __y) { return !(__x == __y); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_code      make_error_code(errc __e)      { return error_code(int(errc::enum_type(__e)), generic_category()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_condition make_error_condition(errc __e) { return error_condition(int(errc::enum_type(__e)), generic_category()); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_code& __x, errc __y)      { return __x == make_error_condition(__y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(errc __x, const error_code& __y)      { return __y == make_error_condition(__x); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_code& __x, errc __y)      { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(errc __x, const error_code& __y)      { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_condition& __x, errc __y) { return __x == make_error_condition(__y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(errc __x, const error_condition& __y) { return make_error_condition(__x) == __y; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_condition& __x, errc __y) { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(errc __x, const error_condition& __y) { return !(__x == __y); }
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const error_code& __ec) {
+    return __os << __ec.category().name() << ':' << __ec.value();
+}
+
+inline error_condition error_category::default_error_condition(int __ev) const {
+    return error_condition(__ev, *this);
+}
+inline bool error_category::equivalent(int __code, const error_condition& __cond) const {
+    return default_error_condition(__code) == __cond;
+}
+inline bool error_category::equivalent(const error_code& __code, int __cond) const {
+    return *this == __code.category() && __code.value() == __cond;
+}
+
+class system_error : public _CCW_STD::runtime_error {
+    error_code __ec_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI system_error(error_code __ec, const _CCW_STD::string& __what)
+        : _CCW_STD::runtime_error(__init(__ec, __what).c_str()), __ec_(__ec) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI system_error(error_code __ec, const char* __what)
+        : _CCW_STD::runtime_error(__init(__ec, _CCW_STD::string(__what)).c_str()), __ec_(__ec) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit system_error(error_code __ec)
+        : _CCW_STD::runtime_error(__ec.message().c_str()), __ec_(__ec) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI system_error(int __v, const error_category& __c, const _CCW_STD::string& __what)
+        : _CCW_STD::runtime_error(__init(error_code(__v, __c), __what).c_str()), __ec_(__v, __c) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI system_error(int __v, const error_category& __c, const char* __what)
+        : _CCW_STD::runtime_error(__init(error_code(__v, __c), _CCW_STD::string(__what)).c_str()), __ec_(__v, __c) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI system_error(int __v, const error_category& __c)
+        : _CCW_STD::runtime_error(error_code(__v, __c).message().c_str()), __ec_(__v, __c) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~system_error() _CCW_LIBCPP_NOEXCEPT {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const error_code& code() const _CCW_LIBCPP_NOEXCEPT { return __ec_; }
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI static _CCW_STD::string __init(const error_code& __ec, const _CCW_STD::string& __what) {
+        if (__what.empty()) return __ec.message();
+        return __what + ": " + __ec.message();
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(esys, system_error, system_error)
+
+#endif // _CCW_LIBCPP_SYSTEM_ERROR

@@ -1,0 +1,8 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"cstdarg_h"	"cxx03:<cstdarg> header compiles"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx03:va_arg"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx03:va_arg (multiple types)"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx11:va_copy"	"2011"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx03:va_end"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx03:va_list passed to another function"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"cstdarg_h"	"cxx03:va_start"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"

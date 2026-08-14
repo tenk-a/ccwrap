@@ -1,0 +1,9 @@
+// ccwrap vc forwarder for <ccomplex>. The header is C++11, was deprecated in C++17 and
+// removed in C++20; MSVC never shipped it. All it ever did was include <complex>, so
+// that is what it does here -- the name exists and behaves, without ccwrap pretending
+// the C <complex.h> types are available in C++ (MSVC has no _Complex).
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include <complex>

@@ -1,0 +1,150 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <spanstream> (C++23) for Open Watcom -- basic_spanbuf and the
+//  ispanstream / ospanstream / spanstream views over a fixed, caller-owned buffer
+//  (_CCW_STD::span), with no dynamic allocation. Classic C++03 body; char-only tower.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_SPANSTREAM
+#define _CCW_LIBCPP_SPANSTREAM
+#include "__config"
+#include "__fwd/spanstream.h"
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <span>
+#include <ios>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits>
+class basic_spanbuf : public basic_streambuf<_CharT, _Traits> {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+private:
+    _CCW_STD::span<_CharT>  __sp_;
+    ios_base::openmode __mode_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init_ptrs() {
+        if (__mode_ & ios_base::in)
+            this->setg(__sp_.data(), __sp_.data(), __sp_.data() + __sp_.size());
+        if (__mode_ & ios_base::out) {
+            this->setp(__sp_.data(), __sp_.data() + __sp_.size());
+            if (__mode_ & ios_base::ate)
+                this->pbump((int)__sp_.size());
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __seek_to(off_type __goff, off_type __poff) {
+        if (__mode_ & ios_base::in)
+            this->setg(__sp_.data(), __sp_.data() + __goff, __sp_.data() + __sp_.size());
+        if (__mode_ & ios_base::out) {
+            this->setp(__sp_.data(), __sp_.data() + __sp_.size());
+            this->pbump((int)__poff);
+        }
+    }
+    basic_spanbuf(const basic_spanbuf&);
+    basic_spanbuf& operator=(const basic_spanbuf&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf() : __mode_(ios_base::in | ios_base::out) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_spanbuf(_CCW_STD::span<_CharT> __s, ios_base::openmode __which = ios_base::in | ios_base::out)
+        : __sp_(__s), __mode_(__which) { __init_ptrs(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const {
+        if (__mode_ & ios_base::out) return _CCW_STD::span<_CharT>(this->pbase(), this->pptr());
+        return _CCW_STD::span<_CharT>(this->eback(), this->egptr());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sp_ = __s; __init_ptrs(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_spanbuf& __o) {
+        const _CCW_STD::span<_CharT> __s = __sp_;
+        const ios_base::openmode     __m = __mode_;
+        const off_type __goff = (__mode_ & ios_base::in)  ? (off_type)(this->gptr() - this->eback()) : (off_type)0;
+        const off_type __poff = (__mode_ & ios_base::out) ? (off_type)(this->pptr() - this->pbase()) : (off_type)0;
+        const off_type __ogoff = (__o.__mode_ & ios_base::in)  ? (off_type)(__o.gptr() - __o.eback()) : (off_type)0;
+        const off_type __opoff = (__o.__mode_ & ios_base::out) ? (off_type)(__o.pptr() - __o.pbase()) : (off_type)0;
+        __sp_ = __o.__sp_;  __mode_ = __o.__mode_;  __init_ptrs();  __seek_to(__ogoff, __opoff);
+        __o.__sp_ = __s;    __o.__mode_ = __m;      __o.__init_ptrs(); __o.__seek_to(__goff, __poff);
+    }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekoff(off_type __off, ios_base::seekdir __way,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        const bool __gi = (__which & ios_base::in)  && (__mode_ & ios_base::in);
+        const bool __pi = (__which & ios_base::out) && (__mode_ & ios_base::out);
+        if (!__gi && !__pi) return pos_type(-1);
+        if (__gi && __pi && __way == ios_base::cur) return pos_type(-1);   // no single base
+
+        const off_type __size = (off_type)__sp_.size();
+        off_type __base;
+        if      (__way == ios_base::beg) __base = 0;
+        else if (__way == ios_base::end) __base = __size;
+        else __base = __gi ? (off_type)(this->gptr() - this->eback())
+                           : (off_type)(this->pptr() - this->pbase());
+
+        const off_type __np = __base + __off;
+        if (__np < 0 || __np > __size) return pos_type(-1);
+
+        if (__gi) this->setg(__sp_.data(), __sp_.data() + __np, __sp_.data() + __size);
+        if (__pi) { this->setp(__sp_.data(), __sp_.data() + __size); this->pbump((int)__np); }
+        return pos_type(__np);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekpos(pos_type __pos,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        return seekoff((off_type)__pos, ios_base::beg, __which);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual basic_streambuf<_CharT, _Traits>*
+    setbuf(_CharT* __s, streamsize __n) {
+        this->span(_CCW_STD::span<_CharT>(__s, (_CCW_STD::size_t)__n));
+        return this;
+    }
+};
+
+template <class _CharT, class _Traits>
+class basic_ispanstream : public basic_istream<_CharT, _Traits> {
+    basic_spanbuf<_CharT, _Traits> __sb_;
+    basic_ispanstream(const basic_ispanstream&);
+    basic_ispanstream& operator=(const basic_ispanstream&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ispanstream(_CCW_STD::span<_CharT> __s, ios_base::openmode __which = ios_base::in)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_(__s, __which | ios_base::in) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_ispanstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ispanstream& __o) { __sb_.swap(__o.__sb_); }
+};
+
+template <class _CharT, class _Traits>
+class basic_ospanstream : public basic_ostream<_CharT, _Traits> {
+    basic_spanbuf<_CharT, _Traits> __sb_;
+    basic_ospanstream(const basic_ospanstream&);
+    basic_ospanstream& operator=(const basic_ospanstream&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ospanstream(_CCW_STD::span<_CharT> __s, ios_base::openmode __which = ios_base::out)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(__s, __which | ios_base::out) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_ospanstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ospanstream& __o) { __sb_.swap(__o.__sb_); }
+};
+
+template <class _CharT, class _Traits>
+class basic_spanstream : public basic_iostream<_CharT, _Traits> {
+    basic_spanbuf<_CharT, _Traits> __sb_;
+    basic_spanstream(const basic_spanstream&);
+    basic_spanstream& operator=(const basic_spanstream&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_spanstream(_CCW_STD::span<_CharT> __s, ios_base::openmode __which = ios_base::in | ios_base::out)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_(__s, __which) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_spanstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_spanstream& __o) { __sb_.swap(__o.__sb_); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SPANSTREAM

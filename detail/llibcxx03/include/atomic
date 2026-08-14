@@ -1,0 +1,374 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <atomic> for Open Watcom.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_ATOMIC
+#define _CCW_LIBCPP_ATOMIC
+#include "__config"
+#include <cstring>   // memcmp: compare_exchange compares value representations
+#include <cstddef>
+#include <cstdint>
+#include <climits>
+#include "__atomic/interlocked.h"
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct memory_order {
+    int __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI memory_order() : __v_(5) {}          // seq_cst
+    _CCW_LIBCPP_HIDE_FROM_ABI memory_order(int __v) : __v_(__v) {}
+    enum _E { relaxed = 0, consume = 1, acquire = 2, release = 3, acq_rel = 4, seq_cst = 5 };
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(memory_order __a, memory_order __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(memory_order __a, memory_order __b) { return __a.__v_ != __b.__v_; }
+
+static const memory_order memory_order_relaxed = memory_order(memory_order::relaxed);
+static const memory_order memory_order_consume = memory_order(memory_order::consume);
+static const memory_order memory_order_acquire = memory_order(memory_order::acquire);
+static const memory_order memory_order_release = memory_order(memory_order::release);
+static const memory_order memory_order_acq_rel = memory_order(memory_order::acq_rel);
+static const memory_order memory_order_seq_cst = memory_order(memory_order::seq_cst);
+
+template <class _Tp>
+struct atomic {
+    typedef _Tp value_type;
+    typedef _Tp difference_type;                 // meaningful for integral/pointer atomics
+    static const bool is_always_lock_free = false;
+
+    _Tp __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic() : __v_() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic(_Tp __d) : __v_(__d) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  load(memory_order = memory_order_seq_cst) const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void store(_Tp __d, memory_order = memory_order_seq_cst) { __v_ = __d; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  exchange(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ = __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __exp, _Tp __des, memory_order = memory_order_seq_cst) {
+        if (_CCW_STD::memcmp(&__v_, &__exp, sizeof(_Tp)) == 0) { __v_ = __des; return true; }
+        __exp = __v_; return false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __exp, _Tp __des, memory_order = memory_order_seq_cst) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __exp, _Tp __des, memory_order, memory_order) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __exp, _Tp __des, memory_order, memory_order) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return true; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI operator _Tp() const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator=(_Tp __d) { __v_ = __d; return __d; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_add(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ += __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_sub(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ -= __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++()    { return ++__v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++(int) { return __v_++; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--()    { return --__v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--(int) { return __v_--; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator+=(_Tp __d) { __v_ += __d; return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator-=(_Tp __d) { __v_ -= __d; return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_and(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ &= __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_or(_Tp __d,  memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ |= __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_xor(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; __v_ ^= __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator&=(_Tp __d) { __v_ &= __d; return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator|=(_Tp __d) { __v_ |= __d; return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator^=(_Tp __d) { __v_ ^= __d; return __v_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_max(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; if (__d > __o) __v_ = __d; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_min(_Tp __d, memory_order = memory_order_seq_cst) { _Tp __o = __v_; if (__d < __o) __v_ = __d; return __o; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait(_Tp __old, memory_order __o = memory_order_seq_cst) const {
+        for (;;) {
+            _Tp __cur = load(__o);
+            if (_CCW_STD::memcmp(&__cur, &__old, sizeof(_Tp)) != 0) return;
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_all() {}
+
+private:
+    atomic(const atomic&);            // non-copyable, like _CCW_STD::atomic
+    atomic& operator=(const atomic&);
+};
+
+#if defined(_CCW_ATOMIC_REAL)
+#  define _CCW_ATOMIC_INT_SPEC(_Tp)                                                                                     \
+template <> struct atomic<_Tp> {                                                                                        \
+    volatile long __v_;                                                                                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic() : __v_(0) {}                                                                         \
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic(_Tp __d) : __v_((long)__d) {}                                                          \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  load(memory_order = memory_order_seq_cst) const { return (_Tp)__v_; }                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI void store(_Tp __d, memory_order = memory_order_seq_cst) { __ccw_ilk_xchg((long volatile*)&__v_, (long)__d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  exchange(_Tp __d, memory_order = memory_order_seq_cst) { return (_Tp)__ccw_ilk_xchg((long volatile*)&__v_, (long)__d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __exp, _Tp __des, memory_order = memory_order_seq_cst) {     \
+        long __old = __ccw_ilk_cas((long volatile*)&__v_, (long)__des, (long)__exp);                       \
+        if (__old == (long)__exp) return true; __exp = (_Tp)__old; return false; }                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __exp, _Tp __des, memory_order = memory_order_seq_cst) { return compare_exchange_strong(__exp, __des); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __exp, _Tp __des, memory_order, memory_order) { return compare_exchange_strong(__exp, __des); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __exp, _Tp __des, memory_order, memory_order) { return compare_exchange_strong(__exp, __des); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return true; }                                                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI operator _Tp() const { return (_Tp)__v_; }                                                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator=(_Tp __d) { store(__d); return __d; }                                            \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_add(_Tp __d, memory_order = memory_order_seq_cst) { return (_Tp)__ccw_ilk_xadd((long volatile*)&__v_, (long)__d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_sub(_Tp __d, memory_order = memory_order_seq_cst) { return (_Tp)__ccw_ilk_xadd((long volatile*)&__v_, -(long)__d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_and(_Tp __d, memory_order = memory_order_seq_cst) { for (;;) { long __o = __v_, __n = __o & (long)__d; if (__ccw_ilk_cas((long volatile*)&__v_, __n, __o) == __o) return (_Tp)__o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_or(_Tp __d,  memory_order = memory_order_seq_cst) { for (;;) { long __o = __v_, __n = __o | (long)__d; if (__ccw_ilk_cas((long volatile*)&__v_, __n, __o) == __o) return (_Tp)__o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_xor(_Tp __d, memory_order = memory_order_seq_cst) { for (;;) { long __o = __v_, __n = __o ^ (long)__d; if (__ccw_ilk_cas((long volatile*)&__v_, __n, __o) == __o) return (_Tp)__o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator&=(_Tp __d) { return (_Tp)(fetch_and(__d) & __d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator|=(_Tp __d) { return (_Tp)(fetch_or(__d)  | __d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator^=(_Tp __d) { return (_Tp)(fetch_xor(__d) ^ __d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++()    { return (_Tp)__ccw_ilk_inc((long volatile*)&__v_); }              \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++(int) { return (_Tp)(__ccw_ilk_inc((long volatile*)&__v_) - 1); }        \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--()    { return (_Tp)__ccw_ilk_dec((long volatile*)&__v_); }              \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--(int) { return (_Tp)(__ccw_ilk_dec((long volatile*)&__v_) + 1); }        \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator+=(_Tp __d) { return (_Tp)(__ccw_ilk_xadd((long volatile*)&__v_, (long)__d) + (long)__d); }  \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator-=(_Tp __d) { return (_Tp)(__ccw_ilk_xadd((long volatile*)&__v_, -(long)__d) - (long)__d); } \
+    typedef _Tp value_type; typedef _Tp difference_type;                                                                \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_max(_Tp __d, memory_order = memory_order_seq_cst) { for (;;) { long __o = __v_; long __n = ((_Tp)__o > __d) ? __o : (long)__d; if (__ccw_ilk_cas((long volatile*)&__v_, __n, __o) == __o) return (_Tp)__o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_min(_Tp __d, memory_order = memory_order_seq_cst) { for (;;) { long __o = __v_; long __n = ((_Tp)__o < __d) ? __o : (long)__d; if (__ccw_ilk_cas((long volatile*)&__v_, __n, __o) == __o) return (_Tp)__o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait(_Tp __old, memory_order __mo = memory_order_seq_cst) const { while (load(__mo) == __old) {} } \
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() {}                                                                          \
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_all() {}                                                                          \
+    static const bool is_always_lock_free = true;                                                                       \
+private:                                                                                                                \
+    atomic(const atomic&); atomic& operator=(const atomic&);                                                            \
+};
+_CCW_ATOMIC_INT_SPEC(int)
+_CCW_ATOMIC_INT_SPEC(unsigned int)
+_CCW_ATOMIC_INT_SPEC(long)
+_CCW_ATOMIC_INT_SPEC(unsigned long)
+#  undef _CCW_ATOMIC_INT_SPEC
+#endif // _CCW_ATOMIC_REAL
+
+template <class _Tp>
+struct atomic<_Tp*> {
+    typedef _Tp* value_type;
+    typedef ptrdiff_t difference_type;
+#if defined(_CCW_ATOMIC_REAL)
+    static const bool is_always_lock_free = true;
+#else
+    static const bool is_always_lock_free = false;
+#endif
+    _Tp* __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic(_Tp* __d) : __v_(__d) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* load(memory_order = memory_order_seq_cst) const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void store(_Tp* __d, memory_order = memory_order_seq_cst) {
+#if defined(_CCW_ATOMIC_REAL)
+        __ccw_ilk_pxchg((__ccw_ilk_iptr volatile*)&__v_, (__ccw_ilk_iptr)__d);
+#else
+        __v_ = __d;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* exchange(_Tp* __d, memory_order = memory_order_seq_cst) {
+#if defined(_CCW_ATOMIC_REAL)
+        return (_Tp*)__ccw_ilk_pxchg((__ccw_ilk_iptr volatile*)&__v_, (__ccw_ilk_iptr)__d);
+#else
+        _Tp* __o = __v_; __v_ = __d; return __o;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp*& __exp, _Tp* __des, memory_order = memory_order_seq_cst) {
+#if defined(_CCW_ATOMIC_REAL)
+        __ccw_ilk_iptr __old = __ccw_ilk_pcas((__ccw_ilk_iptr volatile*)&__v_, (__ccw_ilk_iptr)__des, (__ccw_ilk_iptr)__exp);
+        if (__old == (__ccw_ilk_iptr)__exp) return true; __exp = (_Tp*)__old; return false;
+#else
+        if (__v_ == __exp) { __v_ = __des; return true; } __exp = __v_; return false;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp*& __exp, _Tp* __des, memory_order = memory_order_seq_cst) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp*& __exp, _Tp* __des, memory_order, memory_order) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp*& __exp, _Tp* __des, memory_order, memory_order) {
+        return compare_exchange_strong(__exp, __des);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return true; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI operator _Tp*() const { return __v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator=(_Tp* __d) { store(__d); return __d; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* fetch_add(ptrdiff_t __d, memory_order = memory_order_seq_cst) {
+#if defined(_CCW_ATOMIC_REAL)
+        return (_Tp*)__ccw_ilk_pxadd((__ccw_ilk_iptr volatile*)&__v_, (__ccw_ilk_iptr)(__d * (ptrdiff_t)sizeof(_Tp)));
+#else
+        _Tp* __o = __v_; __v_ += __d; return __o;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* fetch_sub(ptrdiff_t __d, memory_order = memory_order_seq_cst) {
+#if defined(_CCW_ATOMIC_REAL)
+        return (_Tp*)__ccw_ilk_pxadd((__ccw_ilk_iptr volatile*)&__v_, -(__ccw_ilk_iptr)(__d * (ptrdiff_t)sizeof(_Tp)));
+#else
+        _Tp* __o = __v_; __v_ -= __d; return __o;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator++()    { return fetch_add(1) + 1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator++(int) { return fetch_add(1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator--()    { return fetch_sub(1) - 1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator--(int) { return fetch_sub(1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator+=(ptrdiff_t __d) { return fetch_add(__d) + __d; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp* operator-=(ptrdiff_t __d) { return fetch_sub(__d) - __d; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait(_Tp* __old, memory_order __mo = memory_order_seq_cst) const { while (load(__mo) == __old) {} }
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_all() {}
+private:
+    atomic(const atomic&);
+    atomic& operator=(const atomic&);
+};
+
+typedef atomic<bool>               atomic_bool;
+typedef atomic<char>               atomic_char;
+typedef atomic<signed char>        atomic_schar;
+typedef atomic<unsigned char>      atomic_uchar;
+typedef atomic<short>              atomic_short;
+typedef atomic<unsigned short>     atomic_ushort;
+typedef atomic<int>                atomic_int;
+typedef atomic<int>                atomic_signed_lock_free;
+typedef atomic<unsigned int>       atomic_unsigned_lock_free;
+typedef atomic<unsigned>           atomic_uint;
+typedef atomic<long>               atomic_long;
+typedef atomic<unsigned long>      atomic_ulong;
+typedef atomic<wchar_t>            atomic_wchar_t;
+#ifdef LLONG_MAX
+typedef atomic<long long>          atomic_llong;
+typedef atomic<unsigned long long> atomic_ullong;
+#endif
+typedef atomic<_CCW_STD::int8_t>        atomic_int8_t;
+typedef atomic<_CCW_STD::uint8_t>       atomic_uint8_t;
+typedef atomic<_CCW_STD::int16_t>       atomic_int16_t;
+typedef atomic<_CCW_STD::uint16_t>      atomic_uint16_t;
+typedef atomic<_CCW_STD::int32_t>       atomic_int32_t;
+typedef atomic<_CCW_STD::uint32_t>      atomic_uint32_t;
+typedef atomic<_CCW_STD::int64_t>       atomic_int64_t;
+typedef atomic<_CCW_STD::uint64_t>      atomic_uint64_t;
+typedef atomic<_CCW_STD::size_t>        atomic_size_t;
+typedef atomic<_CCW_STD::ptrdiff_t>     atomic_ptrdiff_t;
+typedef atomic<_CCW_STD::intptr_t>      atomic_intptr_t;
+typedef atomic<_CCW_STD::uintptr_t>     atomic_uintptr_t;
+typedef atomic<_CCW_STD::intmax_t>      atomic_intmax_t;
+typedef atomic<_CCW_STD::uintmax_t>     atomic_uintmax_t;
+typedef atomic<char16_t>           atomic_char16_t;
+typedef atomic<char32_t>           atomic_char32_t;
+#if defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T)
+typedef atomic<char8_t>            atomic_char8_t;
+#endif
+typedef atomic<_CCW_STD::int_least8_t>   atomic_int_least8_t;
+typedef atomic<_CCW_STD::uint_least8_t>  atomic_uint_least8_t;
+typedef atomic<_CCW_STD::int_least16_t>  atomic_int_least16_t;
+typedef atomic<_CCW_STD::uint_least16_t> atomic_uint_least16_t;
+typedef atomic<_CCW_STD::int_least32_t>  atomic_int_least32_t;
+typedef atomic<_CCW_STD::uint_least32_t> atomic_uint_least32_t;
+typedef atomic<_CCW_STD::int_least64_t>  atomic_int_least64_t;
+typedef atomic<_CCW_STD::uint_least64_t> atomic_uint_least64_t;
+typedef atomic<_CCW_STD::int_fast8_t>    atomic_int_fast8_t;
+typedef atomic<_CCW_STD::uint_fast8_t>   atomic_uint_fast8_t;
+typedef atomic<_CCW_STD::int_fast16_t>   atomic_int_fast16_t;
+typedef atomic<_CCW_STD::uint_fast16_t>  atomic_uint_fast16_t;
+typedef atomic<_CCW_STD::int_fast32_t>   atomic_int_fast32_t;
+typedef atomic<_CCW_STD::uint_fast32_t>  atomic_uint_fast32_t;
+typedef atomic<_CCW_STD::int_fast64_t>   atomic_int_fast64_t;
+typedef atomic<_CCW_STD::uint_fast64_t>  atomic_uint_fast64_t;
+
+#define ATOMIC_BOOL_LOCK_FREE     0
+#define ATOMIC_CHAR_LOCK_FREE     0
+#define ATOMIC_CHAR8_T_LOCK_FREE  0
+#define ATOMIC_CHAR16_T_LOCK_FREE 0
+#define ATOMIC_CHAR32_T_LOCK_FREE 0
+#define ATOMIC_WCHAR_T_LOCK_FREE  0
+#define ATOMIC_SHORT_LOCK_FREE    0
+#define ATOMIC_INT_LOCK_FREE      2
+#define ATOMIC_LONG_LOCK_FREE     2
+#define ATOMIC_LLONG_LOCK_FREE    0
+#define ATOMIC_POINTER_LOCK_FREE  2
+#define ATOMIC_VAR_INIT(__v)      { __v }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp kill_dependency(_Tp __y) { return __y; }
+
+struct atomic_flag {
+#if defined(_CCW_ATOMIC_REAL)
+    volatile long __f_;
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic_flag() : __f_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool test_and_set(memory_order = memory_order_seq_cst) { return __ccw_ilk_xchg((long volatile*)&__f_, 1) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear(memory_order = memory_order_seq_cst) { __ccw_ilk_xchg((long volatile*)&__f_, 0); }
+#else
+    bool __f_;
+    _CCW_LIBCPP_HIDE_FROM_ABI atomic_flag() : __f_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool test_and_set(memory_order = memory_order_seq_cst) { bool __o = __f_; __f_ = true; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear(memory_order = memory_order_seq_cst) { __f_ = false; }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI bool test(memory_order = memory_order_seq_cst) const { return __f_ != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait(bool __old, memory_order = memory_order_seq_cst) const { while ((__f_ != 0) == __old) {} }
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void notify_all() {}
+private:
+    atomic_flag(const atomic_flag&);
+    atomic_flag& operator=(const atomic_flag&);
+};
+
+#define ATOMIC_FLAG_INIT { 0 }
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#include "__atomic/atomic_ref.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool atomic_flag_test_and_set(atomic_flag* __f) { return __f->test_and_set(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool atomic_flag_test_and_set_explicit(atomic_flag* __f, memory_order __o) { return __f->test_and_set(__o); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_clear(atomic_flag* __f) { __f->clear(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_clear_explicit(atomic_flag* __f, memory_order __o) { __f->clear(__o); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool atomic_flag_test(const atomic_flag* __f) { return __f->test(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool atomic_flag_test_explicit(const atomic_flag* __f, memory_order __o) { return __f->test(__o); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_wait(const atomic_flag* __f, bool __old) { __f->wait(__old); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_wait_explicit(const atomic_flag* __f, bool __old, memory_order __o) { __f->wait(__old, __o); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_notify_one(atomic_flag* __f) { __f->notify_one(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_flag_notify_all(atomic_flag* __f) { __f->notify_all(); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_load(const atomic<_Tp>* __a) { return __a->load(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_load_explicit(const atomic<_Tp>* __a, memory_order __o) { return __a->load(__o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void  atomic_store(atomic<_Tp>* __a, _Tp __d) { __a->store(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void  atomic_store_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { __a->store(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_exchange(atomic<_Tp>* __a, _Tp __d) { return __a->exchange(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_exchange_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->exchange(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool  atomic_compare_exchange_strong(atomic<_Tp>* __a, _Tp* __e, _Tp __d) { return __a->compare_exchange_strong(*__e, __d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool  atomic_compare_exchange_weak(atomic<_Tp>* __a, _Tp* __e, _Tp __d)   { return __a->compare_exchange_weak(*__e, __d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_add(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_add(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_sub(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_sub(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_and(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_and(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_or(atomic<_Tp>* __a, _Tp __d)  { return __a->fetch_or(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_xor(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_xor(__d); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool  atomic_compare_exchange_strong_explicit(atomic<_Tp>* __a, _Tp* __e, _Tp __d, memory_order __s, memory_order) { return __a->compare_exchange_strong(*__e, __d, __s); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool  atomic_compare_exchange_weak_explicit(atomic<_Tp>* __a, _Tp* __e, _Tp __d, memory_order __s, memory_order)   { return __a->compare_exchange_weak(*__e, __d, __s); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_add_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_add(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_sub_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_sub(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_and_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_and(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_or_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o)  { return __a->fetch_or(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp   atomic_fetch_xor_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_xor(__d, __o); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void atomic_wait(const atomic<_Tp>* __a, _Tp __old) { __a->wait(__old); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void atomic_wait_explicit(const atomic<_Tp>* __a, _Tp __old, memory_order __o) { __a->wait(__old, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void atomic_notify_one(atomic<_Tp>* __a) { __a->notify_one(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void atomic_notify_all(atomic<_Tp>* __a) { __a->notify_all(); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp atomic_fetch_max(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_max(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp atomic_fetch_min(atomic<_Tp>* __a, _Tp __d) { return __a->fetch_min(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp atomic_fetch_max_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_max(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp atomic_fetch_min_explicit(atomic<_Tp>* __a, _Tp __d, memory_order __o) { return __a->fetch_min(__d, __o); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* atomic_fetch_add(atomic<_Tp*>* __a, ptrdiff_t __d) { return __a->fetch_add(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* atomic_fetch_sub(atomic<_Tp*>* __a, ptrdiff_t __d) { return __a->fetch_sub(__d); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __a, ptrdiff_t __d, memory_order __o) { return __a->fetch_add(__d, __o); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* atomic_fetch_sub_explicit(atomic<_Tp*>* __a, ptrdiff_t __d, memory_order __o) { return __a->fetch_sub(__d, __o); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool  atomic_is_lock_free(const atomic<_Tp>* __a) { return __a->is_lock_free(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void  atomic_init(atomic<_Tp>* __a, _Tp __d) { __a->store(__d); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_thread_fence(memory_order) {}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void atomic_signal_fence(memory_order) {}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_ATOMIC

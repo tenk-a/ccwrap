@@ -1,1 +1,0 @@
-// Dummy ratio.hxx 

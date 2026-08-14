@@ -1,0 +1,2 @@
+// ccwrap <istream>
+#include "../std/istream"

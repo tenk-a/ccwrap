@@ -1,0 +1,6 @@
+// ccwrap <ciso646>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include <iso646.h>

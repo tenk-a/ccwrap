@@ -1,0 +1,8 @@
+// ccwrap <functional>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <functional>
+
+#include <../../detail/cxx/functional.hpp>

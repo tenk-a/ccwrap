@@ -1,0 +1,21 @@
+// ccwrap vc forwarder for <locale>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(locale)
+
+#if defined(__cplusplus) && _MSC_VER < 1700
+namespace std {
+template <class _CharT>
+inline bool isblank(_CharT __c, const locale& __loc) {
+    const ctype<_CharT>& __ct = use_facet<ctype<_CharT> >(__loc);
+    if (!__ct.is(ctype_base::space, __c)) return false;
+    return __c != __ct.widen('\n') && __c != __ct.widen('\v')
+        && __c != __ct.widen('\f') && __c != __ct.widen('\r');
+}
+}
+#endif

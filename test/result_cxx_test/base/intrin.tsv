@@ -1,0 +1,5 @@
+"suite"	"pass"	"status"	"note"
+"intrin"	"cxx03:bitscan"	"tested"	""
+"intrin"	"cxx03:byteswap and misc"	"tested"	""
+"intrin"	"cxx03:gcc builtins"	"tested"	""
+"intrin"	"cxx03:interlocked"	"tested"	""

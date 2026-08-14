@@ -1,0 +1,9 @@
+// ccwrap <system_error>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <system_error>
+#endif
+#include <../../detail/cxx/system_error.hpp>

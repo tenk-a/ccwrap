@@ -1,0 +1,2 @@
+// ccwrap <ciso646>
+#include "../std/ciso646"

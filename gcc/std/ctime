@@ -1,0 +1,30 @@
+// ccwrap <ctime>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <ctime>
+
+#if defined(__MINGW32__) && defined(__cplusplus)
+#include <time.h>
+namespace _CCW_STD17 {
+    using ::timespec;
+    using ::timespec_get;
+}
+#endif // __MINGW32__ && __cplusplus
+
+#if defined(__MINGW32__) && defined(__cplusplus) && defined(_CCW_C_CONFORM)
+#include <string.h>
+inline char* __ccw_fix_asc_cxx(char* __s) {
+    if (__s != 0 && ::strlen(__s) >= 9 && __s[8] == '0') __s[8] = ' ';
+    return __s;
+}
+inline char* __ccw_asctime_cxx(const ::tm* __t)   { return __ccw_fix_asc_cxx(asctime(__t)); }
+inline char* __ccw_ctime_cxx(const ::time_t* __t) { return __ccw_fix_asc_cxx(ctime(__t)); }
+namespace std {
+    using ::__ccw_asctime_cxx;
+    using ::__ccw_ctime_cxx;
+}
+#define asctime(t) __ccw_asctime_cxx(t)
+#define ctime(t)   __ccw_ctime_cxx(t)
+#endif // __MINGW32__ && __cplusplus && _CCW_C_CONFORM

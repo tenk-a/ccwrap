@@ -1,0 +1,7 @@
+// ccwrap watcom forwarder: pull the genuine C++ <version> from detail/llibcxx03/include so that
+// putting only watcom/ on the include path overrides Open Watcom's native header.
+#pragma once
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_STL_HEADER_PATH(version)
+
+#include <../../detail/c/version_macros.h>

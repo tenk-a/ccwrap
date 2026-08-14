@@ -1,0 +1,6 @@
+// ccwrap <cstdalign>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include <stdalign.h>

@@ -1,0 +1,8 @@
+// ccwrap vc/ccwstd: <csignal> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CSIGNAL_
+#define _CCW_CCWSTD_CSIGNAL_
+#include "../std/csignal"
+namespace _CCW_STD {
+using ::std::sig_atomic_t; using ::std::signal; using ::std::raise;
+}
+#endif

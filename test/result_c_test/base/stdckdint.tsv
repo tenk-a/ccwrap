@@ -1,0 +1,8 @@
+"suite"	"pass"	"status"	"note"
+"stdckdint"	"c2023:__STDC_VERSION_STDCKDINT_H__"	"tested"	""
+"stdckdint"	"c2023:ckd_add unsigned-result type (subset)"	"tested"	""
+"stdckdint"	"c2023:ckd_add(result,a,b) no-overflow"	"tested"	""
+"stdckdint"	"c2023:ckd_add(result,a,b) overflow-reported"	"tested"	""
+"stdckdint"	"c2023:ckd_mul(result,a,b)"	"tested"	""
+"stdckdint"	"c2023:ckd_sub(result,a,b)"	"tested"	""
+"stdckdint"	"c2023:mixed operand width promotion"	"tested"	""

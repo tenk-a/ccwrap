@@ -1,0 +1,5 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"stdckdint"	"cxx26:__cpp_lib_stdckdint_h=202603L"	"2026"	"*"	""	""
+"stdckdint"	"cxx26:ckd_add"	"2026"	"*"	""	""
+"stdckdint"	"cxx26:ckd_mul"	"2026"	"*"	""	""
+"stdckdint"	"cxx26:ckd_sub"	"2026"	"*"	""	""

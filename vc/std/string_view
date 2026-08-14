@@ -1,0 +1,17 @@
+// ccwrap <string_view>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include _CCW_NATIVE_STL_HEADER_PATH(string_view)
+ namespace _ccw {
+     using std::basic_string_view; using std::string_view; using std::wstring_view;
+     using std::u16string_view; using std::u32string_view;
+ }
+#else
+ #include <../../detail/llibcxx03/include/string_view>
+#endif
+
+// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
+#include <iterator>

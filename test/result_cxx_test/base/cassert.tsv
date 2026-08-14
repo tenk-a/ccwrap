@@ -1,0 +1,7 @@
+"suite"	"pass"	"status"	"note"
+"cassert"	"cxx03:<cassert> header compiles"	"tested"	""
+"cassert"	"cxx03:NDEBUG disables assert"	"tested"	""
+"cassert"	"cxx03:assert"	"tested"	""
+"cassert"	"cxx03:assert is a macro"	"tested"	""
+"cassert"	"cxx26:assert variadic macro"	"skip"	""
+"cassert"	"cxx26:assert variadic macro with NDEBUG"	"skip"	""

@@ -33,16 +33,15 @@ etc/ フォルダにあるのは
 
   ccwrap_header.h
 
-がincludeされるように指定する。 (ow:-fi=  dmc:-HI  bc55:無し)
+がincludeされるように指定する。 (dmc:-HI  bc55:無し)
 
 - 次に ccwrap/etc/??/ ディレクトリを、他より先に検索されるように include パス設定する。
-(ow:-i=  dmc:-I   bc55:-I)  
+(dmc:-I   bc55:-I)  
 標準ライブラリをフックして定義を追加している。  
 ので、必ず標準ライブラリを include するようにすれば、暗黙のinclude を指定しなくても ok.
 ※ bc55 では暗黙のincludeが行えないため。
 
 例えば X:\ccwrap があるとして、
 
-- wcl386 -cc++ -xs -xr -bcl=nt -I=X:\ccwrap\etc\ow -fi=ccwrap_header.h smp.cpp
 - dmc -IX:\ccwrap\etc\dmc -Hlccwrap_header.h smp.cpp kernel32.lib gdi32.lib
 - bcc32 -IX:\ccwrap\etc\borland smp.cpp

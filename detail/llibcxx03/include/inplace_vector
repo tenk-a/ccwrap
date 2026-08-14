@@ -1,0 +1,178 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <inplace_vector> (C++26) for Open Watcom -- a dynamically
+//  resizable, fixed-capacity vector whose N elements live inline (no heap). Not in
+//  the libc++ reference snapshot (newer than it), so this is a from-scratch C++03
+//  subset following the standard's interface. Copy semantics only (no move);
+//  emplace via the fnctmpl 0..4-arity emulation.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_INPLACE_VECTOR
+#define _CCW_LIBCPP_INPLACE_VECTOR
+#include "__config"
+#include "__fnctmpl.h"
+#include "__type_traits/integral_dispatch.h"
+#include <new>
+#include <cstddef>
+#include <stdexcept>
+#include <iterator>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp, size_t _Np>
+class inplace_vector {
+    union __storage_t { char __b_[_Np ? _Np * sizeof(_Tp) : 1]; double __d_; void* __p_; long __l_; } __s_;
+    size_t __size_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       __data()       { return reinterpret_cast<_Tp*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* __data() const { return reinterpret_cast<const _Tp*>(__s_.__b_); }
+
+    template <class _II>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init_disp(_II __f, _II __l, __ccw_int_false_tag) { for (; __f != __l; ++__f) push_back(*__f); }
+    template <class _Sz, class _Vp>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init_disp(_Sz __n, const _Vp& __v, __ccw_int_true_tag) { for (_Sz __i = 0; __i < __n; ++__i) push_back((_Tp)__v); }
+public:
+    typedef _Tp              value_type;
+    typedef size_t           size_type;
+    typedef _CCW_STD::ptrdiff_t   difference_type;
+    typedef _Tp&             reference;
+    typedef const _Tp&       const_reference;
+    typedef _Tp*             pointer;
+    typedef const _Tp*       const_pointer;
+    typedef _Tp*             iterator;
+    typedef const _Tp*       const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>       reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector() : __size_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit inplace_vector(size_type __n) : __size_(0) { for (size_type __i = 0; __i < __n; ++__i) push_back(_Tp()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(size_type __n, const _Tp& __v) : __size_(0) { for (size_type __i = 0; __i < __n; ++__i) push_back(__v); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(_InputIt __f, _InputIt __l) : __size_(0) {
+        __init_disp(__f, __l, __ccw_dispatch_is_int<_InputIt>::_Tag());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(const inplace_vector& __o) : __size_(0) { for (size_type __i = 0; __i < __o.__size_; ++__i) push_back(__o.__data()[__i]); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~inplace_vector() { clear(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector& operator=(const inplace_vector& __o) {
+        if (this != &__o) { clear(); for (size_type __i = 0; __i < __o.__size_; ++__i) push_back(__o.__data()[__i]); }
+        return *this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool        empty() const { return __size_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type   size() const  { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static size_type max_size() { return _Np; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static size_type capacity() { return _Np; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reserve(size_type __n) { if (__n > _Np) _CCW_THROW(_CCW_STD::bad_alloc()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void shrink_to_fit() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       operator[](size_type __i)       { return __data()[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference operator[](size_type __i) const { return __data()[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       at(size_type __i)       { if (__i >= __size_) _CCW_THROW(_CCW_STD::out_of_range("inplace_vector::at")); return __data()[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference at(size_type __i) const { if (__i >= __size_) _CCW_THROW(_CCW_STD::out_of_range("inplace_vector::at")); return __data()[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       front()       { return __data()[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference front() const { return __data()[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       back()        { return __data()[__size_ - 1]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference back() const  { return __data()[__size_ - 1]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       data()       { return __data(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* data() const { return __data(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()        { return __data(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()          { return __data() + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const  { return __data(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const    { return __data() + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __data(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return __data() + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rbegin()        { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rend()          { return reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const  { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend() const    { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference push_back(const _Tp& __v) {
+        if (__size_ >= _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        ::new (static_cast<void*>(__data() + __size_)) _Tp(__v);
+        return __data()[__size_++];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer try_push_back(const _Tp& __v) {
+        if (__size_ >= _Np) return 0;
+        ::new (static_cast<void*>(__data() + __size_)) _Tp(__v);
+        return &__data()[__size_++];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference unchecked_push_back(const _Tp& __v) {
+        ::new (static_cast<void*>(__data() + __size_)) _Tp(__v);
+        return __data()[__size_++];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_back() {
+        if (__size_ >= _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        ::new (static_cast<void*>(__data() + __size_)) _Tp();
+        return __data()[__size_++];
+    }
+#if _CCW_NO_VARIADIC_TEMPLATES
+#  define _CCW_GEN_IPV_EMPLACE(N)                                                                     \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                \
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_back(_CCW_FNCTMPL_DECLARG(N)) {                           \
+        if (__size_ >= _Np) _CCW_THROW(_CCW_STD::bad_alloc());                                                   \
+        ::new (static_cast<void*>(__data() + __size_)) _Tp(_CCW_FNCTMPL_FNCARG(N));                   \
+        return __data()[__size_++]; }
+    _CCW_GEN_IPV_EMPLACE(1) _CCW_GEN_IPV_EMPLACE(2) _CCW_GEN_IPV_EMPLACE(3) _CCW_GEN_IPV_EMPLACE(4)
+#  undef _CCW_GEN_IPV_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_back(_Args&&... __a) {
+        if (__size_ >= _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        ::new (static_cast<void*>(__data() + __size_)) _Tp(static_cast<_Args&&>(__a)...);
+        return __data()[__size_++];
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void pop_back() { __data()[--__size_].~_Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { while (__size_) pop_back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void resize(size_type __n) {
+        if (__n > _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        while (__size_ > __n) pop_back();
+        while (__size_ < __n) push_back(_Tp());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void resize(size_type __n, const _Tp& __v) {
+        if (__n > _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        while (__size_ > __n) pop_back();
+        while (__size_ < __n) push_back(__v);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __pos, const _Tp& __v) {
+        if (__size_ >= _Np) _CCW_THROW(_CCW_STD::bad_alloc());
+        size_type __i = (size_type)(__pos - __data());
+        if (__i == __size_) { push_back(__v); return __data() + __i; }
+        push_back(__data()[__size_ - 1]);                       // extend by duplicating the last element
+        for (size_type __k = __size_ - 1; __k > __i; --__k) __data()[__k] = __data()[__k - 1];
+        __data()[__i] = __v;
+        return __data() + __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __pos) {
+        size_type __i = (size_type)(__pos - __data());
+        for (size_type __k = __i; __k + 1 < __size_; ++__k) __data()[__k] = __data()[__k + 1];
+        pop_back();
+        return __data() + __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __f, const_iterator __l) {
+        size_type __i = (size_type)(__f - __data()), __j = (size_type)(__l - __data()), __cnt = __j - __i;
+        for (size_type __k = __j; __k < __size_; ++__k) __data()[__k - __cnt] = __data()[__k];
+        for (size_type __c = 0; __c < __cnt; ++__c) pop_back();
+        return __data() + __i;
+    }
+    template <class _A1, class _A2>
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_A1 __a, _A2 __b) { clear(); __init_disp(__a, __b, __ccw_dispatch_is_int<_A1>::_Tag()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(inplace_vector& __o) { inplace_vector __t(*this); *this = __o; __o = __t; }
+};
+
+template <class _Tp, size_t _Np>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const inplace_vector<_Tp, _Np>& __x, const inplace_vector<_Tp, _Np>& __y) {
+    if (__x.size() != __y.size()) return false;
+    for (size_t __i = 0; __i < __x.size(); ++__i) if (!(__x[__i] == __y[__i])) return false;
+    return true;
+}
+template <class _Tp, size_t _Np>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const inplace_vector<_Tp, _Np>& __x, const inplace_vector<_Tp, _Np>& __y) { return !(__x == __y); }
+#if !defined(__WATCOMC__)
+template <class _Tp, size_t _Np>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(inplace_vector<_Tp, _Np>& __x, inplace_vector<_Tp, _Np>& __y) { __x.swap(__y); }
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_INPLACE_VECTOR

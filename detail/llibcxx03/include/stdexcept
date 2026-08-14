@@ -1,0 +1,100 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <stdexcept> for Open Watcom. Deliberately does NOT depend
+//  on <string>: each exception owns a fixed inline message buffer and takes a
+//  `const char*`. This breaks the classic <string> <-> <stdexcept> cycle (string
+//  needs out_of_range for at(); stdexcept would need string for its message), so
+//  <string> can include <stdexcept> freely.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STDEXCEPT
+#define _CCW_LIBCPP_STDEXCEPT
+#include "__config"
+#include <exception>
+#include <cstddef>
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class __ccw_msg_exception : public exception {
+    char __buf_[256];
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set(const char* __s) {
+        _CCW_STD::size_t __i = 0;
+        if (__s) { for (; __s[__i] && __i < sizeof(__buf_) - 1; ++__i) __buf_[__i] = __s[__i]; }
+        __buf_[__i] = '\0';
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __ccw_msg_exception(const char* __s) { __set(__s); }
+    virtual ~__ccw_msg_exception() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return __buf_; }
+};
+
+class logic_error : public __ccw_msg_exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit logic_error(const char* __s) : __ccw_msg_exception(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit logic_error(const _Str& __s) : __ccw_msg_exception(__s.c_str()) {}
+    virtual ~logic_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+class runtime_error : public __ccw_msg_exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit runtime_error(const char* __s) : __ccw_msg_exception(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit runtime_error(const _Str& __s) : __ccw_msg_exception(__s.c_str()) {}
+    virtual ~runtime_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+
+class domain_error : public logic_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit domain_error(const char* __s) : logic_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit domain_error(const _Str& __s) : logic_error(__s.c_str()) {}
+    virtual ~domain_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+class invalid_argument : public logic_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit invalid_argument(const char* __s) : logic_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit invalid_argument(const _Str& __s) : logic_error(__s.c_str()) {}
+    virtual ~invalid_argument() _CCW_LIBCPP_NOEXCEPT {}
+};
+class length_error : public logic_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit length_error(const char* __s) : logic_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit length_error(const _Str& __s) : logic_error(__s.c_str()) {}
+    virtual ~length_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+class out_of_range : public logic_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit out_of_range(const char* __s) : logic_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit out_of_range(const _Str& __s) : logic_error(__s.c_str()) {}
+    virtual ~out_of_range() _CCW_LIBCPP_NOEXCEPT {}
+};
+
+class range_error : public runtime_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit range_error(const char* __s) : runtime_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit range_error(const _Str& __s) : runtime_error(__s.c_str()) {}
+    virtual ~range_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+class overflow_error : public runtime_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit overflow_error(const char* __s) : runtime_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit overflow_error(const _Str& __s) : runtime_error(__s.c_str()) {}
+    virtual ~overflow_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+class underflow_error : public runtime_error {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit underflow_error(const char* __s) : runtime_error(__s) {}
+    template <class _Str> _CCW_LIBCPP_HIDE_FROM_ABI explicit underflow_error(const _Str& __s) : runtime_error(__s.c_str()) {}
+    virtual ~underflow_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(elog, logic_error, logic_error)
+_CCW_EH_ANCHOR(erun, runtime_error, runtime_error)
+_CCW_EH_ANCHOR(edom, domain_error, domain_error)
+_CCW_EH_ANCHOR(einv, invalid_argument, invalid_argument)
+_CCW_EH_ANCHOR(elen, length_error, length_error)
+_CCW_EH_ANCHOR(eoor, out_of_range, out_of_range)
+_CCW_EH_ANCHOR(erng, range_error, range_error)
+_CCW_EH_ANCHOR(eovf, overflow_error, overflow_error)
+_CCW_EH_ANCHOR(eunf, underflow_error, underflow_error)
+
+#endif // _CCW_LIBCPP_STDEXCEPT

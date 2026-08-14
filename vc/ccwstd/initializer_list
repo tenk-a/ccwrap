@@ -1,0 +1,14 @@
+// ccwrap vc/ccwstd: <initializer_list> wrapper + bridge (see ccwstd/cstddef).
+// std::initializer_list is one of the few library types the COMPILER itself builds, so it
+// can only live in std. llibcxx03 spells it _CCW_STD::initializer_list, hence the
+// using-declaration: the name is reachable as ccwstd::initializer_list and denotes the
+// very template a braced-init-list produces.
+#ifndef _CCW_CCWSTD_INITIALIZER_LIST_
+#define _CCW_CCWSTD_INITIALIZER_LIST_
+#include "../std/initializer_list"
+#if _MSC_VER >= 1800
+namespace _CCW_STD {
+using ::std::initializer_list;
+}
+#endif
+#endif

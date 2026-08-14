@@ -1,0 +1,17 @@
+// ccwrap <cuchar>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include <uchar.h>
+
+#if defined(__cplusplus) && _MSC_VER >= 1900
+namespace std {
+    using ::mbstate_t;
+    using ::size_t;
+    using ::mbrtoc16;
+    using ::c16rtomb;
+    using ::mbrtoc32;
+    using ::c32rtomb;
+}
+#endif

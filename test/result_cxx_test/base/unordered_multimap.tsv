@@ -1,0 +1,6 @@
+"suite"	"pass"	"status"	"note"
+"unordered_multimap"	"cxx11:unordered_multimap::const_pointer"	"tested"	""
+"unordered_multimap"	"cxx11:unordered_multimap::const_reference"	"tested"	""
+"unordered_multimap"	"cxx11:unordered_multimap::difference_type"	"tested"	""
+"unordered_multimap"	"cxx11:unordered_multimap::pointer"	"tested"	""
+"unordered_multimap"	"cxx11:unordered_multimap::reference"	"tested"	""

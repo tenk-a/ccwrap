@@ -1,0 +1,384 @@
+//  ccwrap llibcxx03: <future> for Open Watcom. promise<T> / future<T> /
+//  shared_future<T> over a heap shared state synchronized with the REAL
+//  <mutex> + <condition_variable> (so a producer thread can hand a value to a
+//  consumer thread). T must be default-constructible (the value is stored by
+//  value). async() is NOT provided (its return type needs decltype/result_of).
+//  packaged_task<R(Args)> IS provided (arity 0..2, non-void R): its signature gives
+//  R explicitly, so the callable is stored in a function<> and the result routed
+//  through a promise<R>. Exception propagation works through
+//  promise::set_exception(exception_ptr) -> get() rethrows it (the <exception> subset
+//  is enough; note it preserves what() but not the exact type for a caught
+//  _CCW_STD::exception). A promise abandoned without a value makes get() throw
+//  future_error(broken_promise). future_errc / launch / future_category /
+//  make_error_code and future_error::code() are provided.
+#ifndef _CCW_LIBCPP_FUTURE
+#define _CCW_LIBCPP_FUTURE
+#include "__config"
+#include "__memory/allocator_arg_t.h"
+#include "__utility/move.h"
+#include <mutex>
+#include <condition_variable>
+#include <stdexcept>
+#include <system_error>
+#include <exception>
+#include "__functional/function.h"   // packaged_task stores its callable in a function<>
+#include "__functional/bad_function_call.h"
+
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct future_status {
+    enum enum_type { ready = 0, timeout = 1, deferred = 2 };
+    enum_type __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status(enum_type __v = ready) : __v_(__v) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
+};
+static const future_status::enum_type future_ready    = future_status::ready;
+static const future_status::enum_type future_timeout  = future_status::timeout;
+static const future_status::enum_type future_deferred = future_status::deferred;
+
+struct launch {
+    enum enum_type { async = 1, deferred = 2 };
+    enum_type __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI launch(enum_type __v = async) : __v_(__v) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator|(launch __x, launch __y) { return launch(launch::enum_type(int(launch::enum_type(__x)) | int(launch::enum_type(__y)))); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator&(launch __x, launch __y) { return launch(launch::enum_type(int(launch::enum_type(__x)) & int(launch::enum_type(__y)))); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator^(launch __x, launch __y) { return launch(launch::enum_type(int(launch::enum_type(__x)) ^ int(launch::enum_type(__y)))); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator~(launch __x) { return launch(launch::enum_type(~int(launch::enum_type(__x)) & 3)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator|(launch::enum_type __x, launch::enum_type __y) { return launch(launch::enum_type(int(__x) | int(__y))); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator&(launch::enum_type __x, launch::enum_type __y) { return launch(launch::enum_type(int(__x) & int(__y))); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline launch operator^(launch::enum_type __x, launch::enum_type __y) { return launch(launch::enum_type(int(__x) ^ int(__y))); }
+
+struct future_errc {
+    enum enum_type {
+        broken_promise             = 1,
+        future_already_retrieved   = 2,
+        promise_already_satisfied  = 3,
+        no_state                   = 4
+    };
+    enum_type __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI future_errc(enum_type __v = broken_promise) : __v_(__v) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
+};
+
+template <> struct is_error_code_enum<future_errc>            { static const bool value = true; };
+template <> struct is_error_code_enum<future_errc::enum_type> { static const bool value = true; };
+
+class __future_category : public error_category {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const _CCW_LIBCPP_NOEXCEPT { return "future"; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message(int __ev) const {
+        switch (__ev) {
+        case future_errc::broken_promise:            return "broken promise";
+        case future_errc::future_already_retrieved:  return "future already retrieved";
+        case future_errc::promise_already_satisfied: return "promise already satisfied";
+        case future_errc::no_state:                  return "no state";
+        default:                                     return "unknown future error";
+        }
+    }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline const error_category& future_category() _CCW_LIBCPP_NOEXCEPT {
+    static __future_category __c; return __c;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_code      make_error_code(future_errc __e)      { return error_code(int(future_errc::enum_type(__e)), future_category()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_condition make_error_condition(future_errc __e) { return error_condition(int(future_errc::enum_type(__e)), future_category()); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_code& __x, future_errc __y)      { return __x == make_error_condition(__y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(future_errc __x, const error_code& __y)      { return __y == make_error_condition(__x); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const error_code& __x, future_errc __y)      { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(future_errc __x, const error_code& __y)      { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const error_condition& __x, future_errc __y) { return __x == make_error_condition(__y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(future_errc __x, const error_condition& __y) { return make_error_condition(__x) == __y; }
+
+class future_error : public _CCW_STD::logic_error {
+    error_code __ec_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI future_error() : _CCW_STD::logic_error("future_error"), __ec_(make_error_code(future_errc::broken_promise)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit future_error(const char* __w) : _CCW_STD::logic_error(__w), __ec_(make_error_code(future_errc::broken_promise)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit future_error(error_code __ec) : _CCW_STD::logic_error(__ec.message().c_str()), __ec_(__ec) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit future_error(future_errc __e) : _CCW_STD::logic_error(make_error_code(__e).message().c_str()), __ec_(make_error_code(__e)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI const error_code& code() const _CCW_LIBCPP_NOEXCEPT { return __ec_; }
+    virtual ~future_error() _CCW_LIBCPP_NOEXCEPT {}
+};
+
+template <class _Tp>
+struct __future_state {
+    mutex               __m_;
+    condition_variable  __cv_;
+    _Tp                 __value_;
+    exception_ptr       __eptr_;      // set via promise::set_exception; rethrown by get()
+    bool                __ready_;
+    bool                __broken_;
+    long                __refs_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __future_state() : __value_(), __ready_(false), __broken_(false), __refs_(1) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void __add() { lock_guard<mutex> __g(__m_); ++__refs_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __release() {
+        bool __del;
+        { lock_guard<mutex> __g(__m_); __del = (--__refs_ == 0); }
+        if (__del) delete this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set(const _Tp& __v) {
+        { lock_guard<mutex> __g(__m_); __value_ = __v; __ready_ = true; }
+        __cv_.notify_all();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set_exception(exception_ptr __e) {
+        { lock_guard<mutex> __g(__m_); if (!__ready_) { __eptr_ = __e; __ready_ = true; } }
+        __cv_.notify_all();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __break() {
+        { lock_guard<mutex> __g(__m_); if (!__ready_) { __broken_ = true; __ready_ = true; } }
+        __cv_.notify_all();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __wait() {
+        unique_lock<mutex> __lk(__m_);
+        while (!__ready_) __cv_.wait(__lk);
+    }
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status __wait_for(const chrono::duration<_Rep, _Period>& __rt) {
+        unique_lock<mutex> __lk(__m_);
+        if (__ready_) return future_status::ready;
+        __cv_.wait_for(__lk, __rt);
+        return __ready_ ? future_status::ready : future_status::timeout;
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status __wait_until(const chrono::time_point<_Clock, _Duration>& __tp) {
+        unique_lock<mutex> __lk(__m_);
+        if (__ready_) return future_status::ready;
+        __cv_.wait_until(__lk, __tp);
+        return __ready_ ? future_status::ready : future_status::timeout;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp __get() {
+        __wait();
+        if (__eptr_) rethrow_exception(__eptr_);
+        if (__broken_) _CCW_THROW(future_error(future_errc::broken_promise));
+        return __value_;
+    }
+};
+
+template <class _Tp> class promise;
+template <class _Tp> class shared_future;
+
+template <class _Tp>
+class future {
+    __future_state<_Tp>* __s_;
+    friend class promise<_Tp>;
+    friend class shared_future<_Tp>;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit future(__future_state<_Tp>* __s) : __s_(__s) {}   // takes an already-owned ref
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI future() : __s_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI future(const future& __o) : __s_(__o.__s_) { if (__s_) __s_->__add(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI future& operator=(const future& __o) {
+        if (__s_ != __o.__s_) { if (__o.__s_) __o.__s_->__add(); if (__s_) __s_->__release(); __s_ = __o.__s_; }
+        return *this;
+    }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI future(_CCW_RV_REF(future) __r) : __s_(0) {
+        future& __o = _CCW_MOVED_OBJ(__r);
+        __s_ = __o.__s_; __o.__s_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI future& operator=(_CCW_RV_REF(future) __r) {
+        future& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { if (__s_) __s_->__release(); __s_ = __o.__s_; __o.__s_ = 0; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ~future() { if (__s_) __s_->__release(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  get()   { _Tp __v = __s_->__get(); __s_->__release(); __s_ = 0; return __v; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait() const { __s_->__wait(); }
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status wait_for(const chrono::duration<_Rep, _Period>& __rt) const {
+        return __s_->__wait_for(__rt);
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status wait_until(const chrono::time_point<_Clock, _Duration>& __tp) const {
+        return __s_->__wait_until(__tp);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool valid() const { return __s_ != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future<_Tp> share();
+};
+
+template <class _Tp>
+class shared_future {
+    __future_state<_Tp>* __s_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future() : __s_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future(const shared_future& __o) : __s_(__o.__s_) { if (__s_) __s_->__add(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future(future<_Tp>& __f) : __s_(__f.__s_) { __f.__s_ = 0; }   // transfer
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future& operator=(const shared_future& __o) {
+        if (__s_ != __o.__s_) { if (__o.__s_) __o.__s_->__add(); if (__s_) __s_->__release(); __s_ = __o.__s_; }
+        return *this;
+    }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future(_CCW_RV_REF(shared_future) __r) : __s_(0) {
+        shared_future& __o = _CCW_MOVED_OBJ(__r);
+        __s_ = __o.__s_; __o.__s_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future(_CCW_RV_REF(future<_Tp>) __r) : __s_(0) {
+        future<_Tp>& __f = _CCW_MOVED_OBJ(__r);
+        __s_ = __f.__s_; __f.__s_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI shared_future& operator=(_CCW_RV_REF(shared_future) __r) {
+        shared_future& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { if (__s_) __s_->__release(); __s_ = __o.__s_; __o.__s_ = 0; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ~shared_future() { if (__s_) __s_->__release(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  get()   const { return __s_->__get(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait()  const { __s_->__wait(); }
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status wait_for(const chrono::duration<_Rep, _Period>& __rt) const {
+        return __s_->__wait_for(__rt);
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI future_status wait_until(const chrono::time_point<_Clock, _Duration>& __tp) const {
+        return __s_->__wait_until(__tp);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool valid() const { return __s_ != 0; }
+};
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI shared_future<_Tp> future<_Tp>::share() { shared_future<_Tp> __sf(*this); return __sf; }
+
+template <class _Tp>
+class promise {
+    __future_state<_Tp>* __s_;
+    bool __future_taken_;
+    promise(const promise&);
+    promise& operator=(const promise&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI promise() : __s_(new __future_state<_Tp>()), __future_taken_(false) {}
+    template <class _Alloc>
+    _CCW_LIBCPP_HIDE_FROM_ABI promise(allocator_arg_t, const _Alloc&)
+        : __s_(new __future_state<_Tp>()), __future_taken_(false) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI promise(_CCW_RV_REF(promise) __r) : __s_(0), __future_taken_(false) {
+        promise& __o = _CCW_MOVED_OBJ(__r);
+        __s_ = __o.__s_; __future_taken_ = __o.__future_taken_;
+        __o.__s_ = 0; __o.__future_taken_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI promise& operator=(_CCW_RV_REF(promise) __r) {
+        promise& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            if (__s_) { __s_->__break(); __s_->__release(); }
+            __s_ = __o.__s_; __future_taken_ = __o.__future_taken_;
+            __o.__s_ = 0; __o.__future_taken_ = false;
+        }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ~promise() { if (__s_) { __s_->__break(); __s_->__release(); } }
+    _CCW_LIBCPP_HIDE_FROM_ABI future<_Tp> get_future() {
+        if (!__s_) _CCW_THROW(future_error(future_errc::no_state));
+        if (__future_taken_) _CCW_THROW(future_error(future_errc::future_already_retrieved));
+        __future_taken_ = true; __s_->__add(); return future<_Tp>(__s_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void set_value(const _Tp& __v) { __s_->__set(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void set_exception(exception_ptr __e) { __s_->__set_exception(__e); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(promise& __o) {
+        __future_state<_Tp>* __t = __s_; __s_ = __o.__s_; __o.__s_ = __t;
+        bool __tb = __future_taken_; __future_taken_ = __o.__future_taken_; __o.__future_taken_ = __tb;
+    }
+};
+
+template <class _Sig> class packaged_task;   // primary: only the arity specializations exist
+
+template <class _Rp>
+class packaged_task<_Rp()> {
+    function<_Rp()> __f_;
+    promise<_Rp>    __p_;
+    bool            __valid_;
+    packaged_task(const packaged_task&);
+    packaged_task& operator=(const packaged_task&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task() : __valid_(false) {}
+    template <class _Fp> _CCW_LIBCPP_HIDE_FROM_ABI explicit packaged_task(_Fp __f) : __f_(__f), __valid_(true) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task(_CCW_RV_REF(packaged_task) __r) : __valid_(false) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task& operator=(_CCW_RV_REF(packaged_task) __r) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI bool valid() const { return __valid_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI future<_Rp> get_future() { return __p_.get_future(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator()() {
+        _CCW_TRY { __p_.set_value(__f_()); }
+        _CCW_CATCH_ALL { __p_.set_exception(current_exception()); }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { promise<_Rp> __np; __p_.swap(__np); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(packaged_task& __o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); bool __t = __valid_; __valid_ = __o.__valid_; __o.__valid_ = __t; }
+};
+
+template <class _Rp, class _A0>
+class packaged_task<_Rp(_A0)> {
+    function<_Rp(_A0)> __f_;
+    promise<_Rp>       __p_;
+    bool               __valid_;
+    packaged_task(const packaged_task&);
+    packaged_task& operator=(const packaged_task&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task() : __valid_(false) {}
+    template <class _Fp> _CCW_LIBCPP_HIDE_FROM_ABI explicit packaged_task(_Fp __f) : __f_(__f), __valid_(true) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task(_CCW_RV_REF(packaged_task) __r) : __valid_(false) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task& operator=(_CCW_RV_REF(packaged_task) __r) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI bool valid() const { return __valid_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI future<_Rp> get_future() { return __p_.get_future(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator()(_A0 __a0) {
+        _CCW_TRY { __p_.set_value(__f_(__a0)); }
+        _CCW_CATCH_ALL { __p_.set_exception(current_exception()); }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { promise<_Rp> __np; __p_.swap(__np); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(packaged_task& __o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); bool __t = __valid_; __valid_ = __o.__valid_; __o.__valid_ = __t; }
+};
+
+template <class _Rp, class _A0, class _A1>
+class packaged_task<_Rp(_A0, _A1)> {
+    function<_Rp(_A0, _A1)> __f_;
+    promise<_Rp>            __p_;
+    bool                    __valid_;
+    packaged_task(const packaged_task&);
+    packaged_task& operator=(const packaged_task&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task() : __valid_(false) {}
+    template <class _Fp> _CCW_LIBCPP_HIDE_FROM_ABI explicit packaged_task(_Fp __f) : __f_(__f), __valid_(true) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task(_CCW_RV_REF(packaged_task) __r) : __valid_(false) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI packaged_task& operator=(_CCW_RV_REF(packaged_task) __r) {
+        packaged_task& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); __valid_ = __o.__valid_; __o.__valid_ = false; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI bool valid() const { return __valid_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI future<_Rp> get_future() { return __p_.get_future(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator()(_A0 __a0, _A1 __a1) {
+        _CCW_TRY { __p_.set_value(__f_(__a0, __a1)); }
+        _CCW_CATCH_ALL { __p_.set_exception(current_exception()); }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { promise<_Rp> __np; __p_.swap(__np); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(packaged_task& __o) { __f_.swap(__o.__f_); __p_.swap(__o.__p_); bool __t = __valid_; __valid_ = __o.__valid_; __o.__valid_ = __t; }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(efut, future_error, future_error)
+
+#endif // _CCW_LIBCPP_FUTURE

@@ -1,0 +1,438 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: a minimal separate-chaining hash table backing the unordered
+//  containers for Open Watcom. Buckets are a vector<node*>; each bucket is a
+//  singly-linked list. A KeyOfValue functor lets unordered_set store the value and
+//  unordered_map store a pair keyed on .first (mirrors __tree). Forward iteration
+//  walks bucket to bucket. Classic C++03 body.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP___HASH_TABLE
+#define _CCW_LIBCPP___HASH_TABLE
+#include "__config"
+#include "__utility/move.h"
+#include "__iterator/iterator_traits.h"
+#include "__utility/pair.h"
+#include "__memory/allocator.h"
+#include <vector>
+#include <cstddef>
+#include <new>
+#if _CCW_HAS_REAL_RVALUE_REF
+# define _CCW_HT_FWD(x)  ::_ccw::move(x)
+#else
+# define _CCW_HT_FWD(x)  (x)
+#endif
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Value>
+struct __hash_node {
+    __hash_node* __next_;
+    _Value       __value_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_node(const _Value& __v) : __next_(0), __value_(__v) {}
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_node(_Value&& __v) : __next_(0), __value_(_ccw::move(__v)) {}
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_node(_CCW_RV_REF(_Value) __v) : __next_(0), __value_(__v) {}
+#endif // _CCW_HAS_REAL_RVALUE_REF
+};
+
+template <class _Value, class _Ref, class _Ptr>
+class __hash_iterator {
+    typedef __hash_node<_Value> __node;
+    __node*  __nd_;
+    __node** __bkt_;
+    __node** __bend_;
+public:
+    typedef forward_iterator_tag iterator_category;
+    typedef _Value               value_type;
+    typedef _CCW_STD::ptrdiff_t       difference_type;
+    typedef _Ptr                 pointer;
+    typedef _Ref                 reference;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_iterator() : __nd_(0), __bkt_(0), __bend_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_iterator(__node* __n, __node** __b, __node** __e) : __nd_(__n), __bkt_(__b), __bend_(__e) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_iterator(const __hash_iterator<_Value, _Value&, _Value*>& __o)
+        : __nd_(__o.__node_()), __bkt_(__o.__bkt()), __bend_(__o.__bend()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node*  __node_() const { return __nd_; }   // name differs from the __node type
+    _CCW_LIBCPP_HIDE_FROM_ABI __node** __bkt()  const { return __bkt_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __node** __bend() const { return __bend_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator*()  const { return __nd_->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer   operator->() const { return &__nd_->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_iterator& operator++() {
+        if (__nd_->__next_) { __nd_ = __nd_->__next_; }
+        else { do { ++__bkt_; } while (__bkt_ != __bend_ && *__bkt_ == 0); __nd_ = (__bkt_ != __bend_) ? *__bkt_ : 0; }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_iterator operator++(int) { __hash_iterator __t = *this; ++*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const __hash_iterator& __o) const { return __nd_ == __o.__nd_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const __hash_iterator& __o) const { return __nd_ != __o.__nd_; }
+};
+
+template <class _Value, class _Ref, class _Ptr>
+class __hash_local_iterator {
+    typedef __hash_node<_Value> __node;
+    __node* __nd_;
+public:
+    typedef forward_iterator_tag iterator_category;
+    typedef _Value               value_type;
+    typedef _CCW_STD::ptrdiff_t       difference_type;
+    typedef _Ptr                 pointer;
+    typedef _Ref                 reference;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_local_iterator() : __nd_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __hash_local_iterator(__node* __n) : __nd_(__n) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_local_iterator(const __hash_local_iterator<_Value, _Value&, _Value*>& __o)
+        : __nd_(__o.__node_()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __node_() const { return __nd_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator*()  const { return __nd_->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer   operator->() const { return &__nd_->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_local_iterator& operator++() { __nd_ = __nd_->__next_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_local_iterator operator++(int) { __hash_local_iterator __t = *this; ++*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const __hash_local_iterator& __o) const { return __nd_ == __o.__nd_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const __hash_local_iterator& __o) const { return __nd_ != __o.__nd_; }
+};
+
+template <class _Key, class _Value, class _KoV, class _Hash, class _Equal, class _Alloc = allocator<_Value> >
+class __hash_table {
+public:
+    typedef _Value                                          value_type;
+    typedef _Key                                            key_type;
+    typedef _CCW_STD::size_t                                     size_type;
+    typedef _Alloc                                          allocator_type;
+    typedef __hash_iterator<_Value, _Value&, _Value*>        iterator;
+    typedef __hash_iterator<_Value, const _Value&, const _Value*> const_iterator;
+    typedef __hash_local_iterator<_Value, _Value&, _Value*>        local_iterator;
+    typedef __hash_local_iterator<_Value, const _Value&, const _Value*> const_local_iterator;
+private:
+    typedef __hash_node<_Value>                              __node;
+    typedef typename _Alloc::template rebind<__node>::other   __node_allocator;
+    typedef typename _Alloc::template rebind<__node*>::other  __bucket_allocator;
+    typedef vector<__node*, __bucket_allocator>               __bucket_vector;
+
+    __bucket_vector  __buckets_;
+    float            __max_load_;
+    _Hash            __hash_;
+    _Equal           __eq_;
+    _KoV             __kov_;
+    struct __na_sz : __node_allocator {
+        size_type __size_;
+        _CCW_LIBCPP_HIDE_FROM_ABI __na_sz() : __size_(0) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit __na_sz(const __node_allocator& __a) : __node_allocator(__a), __size_(0) {}
+    };
+    __na_sz __nas_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __new_node(const _Value& __v) {
+        __node* __p = __node_alloc().allocate(1);
+        _CCW_TRY {
+            ::new (static_cast<void*>(__p)) __node(__v);
+        } _CCW_CATCH_ALL {
+            __node_alloc().deallocate(__p, 1);
+            _CCW_RETHROW;
+        }
+        return __p;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __new_node(_CCW_RV_REF(_Value) __v) {
+        __node* __p = __node_alloc().allocate(1);
+        _CCW_TRY {
+            ::new (static_cast<void*>(__p)) __node(_CCW_HT_FWD(__v));
+        } _CCW_CATCH_ALL {
+            __node_alloc().deallocate(__p, 1);
+            _CCW_RETHROW;
+        }
+        return __p;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __delete_node(__node* __p) {
+        __p->~__node();
+        __node_alloc().deallocate(__p, 1);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __steal(__hash_table& __o) {
+        __buckets_  = _ccw::move(__o.__buckets_);
+        __max_load_ = __o.__max_load_;
+        __hash_     = __o.__hash_;
+        __eq_       = __o.__eq_;
+        __kov_      = __o.__kov_;
+        __node_alloc() = __o.__node_alloc();   // clobbers __nas_.__size_'s low byte...
+        __nas_.__size_ = __o.__nas_.__size_;                 // ...repaired here
+        __o.__nas_.__size_ = 0;
+        __o.__buckets_.clear();
+        for (size_type __i = 0; __i < 8; ++__i) __o.__buckets_.push_back(0);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node** __bptr() const {
+        __bucket_vector& __b = const_cast<__bucket_vector&>(__buckets_);
+        return __b.empty() ? 0 : &__b[0];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type __bidx(const _Key& __k, size_type __bc) const { return __hash_(__k) % __bc; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __iter_to(__node* __n, size_type __bi) const {
+        __node** __b = __bptr();
+        return iterator(__n, __b + __bi, __b + __buckets_.size());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __rehash_to(size_type __nbc) {
+        if (__nbc < 1) __nbc = 1;
+        __bucket_vector __nb(__buckets_.get_allocator());
+        for (size_type __i = 0; __i < __nbc; ++__i) __nb.push_back(0);
+        for (size_type __i = 0; __i < __buckets_.size(); ++__i) {
+            __node* __n = __buckets_[__i];
+            while (__n) { __node* __nx = __n->__next_; size_type __bi = __bidx(__kov_(__n->__value_), __nbc); __n->__next_ = __nb[__bi]; __nb[__bi] = __n; __n = __nx; }
+        }
+        __buckets_ = __nb;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __maybe_grow() {
+        size_type __bc = __buckets_.size();
+        if ((float)(__nas_.__size_ + 1) > __max_load_ * (float)__bc) __rehash_to(__bc * 2);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __copy_from(const __hash_table& __o) {
+        for (size_type __i = 0; __i < __o.__buckets_.size(); ++__i)
+            for (__node* __n = __o.__buckets_[__i]; __n; __n = __n->__next_) __insert_multi(__n->__value_);
+    }
+
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table() : __max_load_(1.0f) {
+        for (size_type __i = 0; __i < 8; ++__i) __buckets_.push_back(0);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __hash_table(const _Alloc& __a)
+        : __buckets_(__bucket_allocator(__a)), __max_load_(1.0f), __nas_(__a) {
+        for (size_type __i = 0; __i < 8; ++__i) __buckets_.push_back(0);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table(const _Hash& __h, const _Equal& __e, const _Alloc& __a)
+        : __buckets_(__bucket_allocator(__a)), __max_load_(1.0f), __hash_(__h), __eq_(__e), __nas_(__a) {
+        for (size_type __i = 0; __i < 8; ++__i) __buckets_.push_back(0);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table(const __hash_table& __o)
+        : __buckets_(__o.__buckets_.get_allocator()), __max_load_(__o.__max_load_),
+          __hash_(__o.__hash_), __eq_(__o.__eq_), __kov_(__o.__kov_), __nas_(__o.__node_alloc()) {
+        for (size_type __i = 0; __i < 8; ++__i) __buckets_.push_back(0);
+        __copy_from(__o);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table(const __hash_table& __o, const _Alloc& __a)
+        : __buckets_(__bucket_allocator(__a)), __max_load_(__o.__max_load_),
+          __hash_(__o.__hash_), __eq_(__o.__eq_), __kov_(__o.__kov_), __nas_(__a) {
+        for (size_type __i = 0; __i < 8; ++__i) __buckets_.push_back(0);
+        __copy_from(__o);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table& operator=(const __hash_table& __o) {
+        if (this != &__o) {
+            clear();                    // frees through the OLD allocator, before it changes
+            __max_load_ = __o.__max_load_;
+            __hash_ = __o.__hash_;
+            __eq_   = __o.__eq_;
+            __copy_from(__o);
+        }
+        return *this;
+    }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table(__hash_table&& __o) : __max_load_(1.0f) { __steal(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table& operator=(__hash_table&& __o) {
+        if (this != &__o) { clear(); __steal(__o); }
+        return *this;
+    }
+#else // !_CCW_HAS_REAL_RVALUE_REF -- the same through the C++03 emulation (detail/move03.hpp)
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table(_CCW_RV_REF(__hash_table) __r) : __max_load_(1.0f) {
+        __steal(_CCW_MOVED_OBJ(__r));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hash_table& operator=(_CCW_RV_REF(__hash_table) __r) {
+        __hash_table& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { clear(); __steal(__o); }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI _Alloc __alloc() const { return _Alloc(__node_alloc()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~__hash_table() { clear(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const {
+        __node** __b = __bptr(); __node** __e = __b + __buckets_.size();
+        __node** __p = __b; while (__p != __e && *__p == 0) ++__p;
+        return iterator(__p != __e ? *__p : 0, __p, __e);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const {
+        __node** __b = __bptr(); __node** __e = __b + __buckets_.size();
+        return iterator(0, __e, __e);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __nas_.__size_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return __nas_.__size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return size_type(-1) / sizeof(__node); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Hash  hash_function() const { return __hash_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Equal key_eq() const { return __eq_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(__hash_table& __o) {
+        __buckets_.swap(__o.__buckets_);
+        float     __tl = __max_load_; __max_load_ = __o.__max_load_; __o.__max_load_ = __tl;
+        _Hash     __th = __hash_;     __hash_    = __o.__hash_;    __o.__hash_    = __th;
+        _Equal    __te = __eq_;       __eq_      = __o.__eq_;      __o.__eq_      = __te;
+        __na_sz __tt = __nas_; __nas_ = __o.__nas_; __o.__nas_ = __tt;   // size + allocator together
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_count() const { return __buckets_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket(const _Key& __k) const { return __bidx(__k, __buckets_.size()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_size(size_type __bi) const {
+        size_type __c = 0; for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_) ++__c; return __c;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_bucket_count() const { return size_type(-1) / sizeof(__node*); }
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator __bucket_begin(size_type __bi) { return local_iterator(__buckets_[__bi]); }
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator __bucket_end(size_type) { return local_iterator(0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator __bucket_begin(size_type __bi) const {
+        return const_local_iterator(const_cast<__bucket_vector&>(__buckets_)[__bi]);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator __bucket_end(size_type) const { return const_local_iterator(0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     load_factor() const { return (float)__nas_.__size_ / (float)__buckets_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     max_load_factor() const { return __max_load_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      max_load_factor(float __z) { __max_load_ = __z; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      rehash(size_type __n) { if (__n > __buckets_.size()) __rehash_to(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      reserve(size_type __n) { rehash((size_type)((float)__n / __max_load_) + 1); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() {
+        for (size_type __i = 0; __i < __buckets_.size(); ++__i) {
+            __node* __n = __buckets_[__i];
+            while (__n) { __node* __nx = __n->__next_; __delete_node(__n); __n = __nx; }
+            __buckets_[__i] = 0;
+        }
+        __nas_.__size_ = 0;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator find(const _Key& __k) const {
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_)
+            if (__eq_(__kov_(__n->__value_), __k)) return __iter_to(__n, __bi);
+        return end();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count(const _Key& __k) const {
+        size_type __c = 0, __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_) if (__eq_(__kov_(__n->__value_), __k)) ++__c;
+        return __c;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_unique(const value_type& __v, bool& __inserted) {
+        const _Key& __k = __kov_(__v);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_)
+            if (__eq_(__kov_(__n->__value_), __k)) { __inserted = false; return __iter_to(__n, __bi); }
+        __maybe_grow();
+        __bi = __bidx(__k, __buckets_.size());
+        __node* __nn = __new_node(__v); __nn->__next_ = __buckets_[__bi]; __buckets_[__bi] = __nn; ++__nas_.__size_;
+        __inserted = true; return __iter_to(__nn, __bi);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_unique(_CCW_RV_REF(value_type) __v, bool& __inserted) {
+        const _Key& __k = __kov_(__v);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_)
+            if (__eq_(__kov_(__n->__value_), __k)) { __inserted = false; return __iter_to(__n, __bi); }
+        __maybe_grow();
+        __bi = __bidx(__k, __buckets_.size());
+        __node* __nn = __new_node(_CCW_HT_FWD(__v)); __nn->__next_ = __buckets_[__bi]; __buckets_[__bi] = __nn; ++__nas_.__size_;
+        __inserted = true; return __iter_to(__nn, __bi);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_multi(const value_type& __v) {
+        __maybe_grow();
+        const _Key& __k = __kov_(__v);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_) {
+            if (__eq_(__kov_(__n->__value_), __k)) {
+                __node* __nn = __new_node(__v); __nn->__next_ = __n->__next_; __n->__next_ = __nn; ++__nas_.__size_;
+                return __iter_to(__nn, __bi);
+            }
+        }
+        __node* __nn = __new_node(__v); __nn->__next_ = __buckets_[__bi]; __buckets_[__bi] = __nn; ++__nas_.__size_;
+        return __iter_to(__nn, __bi);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_multi(_CCW_RV_REF(value_type) __v) {
+        __maybe_grow();
+        const _Key& __k = __kov_(__v);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __n = __buckets_[__bi]; __n; __n = __n->__next_) {
+            if (__eq_(__kov_(__n->__value_), __k)) {
+                __node* __nn = __new_node(_CCW_HT_FWD(__v)); __nn->__next_ = __n->__next_; __n->__next_ = __nn; ++__nas_.__size_;
+                return __iter_to(__nn, __bi);
+            }
+        }
+        __node* __nn = __new_node(_CCW_HT_FWD(__v)); __nn->__next_ = __buckets_[__bi]; __buckets_[__bi] = __nn; ++__nas_.__size_;
+        return __iter_to(__nn, __bi);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, iterator> __equal_range(const _Key& __k) const {
+        iterator __f = find(__k), __e = end();
+        if (__f == __e) return _CCW_STD::pair<iterator, iterator>(__f, __f);
+        iterator __l = __f; ++__l;
+        while (__l != __e && __eq_(__kov_(*__l), __k)) ++__l;
+        return _CCW_STD::pair<iterator, iterator>(__f, __l);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type erase(const _Key& __k) {
+        size_type __bi = __bidx(__k, __buckets_.size());
+        __node** __link = &__buckets_[__bi];
+        size_type __removed = 0;
+        while (*__link) {
+            if (__eq_(__kov_((*__link)->__value_), __k)) { __node* __d = *__link; *__link = __d->__next_; __delete_node(__d); --__nas_.__size_; ++__removed; }
+            else __link = &(*__link)->__next_;
+        }
+        return __removed;
+    }
+    template <class _It>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(_It __pos) {
+        __node* __target = __pos.__node_();
+        iterator __next = __iter_to(__target, __bidx(__kov_(__target->__value_), __buckets_.size())); ++__next;
+        size_type __bi = __bidx(__kov_(__target->__value_), __buckets_.size());
+        __node** __link = &__buckets_[__bi];
+        while (*__link) {
+            if (*__link == __target) { *__link = __target->__next_; __delete_node(__target); --__nas_.__size_; break; }
+            __link = &(*__link)->__next_;
+        }
+        return __next;
+    }
+
+    typedef __node           __node_t;
+    typedef __node_allocator __node_alloc_t;
+    _CCW_LIBCPP_HIDE_FROM_ABI __node_allocator&       __node_alloc()       { return __nas_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const __node_allocator& __node_alloc() const { return __nas_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __free_node(__node* __n) { __delete_node(__n); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __extract_key(const _Key& __k) {
+        size_type __bi = __bidx(__k, __buckets_.size());
+        __node** __link = &__buckets_[__bi];
+        while (*__link) {
+            if (__eq_(__kov_((*__link)->__value_), __k)) {
+                __node* __d = *__link; *__link = __d->__next_; __d->__next_ = 0; --__nas_.__size_; return __d;
+            }
+            __link = &(*__link)->__next_;
+        }
+        return 0;
+    }
+    template <class _It>
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __extract_iter(_It __pos) {
+        __node* __target = __pos.__node_();
+        size_type __bi = __bidx(__kov_(__target->__value_), __buckets_.size());
+        __node** __link = &__buckets_[__bi];
+        while (*__link) {
+            if (*__link == __target) { *__link = __target->__next_; __target->__next_ = 0; --__nas_.__size_; return __target; }
+            __link = &(*__link)->__next_;
+        }
+        return 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_unique_node(__node* __n, bool& __inserted, __node*& __existing) {
+        const _Key& __k = __kov_(__n->__value_);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __p = __buckets_[__bi]; __p; __p = __p->__next_)
+            if (__eq_(__kov_(__p->__value_), __k)) { __inserted = false; __existing = __p; return __iter_to(__p, __bi); }
+        __maybe_grow();
+        __bi = __bidx(__k, __buckets_.size());
+        __n->__next_ = __buckets_[__bi]; __buckets_[__bi] = __n; ++__nas_.__size_;
+        __inserted = true; __existing = 0;
+        return __iter_to(__n, __bi);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __insert_multi_node(__node* __n) {
+        __maybe_grow();
+        const _Key& __k = __kov_(__n->__value_);
+        size_type __bi = __bidx(__k, __buckets_.size());
+        for (__node* __p = __buckets_[__bi]; __p; __p = __p->__next_) {   // keep equal keys adjacent
+            if (__eq_(__kov_(__p->__value_), __k)) { __n->__next_ = __p->__next_; __p->__next_ = __n; ++__nas_.__size_; return __iter_to(__n, __bi); }
+        }
+        __n->__next_ = __buckets_[__bi]; __buckets_[__bi] = __n; ++__nas_.__size_;
+        return __iter_to(__n, __bi);
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP___HASH_TABLE

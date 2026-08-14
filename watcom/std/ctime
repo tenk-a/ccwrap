@@ -1,0 +1,16 @@
+// ccwrap watcom: <ctime>. Thin forwarder to Open Watcom's native <ctime> (time_t,
+// struct tm, clock/time/difftime/strftime/..., all in namespace std), guaranteeing
+// ccwrap_common.h is pulled in first.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(ctime)
+#include "../../detail/c/time_c11.h"
+
+#if !defined(_NO_EXT_KEYS)
+namespace std {
+using ::timegm;     // C++26
+using ::timespec;       // C++17
+using ::timespec_get;   // C++17 -- supplied by detail/time_c11.h (TIME_UTC too)
+}
+#endif

@@ -1,0 +1,6 @@
+"suite"	"pass"	"status"	"note"
+"debugging"	"cxx26:<debugging> header"	"tested"	""
+"debugging"	"cxx26:__cpp_lib_debugging"	"skip"	""
+"debugging"	"cxx26:breakpoint"	"tested"	""
+"debugging"	"cxx26:breakpoint_if_debugging"	"tested"	""
+"debugging"	"cxx26:is_debugger_present"	"tested"	""

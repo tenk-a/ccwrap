@@ -1,0 +1,30 @@
+// ccwrap <cmath>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <cmath>
+
+#ifdef __cplusplus
+
+#include "../../detail/c/math_c99_fl.h"
+
+namespace std {
+#define _X(_N) using ::_N##f; using ::_N##l;
+_CCW_MATH_FL1_LIST(_X)
+_CCW_MATH_FL2_LIST(_X)
+_CCW_MATH_FLX_FMA_LIST(_X)
+_CCW_MATH_FLX_INTARG_LIST(_X)
+_CCW_MATH_FLX_LONGARG_LIST(_X)
+_CCW_MATH_FLX_INTPTR_LIST(_X)
+_CCW_MATH_FLX_RETINT_LIST(_X)
+_CCW_MATH_FLX_MODF_LIST(_X)
+_CCW_MATH_FLX_REMQUO_LIST(_X)
+_CCW_MATH_FLX_RETLLONG_LIST(_X)
+_CCW_MATH_FLX_NEXTTWD_LIST(_X)
+#undef _X
+using ::lroundf;  using ::lroundl;  using ::llroundf; using ::llroundl;
+using ::lrintf;   using ::lrintl;
+}   // namespace std
+
+#endif // __cplusplus

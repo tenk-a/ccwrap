@@ -1,0 +1,22 @@
+// ccwrap <cwchar>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cwchar)
+
+#include <stdint.h>
+
+#include <wchar.h>
+#if defined(_CCW_VC_HAVE_WCSTOK3)
+namespace std { using ::__ccw_wcstok3; }
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+#include <wchar.h>
+namespace std {
+    using ::vswscanf;
+    using ::vfwscanf;
+    using ::vwscanf;
+}
+#endif

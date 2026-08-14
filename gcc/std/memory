@@ -1,0 +1,8 @@
+// ccwrap <memory>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <memory>
+
+#include <../../detail/cxx/memory.hpp>

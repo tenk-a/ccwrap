@@ -1,0 +1,326 @@
+// ccwrap watcom: <cmath>. Forward to Open Watcom's native <cmath> (which declares
+// the math library in namespace std), then add the C99 functions the runtime is
+// missing -- in namespace std, where they belong. The matching <math.h> re-exports
+// them into the global namespace for C++ (and defines them globally for C).
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cmath)
+
+#ifndef _CMATH_AUX_INCLUDED
+#define _CMATH_AUX_INCLUDED
+namespace std {
+
+  // double
+  inline double abs( double __x ) { return( fabs( __x ) ); }
+  inline double pow( double __x, int __y ) { return( pow( __x, (double)__y ) ); }
+
+  // float
+  inline float abs  ( float __x ) { return( abs  ( (double)__x ) ); }
+  inline float acos ( float __x ) { return( acos ( (double)__x ) ); }
+  inline float asin ( float __x ) { return( asin ( (double)__x ) ); }
+  inline float atan ( float __x ) { return( atan ( (double)__x ) ); }
+  inline float atan2( float __x, float __y ) { return( atan2( (double)__x, (double)__y ) ); }
+  inline float ceil ( float __x ) { return( ceil ( (double)__x ) ); }
+  inline float cos  ( float __x ) { return( cos  ( (double)__x ) ); }
+  inline float cosh ( float __x ) { return( cosh ( (double)__x ) ); }
+  inline float exp  ( float __x ) { return( exp  ( (double)__x ) ); }
+  inline float fabs ( float __x ) { return( fabs ( (double)__x ) ); }
+  inline float floor( float __x ) { return( floor( (double)__x ) ); }
+  inline float fmod ( float __x, float __y ) { return( fmod( (double)__x, (double)__y ) ); }
+  inline float frexp( float __value, int *__exp ) { return( frexp( (double)__value, __exp ) ); }
+  inline float ldexp( float __x, int __exp ) { return( ldexp( (double)__x, __exp ) ); }
+  inline float log  ( float __x ) { return( log  ( (double)__x ) ); }
+  inline float log10( float __x ) { return( log10( (double)__x ) ); }
+  inline float modf ( float __value, float *__iptr )
+  {
+    float __result; double __i;
+    __result = modf( (double)__value, &__i );
+    *__iptr = __i;
+    return( __result );
+  }
+  inline float pow  ( float __x, float __y ) { return( pow  ( (double)__x, (double)__y ) ); }
+  inline float pow  ( float __x, int __y ) { return( pow  ( (double)__x, __y ) ); }
+  inline float sin  ( float __x ) { return( sin  ( (double)__x ) ); }
+  inline float sinh ( float __x ) { return( sinh ( (double)__x ) ); }
+  inline float sqrt ( float __x ) { return( sqrt ( (double)__x ) ); }
+  inline float tan  ( float __x ) { return( tan  ( (double)__x ) ); }
+  inline float tanh ( float __x ) { return( tanh ( (double)__x ) ); }
+
+  // long double
+  inline long double abs  ( long double __x ) { return( abs  ( (double)__x ) ); }
+  inline long double acos ( long double __x ) { return( acos ( (double)__x ) ); }
+  inline long double asin ( long double __x ) { return( asin ( (double)__x ) ); }
+  inline long double atan ( long double __x ) { return( atan ( (double)__x ) ); }
+  inline long double atan2( long double __x, long double __y ) { return( atan2( (double)__x, (double)__y ) ); }
+  inline long double ceil ( long double __x ) { return( ceil ( (double)__x ) ); }
+  inline long double cos  ( long double __x ) { return( cos  ( (double)__x ) ); }
+  inline long double cosh ( long double __x ) { return( cosh ( (double)__x ) ); }
+  inline long double exp  ( long double __x ) { return( exp  ( (double)__x ) ); }
+  inline long double fabs ( long double __x ) { return( fabs ( (double)__x ) ); }
+  inline long double floor( long double __x ) { return( floor( (double)__x ) ); }
+  inline long double fmod ( long double __x, long double __y ) { return( fmod( (double)__x, (double)__y ) ); }
+  inline long double frexp( long double __value, int *__exp ) { return( frexp( (double)__value, __exp ) ); }
+  inline long double ldexp( long double __x, int __exp ) { return( ldexp( (double)__x, __exp ) ); }
+  inline long double log  ( long double __x ) { return( log  ( (double)__x ) ); }
+  inline long double log10( long double __x ) { return( log10( (double)__x ) ); }
+  inline long double modf ( long double __value, long double *__iptr )
+  {
+    long double __result; double __i;
+    __result = modf( (double)__value, &__i );
+    *__iptr = __i;
+    return( __result );
+  }
+  inline long double pow  ( long double __x, long double __y ) { return( pow  ( (double)__x, (double)__y ) ); }
+  inline long double pow  ( long double __x, int __y ) { return( pow  ( (double)__x, __y ) ); }
+  inline long double sin  ( long double __x ) { return( sin  ( (double)__x ) ); }
+  inline long double sinh ( long double __x ) { return( sinh ( (double)__x ) ); }
+  inline long double sqrt ( long double __x ) { return( sqrt ( (double)__x ) ); }
+  inline long double tan  ( long double __x ) { return( tan  ( (double)__x ) ); }
+  inline long double tanh ( long double __x ) { return( tanh ( (double)__x ) ); }
+
+}   // namespace std
+#endif  // _CMATH_AUX_INCLUDED
+
+#include "../../detail/c/math_c99_fl.h"
+#include "../../detail/cxx/math_special.hpp"   // C++17 special functions (hermite/laguerre/...)
+#include "../../detail/c/math_nextafterf.h"  // bit-exact float nextafter (double detour loses the ULP)
+#include <cfloat>       // FLT_EVAL_METHOD / DECIMAL_DIG, which float_t/double_t follow
+
+#include "../../detail/c/math_errhandling.h"
+
+#ifndef _CCW_CMATH_EVAL_TYPES_DEFINED
+#define _CCW_CMATH_EVAL_TYPES_DEFINED
+namespace std {
+#if FLT_EVAL_METHOD == 0
+    typedef float  float_t;
+    typedef double double_t;
+#elif FLT_EVAL_METHOD == 1
+    typedef double float_t;
+    typedef double double_t;
+#else   /* 2, or anything else -- evaluate in long double */
+    typedef long double float_t;
+    typedef long double double_t;
+#endif
+}
+#endif  /* _CCW_CMATH_EVAL_TYPES_DEFINED */
+
+#ifndef _CCW_CMATH_CLASSIFY_DEFINED
+#define _CCW_CMATH_CLASSIFY_DEFINED
+#undef fpclassify
+#undef isnan
+#undef isinf
+#undef isfinite
+#undef isnormal
+#undef signbit
+#undef isgreater
+#undef isgreaterequal
+#undef isless
+#undef islessequal
+#undef islessgreater
+#undef isunordered
+#undef nan
+#undef nanf
+#undef nanl
+namespace std {
+    inline _ccw_ullong __ccw_dbits(double __x) { union { double __d; _ccw_ullong __u; } __v; __v.__d = __x; return __v.__u; }
+    inline bool signbit(double __x)  { return (__ccw_dbits(__x) >> 63) != 0; }
+    inline bool isnan(double __x)    { _ccw_ullong __u = __ccw_dbits(__x); return ((__u >> 52) & 0x7FFu) == 0x7FFu && (__u & 0xFFFFFFFFFFFFFULL) != 0; }
+    inline bool isinf(double __x)    { _ccw_ullong __u = __ccw_dbits(__x); return ((__u >> 52) & 0x7FFu) == 0x7FFu && (__u & 0xFFFFFFFFFFFFFULL) == 0; }
+    inline bool isfinite(double __x) { return ((__ccw_dbits(__x) >> 52) & 0x7FFu) != 0x7FFu; }
+    inline bool isnormal(double __x) { unsigned __e = (unsigned)((__ccw_dbits(__x) >> 52) & 0x7FFu); return __e != 0 && __e != 0x7FFu; }
+    inline int  fpclassify(double __x) {
+        _ccw_ullong __u = __ccw_dbits(__x);
+        unsigned    __e = (unsigned)((__u >> 52) & 0x7FFu);
+        _ccw_ullong __m = __u & 0xFFFFFFFFFFFFFULL;
+        if (__e == 0x7FFu) return __m ? FP_NAN : FP_INFINITE;
+        if (__e == 0)      return __m ? FP_SUBNORMAL : FP_ZERO;
+        return FP_NORMAL;
+    }
+    inline _ccw_uint32 __ccw_fbits(float __x) { union { float __f; _ccw_uint32 __u; } __v; __v.__f = __x; return __v.__u; }
+    inline bool signbit(float __x)   { return (__ccw_fbits(__x) >> 31) != 0; }
+    inline bool isnan(float __x)     { _ccw_uint32 __u = __ccw_fbits(__x); return ((__u >> 23) & 0xFFu) == 0xFFu && (__u & 0x7FFFFFu) != 0; }
+    inline bool isinf(float __x)     { _ccw_uint32 __u = __ccw_fbits(__x); return ((__u >> 23) & 0xFFu) == 0xFFu && (__u & 0x7FFFFFu) == 0; }
+    inline bool isfinite(float __x)  { return ((__ccw_fbits(__x) >> 23) & 0xFFu) != 0xFFu; }
+    inline bool isnormal(float __x)  { unsigned __e = (unsigned)((__ccw_fbits(__x) >> 23) & 0xFFu); return __e != 0 && __e != 0xFFu; }
+    inline int  fpclassify(float __x) {
+        _ccw_uint32 __u = __ccw_fbits(__x);
+        unsigned    __e = (unsigned)((__u >> 23) & 0xFFu);
+        _ccw_uint32 __m = __u & 0x7FFFFFu;
+        if (__e == 0xFFu) return __m ? FP_NAN : FP_INFINITE;
+        if (__e == 0)     return __m ? FP_SUBNORMAL : FP_ZERO;
+        return FP_NORMAL;
+    }
+    inline int  fpclassify(long double __x) { return fpclassify((double)__x); }
+    inline bool signbit(long double __x)   { return signbit((double)__x); }
+    inline bool isnan(long double __x)     { return isnan((double)__x); }
+    inline bool isinf(long double __x)     { return isinf((double)__x); }
+    inline bool isfinite(long double __x)  { return isfinite((double)__x); }
+    inline bool isnormal(long double __x)  { return isnormal((double)__x); }
+    inline bool isgreater(double __x, double __y)      { return !isnan(__x) && !isnan(__y) && __x >  __y; }
+    inline bool isgreaterequal(double __x, double __y) { return !isnan(__x) && !isnan(__y) && __x >= __y; }
+    inline bool isless(double __x, double __y)         { return !isnan(__x) && !isnan(__y) && __x <  __y; }
+    inline bool islessequal(double __x, double __y)    { return !isnan(__x) && !isnan(__y) && __x <= __y; }
+    inline bool islessgreater(double __x, double __y)  { return !isnan(__x) && !isnan(__y) && (__x < __y || __x > __y); }
+    inline bool isunordered(double __x, double __y)    { return isnan(__x) || isnan(__y); }
+    inline double nan(const char*)  { union { _ccw_ullong __u; double __d; } __v; __v.__u = 0x7FF8000000000000ULL; return __v.__d; }
+    inline float       nanf(const char*) { union { _ccw_uint32 __u; float __f; } __v; __v.__u = 0x7FC00000u; return __v.__f; }
+    inline double      nanl(const char*) { union { _ccw_ullong __u; double __d; } __v; __v.__u = 0x7FF8000000000000ULL; return __v.__d; }
+    inline double lerp(double __a, double __b, double __t) {
+        if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0)) return __t * __b + (1 - __t) * __a;
+        if (__t == 1) return __b;
+        double __x = __a + __t * (__b - __a);
+        if ((__t > 1) == (__b > __a)) return __b < __x ? __x : __b;
+        return __x < __b ? __x : __b;
+    }
+    inline float       lerp(float __a, float __b, float __t)                   { return (float)lerp((double)__a, (double)__b, (double)__t); }
+    inline long double lerp(long double __a, long double __b, long double __t) { return lerp((double)__a, (double)__b, (double)__t); }
+}
+#endif  /* _CCW_CMATH_CLASSIFY_DEFINED */
+
+namespace std {
+#ifndef _CCW_CMATH_LROUND_DEFINED
+#define _CCW_CMATH_LROUND_DEFINED
+inline long       lround(double x)       { return (long)(x >= 0.0 ? x + 0.5 : x - 0.5); }
+inline long       lroundf(float x)       { return lround((double)x); }
+inline long       lroundl(long double x) { return lround((double)x); }
+inline _ccw_llong llround(double x)       { return (_ccw_llong)(x >= 0.0 ? x + 0.5 : x - 0.5); }
+inline _ccw_llong llroundf(float x)       { return llround((double)x); }
+inline _ccw_llong llroundl(long double x) { return llround((double)x); }
+#endif  /* _CCW_CMATH_LROUND_DEFINED */
+}
+
+namespace std {
+#include "../../detail/c/math_c23.h"
+}
+
+#if __WATCOMC__ >= 1300
+namespace std {
+#ifndef _CCW_CMATH_FL_DEFINED
+#define _CCW_CMATH_FL_DEFINED
+#define _X(_N) inline float _N##f(float x){return (float)_N((double)x);}                inline long double _N##l(long double x){return _N((double)x);}
+_CCW_MATH_FL1_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,float y){return (float)_N((double)x,(double)y);}                inline long double _N##l(long double x,long double y){return _N((double)x,(double)y);}
+_CCW_MATH_FL2_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,float y,float z){return (float)_N((double)x,(double)y,(double)z);}                inline long double _N##l(long double x,long double y,long double z){return _N((double)x,(double)y,(double)z);}
+_CCW_MATH_FLX_FMA_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,int e){return (float)_N((double)x,e);}                inline long double _N##l(long double x,int e){return _N((double)x,e);}
+_CCW_MATH_FLX_INTARG_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,long e){return (float)ldexp((double)x,(int)e);}                inline long double _N##l(long double x,long e){return ldexp((double)x,(int)e);}
+_CCW_MATH_FLX_LONGARG_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,int* e){return (float)_N((double)x,e);}                inline long double _N##l(long double x,int* e){return _N((double)x,e);}
+_CCW_MATH_FLX_INTPTR_LIST(_X)
+#undef _X
+#define _X(_N) inline int _N##f(float x){return _N((double)x);}                inline int _N##l(long double x){return _N((double)x);}
+_CCW_MATH_FLX_RETINT_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,float* p){double __i; float __r=(float)_N((double)x,&__i); *p=(float)__i; return __r;} \
+               inline long double _N##l(long double x,long double* p){double __i; double __r=_N((double)x,&__i); *p=__i; return __r;}
+_CCW_MATH_FLX_MODF_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N##f(float x,float y,int* q){return (float)_N((double)x,(double)y,q);} \
+               inline long double _N##l(long double x,long double y,int* q){return _N((double)x,(double)y,q);}
+_CCW_MATH_FLX_REMQUO_LIST(_X)
+#undef _X
+#define _X(_N) inline long long _N##f(float x){return _N((double)x);} \
+               inline long long _N##l(long double x){return _N((double)x);}
+_CCW_MATH_FLX_RETLLONG_LIST(_X)
+#undef _X
+inline long lrintf(float x)       { return (long)rint((double)x); }
+inline long lrintl(long double x) { return (long)rint((double)x); }
+inline double      scalbln(double x, long e)      { return ldexp(x, (int)e); }
+inline float       nextafterf(float x, float y)             { return __ccw_nextafterf(x, y); }
+inline long double nextafterl(long double x, long double y) { return nextafter((double)x, (double)y); }
+inline float       nextafter(float x, float y)              { return __ccw_nextafterf(x, y); }
+inline long double nextafter(long double x, long double y)  { return nextafter((double)x, (double)y); }
+inline double      nexttoward(double x, long double y)      { return nextafter(x, (double)y); }
+inline float       nexttowardf(float x, long double y)      { return __ccw_nextafterf(x, (float)y); }
+inline float       nexttoward(float x, long double y)       { return __ccw_nextafterf(x, (float)y); }
+inline long double nexttoward(long double x, long double y) { return nextafter((double)x, (double)y); }
+inline long double nexttowardl(long double x, long double y) { return nextafter((double)x, (double)y); }
+#endif  /* _CCW_CMATH_FL_DEFINED */
+}
+#endif  /* __WATCOMC__ >= 1300 */
+
+#if __WATCOMC__ < 1300
+namespace std {
+#ifndef _CCW_CMATH_C99_DEFINED
+#define _CCW_CMATH_C99_DEFINED
+inline double trunc(double x)     { return x < 0.0 ? ceil(x) : floor(x); }
+inline double round(double x)     { return x < 0.0 ? ceil(x - 0.5) : floor(x + 0.5); }
+inline double nearbyint(double x) { return round(x); }
+inline double rint(double x)      { return round(x); }
+inline float  truncf(float x)     { return (float)trunc((double)x); }
+inline float  roundf(float x)     { return (float)round((double)x); }
+inline double fmin(double a, double b) { return a < b ? a : b; }
+inline double fmax(double a, double b) { return a > b ? a : b; }
+inline double copysign(double x, double y) { return y < 0.0 ? -fabs(x) : fabs(x); }
+inline double fma(double a, double b, double c) { return a * b + c; }
+inline double scalbn(double x, int n) { return ldexp(x, n); }
+inline double cbrt(double x)  { return x < 0.0 ? -pow(-x, 1.0 / 3.0) : pow(x, 1.0 / 3.0); }
+inline double exp2(double x)  { return pow(2.0, x); }
+inline float  exp2f(float x)  { return (float)pow(2.0, (double)x); }
+inline double expm1(double x) { return exp(x) - 1.0; }
+inline double log1p(double x) { return log(1.0 + x); }
+#endif  /* _CCW_CMATH_C99_DEFINED */
+}
+#endif  /* __WATCOMC__ < 1300 */
+
+#if __WATCOMC__ >= 1300
+namespace std {
+#ifndef _CCW_CMATH_C99_PLAIN_FL_DEFINED
+#define _CCW_CMATH_C99_PLAIN_FL_DEFINED
+#define _X(_N) inline float _N(float x){return (float)_N((double)x);}                inline long double _N(long double x){return _N((double)x);}
+_CCW_MATH_C99ONLY_FL1_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N(float x,float y){return (float)_N((double)x,(double)y);}                inline long double _N(long double x,long double y){return _N((double)x,(double)y);}
+_CCW_MATH_C99ONLY_FL2_LIST(_X)
+#undef _X
+
+inline double hypot(double __x, double __y, double __z) {
+    __x = fabs(__x); __y = fabs(__y); __z = fabs(__z);
+    double __a = __x > __y ? __x : __y;
+    if (__z > __a) __a = __z;
+    if (__a == 0.0) return 0.0;
+    double __rx = __x / __a, __ry = __y / __a, __rz = __z / __a;
+    return __a * sqrt(__rx * __rx + __ry * __ry + __rz * __rz);
+}
+inline float hypot(float __x, float __y, float __z) {
+    return (float)hypot((double)__x, (double)__y, (double)__z);
+}
+inline long double hypot(long double __x, long double __y, long double __z) {
+    return hypot((double)__x, (double)__y, (double)__z);
+}
+inline int       ilogb(float __x)        { return ilogb((double)__x); }
+inline int       ilogb(long double __x)  { return ilogb((double)__x); }
+inline long      lrint(float __x)        { return lrint((double)__x); }
+inline long      lrint(long double __x)  { return lrint((double)__x); }
+inline long      lround(float __x)       { return lround((double)__x); }
+inline long      lround(long double __x) { return lround((double)__x); }
+inline _ccw_llong llrint(float __x)        { return llrint((double)__x); }
+inline _ccw_llong llrint(long double __x)  { return llrint((double)__x); }
+inline _ccw_llong llround(float __x)       { return llround((double)__x); }
+inline _ccw_llong llround(long double __x) { return llround((double)__x); }
+#endif  /* _CCW_CMATH_C99_PLAIN_FL_DEFINED */
+#ifndef _CCW_CSTDLIB_LLABS_DEFINED
+#define _CCW_CSTDLIB_LLABS_DEFINED
+inline _ccw_llong abs(_ccw_llong __x) { return __x < 0 ? -__x : __x; }
+#endif  // _CCW_CSTDLIB_LLABS_DEFINED
+}
+#endif  /* __WATCOMC__ >= 1300 */
+
+#include "../../detail/cxx/math_int_overloads.hpp"
+
+#ifndef _CCW_CMATH_GLOBAL_USING
+#define _CCW_CMATH_GLOBAL_USING
+using std::fpclassify; using std::isfinite; using std::isinf;
+using std::isnan;      using std::isnormal; using std::signbit;
+#if __WATCOMC__ >= 1300
+using std::lrint; using std::llrint;
+#endif
+#endif  /* _CCW_CMATH_GLOBAL_USING */

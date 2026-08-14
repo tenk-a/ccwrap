@@ -1,0 +1,7 @@
+// ccwrap watcom: <ccomplex> (added C++11, deprecated C++17, removed C++20).
+//
+// The standard defines this header as behaving simply as if it included <complex>
+// ([depr.ccomplex]); the C99 _Complex machinery never applied to C++. ccwrap supplies
+// <complex> via libcxx03, so there is nothing else to do here.
+#pragma once
+#include <complex>

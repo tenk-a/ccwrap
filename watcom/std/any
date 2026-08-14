@@ -1,0 +1,4 @@
+// ccwrap watcom forwarder: pull the genuine C++ <any> from detail/llibcxx03/include.
+#pragma once
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_STL_HEADER_PATH(any)

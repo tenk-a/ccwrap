@@ -1,0 +1,10 @@
+// ccwrap <stdexcept>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <stdexcept>
+
+// the sto* family lands here, not in <string>: the native <stdexcept> includes
+// <string> while invalid_argument / out_of_range are still incomplete
+#include <../../detail/cxx/string_stox.hpp>

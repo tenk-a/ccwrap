@@ -1,0 +1,9 @@
+// ccwrap vc/ccwstd: <cinttypes> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CINTTYPES_
+#define _CCW_CCWSTD_CINTTYPES_
+#include "../std/cinttypes"
+namespace _CCW_STD {
+using ::std::imaxdiv_t; using ::std::imaxabs; using ::std::imaxdiv; using ::std::strtoimax; using ::std::strtoumax; using ::std::wcstoimax;
+using ::std::wcstoumax;
+}
+#endif

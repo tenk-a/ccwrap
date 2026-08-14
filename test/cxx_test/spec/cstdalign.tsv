@@ -1,0 +1,4 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"cstdalign"	"cxx11:__alignas_is_defined"	"2011"	"2017"	""	"<cstdalign> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)"
+"cstdalign"	"cxx11:__alignof_is_defined"	"2011"	"2017"	""	"<cstdalign> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)"
+"cstdalign"	"cxx11:<cstdalign> header compiles"	"2011"	"2017"	""	"<cstdalign> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)"

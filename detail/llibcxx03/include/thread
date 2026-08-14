@@ -1,0 +1,131 @@
+//  ccwrap llibcxx03: <thread> for Open Watcom -- REAL threads on Win32. The callable
+//  is type-erased (a virtual __run) and started on a Win32 thread; the OS-specific
+//  parts (CreateThread / WaitForSingleObject / Sleep / ...) live in
+//  llibcxx03/src/thread.cpp so this header stays free of <windows.h>. Windows only.
+#ifndef _CCW_LIBCPP_THREAD
+#define _CCW_LIBCPP_THREAD
+#include "__config"
+
+#if defined(__WATCOMC__) && !defined(_CCW_OS_WIN)
+# error "ccwrap llibcxx03: <thread> is Win32-only on Open Watcom -- std::thread needs Win32 CreateThread / WaitForSingleObject."
+#endif
+#include "__utility/move.h"
+#include <exception>   // _CCW_STD::terminate (move assign to a joinable thread)
+#include <chrono>
+#include "__functional/hash.h"   // the hash<> primary template (hash<thread::id> below)
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+namespace __thread_detail {
+struct __callable_base { virtual ~__callable_base() {} virtual void __run() = 0; };
+template <class _Fp> struct __call0 : __callable_base {
+    _Fp __f_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __call0(const _Fp& __f) : __f_(__f) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void __run() { __f_(); }
+};
+template <class _Fp, class _A0> struct __call1 : __callable_base {
+    _Fp __f_; _A0 __a0_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __call1(const _Fp& __f, const _A0& __a0) : __f_(__f), __a0_(__a0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void __run() { __f_(__a0_); }
+};
+template <class _Fp, class _A0, class _A1> struct __call2 : __callable_base {
+    _Fp __f_; _A0 __a0_; _A1 __a1_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __call2(const _Fp& __f, const _A0& __a0, const _A1& __a1) : __f_(__f), __a0_(__a0), __a1_(__a1) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void __run() { __f_(__a0_, __a1_); }
+};
+}   // namespace __thread_detail
+
+template <class _CharT, class _Traits> class basic_ostream;
+
+class thread {
+    void*         __h_;    // Win32 HANDLE (opaque here)
+    unsigned long __id_;
+    void __start(__thread_detail::__callable_base* __c);   // defined in src (Win32)
+    thread(const thread&);
+    thread& operator=(const thread&);
+public:
+    class id {
+        unsigned long __v_;
+    public:
+        _CCW_LIBCPP_HIDE_FROM_ABI id() : __v_(0) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit id(unsigned long __v) : __v_(__v) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const id& __o) const { return __v_ == __o.__v_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const id& __o) const { return __v_ != __o.__v_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const id& __o) const { return __v_ <  __o.__v_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const id& __o) const { return __o.__v_ <  __v_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const id& __o) const { return !(__o.__v_ < __v_); }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const id& __o) const { return !(__v_ < __o.__v_); }
+        _CCW_LIBCPP_HIDE_FROM_ABI unsigned long __val() const { return __v_; }
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI thread() : __h_(0), __id_(0) {}
+    template <class _Fp>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit thread(_Fp __f) : __h_(0), __id_(0) { __start(new __thread_detail::__call0<_Fp>(__f)); }
+    template <class _Fp, class _A0>
+    _CCW_LIBCPP_HIDE_FROM_ABI thread(_Fp __f, _A0 __a0) : __h_(0), __id_(0) { __start(new __thread_detail::__call1<_Fp, _A0>(__f, __a0)); }
+    template <class _Fp, class _A0, class _A1>
+    _CCW_LIBCPP_HIDE_FROM_ABI thread(_Fp __f, _A0 __a0, _A1 __a1) : __h_(0), __id_(0) { __start(new __thread_detail::__call2<_Fp, _A0, _A1>(__f, __a0, __a1)); }
+
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI thread(_CCW_RV_REF(thread) __r) : __h_(0), __id_(0) {
+        thread& __o = _CCW_MOVED_OBJ(__r);
+        __h_ = __o.__h_; __id_ = __o.__id_;
+        __o.__h_ = 0; __o.__id_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI thread& operator=(_CCW_RV_REF(thread) __r) {
+        thread& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            if (joinable()) _CCW_STD::terminate();
+            __h_ = __o.__h_; __id_ = __o.__id_;
+            __o.__h_ = 0; __o.__id_ = 0;
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(thread& __o) {
+        void* __th = __h_; __h_ = __o.__h_; __o.__h_ = __th;
+        unsigned long __ti = __id_; __id_ = __o.__id_; __o.__id_ = __ti;
+    }
+#endif
+    ~thread();                          // src: terminates if still joinable
+    _CCW_LIBCPP_HIDE_FROM_ABI bool joinable() const { return __h_ != 0; }
+    void join();                        // src
+    void detach();                      // src
+    _CCW_LIBCPP_HIDE_FROM_ABI id get_id() const { return id(__id_); }
+    typedef void* native_handle_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() { return __h_; }
+    static unsigned hardware_concurrency();   // src
+};
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, thread::id __i) { return __os << __i.__val(); }
+
+template <> struct hash<thread::id> {
+    typedef thread::id     argument_type;
+    typedef _CCW_STD::size_t    result_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(thread::id __i) const {
+        return static_cast<_CCW_STD::size_t>(__i.__val());
+    }
+};
+
+namespace this_thread {
+void          __ccw_sleep_ms(unsigned long __ms);   // src (Sleep)
+void          yield();                              // src
+thread::id    get_id();                             // src (GetCurrentThreadId)
+template <class _Rep, class _Period>
+_CCW_LIBCPP_HIDE_FROM_ABI void sleep_for(const chrono::duration<_Rep, _Period>& __d) {
+    chrono::milliseconds __ms = chrono::duration_cast<chrono::milliseconds>(__d);
+    __ccw_sleep_ms(__ms.count() < 0 ? 0UL : (unsigned long)__ms.count());
+}
+template <class _Clock, class _Duration>
+_CCW_LIBCPP_HIDE_FROM_ABI void sleep_until(const chrono::time_point<_Clock, _Duration>& __tp) {
+    for (;;) {
+        typename _Clock::time_point __now = _Clock::now();
+        if (!(__now < __tp)) return;
+        chrono::milliseconds __ms = chrono::duration_cast<chrono::milliseconds>(__tp - __now);
+        __ccw_sleep_ms(__ms.count() <= 0 ? 0UL : (unsigned long)__ms.count());
+    }
+}
+}   // namespace this_thread
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_THREAD

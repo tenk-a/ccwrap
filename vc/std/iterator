@@ -1,0 +1,38 @@
+// ccwrap <iterator>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(iterator)
+
+#include <../../detail/cxx/iterator.hpp>
+
+#if defined(__cplusplus) && !defined(__cpp_lib_concepts)
+namespace _CCW_STD20 {
+struct contiguous_iterator_tag : public std::random_access_iterator_tag {};
+}
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_concepts)
+#include <../../detail/llibcxx03/include/__iterator/default_sentinel.h>
+#include <../../detail/llibcxx03/include/__iterator/unreachable_sentinel.h>
+#include <../../detail/llibcxx03/include/__iterator/incrementable_traits.h>
+#include <../../detail/llibcxx03/include/__iterator/readable_traits.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#include <ranges>
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1600
+#include <../../detail/llibcxx03/include/__iterator/move_iterator.h>
+#endif
+
+#if defined(__cplusplus) && _MSC_VER >= 1600 && _MSC_VER < 1900 && !defined(__cpp_lib_make_reverse_iterator)
+namespace _CCW_STD14 {
+template <class _It>
+inline std::reverse_iterator<_It> make_reverse_iterator(_It __i) {
+    return std::reverse_iterator<_It>(__i);
+}
+}
+#endif

@@ -1,0 +1,13 @@
+// ccwrap <flat_set>
+#pragma once
+
+#include <ccwrap_common.h>
+#include <version>   /* __cpp_lib_flat_set feature-test, if native is present */
+
+#if defined(__cpp_lib_flat_set)
+ #include _CCW_NATIVE_STL_HEADER_PATH(flat_set)
+ namespace _ccw { using std::flat_set; }
+#else
+ #include <../../detail/llibcxx03/include/flat_set>
+ namespace _ccw { using std::flat_set; }
+#endif

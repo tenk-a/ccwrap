@@ -1,0 +1,199 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <limits> for Open Watcom -- _CCW_STD::numeric_limits<T> for the
+//  built-in arithmetic types, drawing the values from the C library <climits> /
+//  <cfloat>. Classic C++03 body: the commonly used members (min/max/lowest,
+//  is_signed/is_integer/is_exact, digits/digits10/max_digits10, radix, the
+//  exponent range, has_*/is_bounded/is_modulo/round_style, epsilon/round_error).
+//  For floating types infinity()/quiet_NaN()/signaling_NaN()/denorm_min() are
+//  synthesized from their IEEE bit patterns via a union (Watcom rejects the usual
+//  MAX*MAX / subnormal-literal generators). Value members are static functions.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_LIMITS
+#define _CCW_LIBCPP_LIMITS
+#include "__config"
+#include <climits>
+#include <cfloat>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+enum float_round_style { round_indeterminate = -1, round_toward_zero = 0, round_to_nearest = 1, round_toward_infinity = 2, round_toward_neg_infinity = 3 };
+enum float_denorm_style { denorm_indeterminate = -1, denorm_absent = 0, denorm_present = 1 };
+
+template <class _Tp>
+struct numeric_limits {
+    static const bool is_specialized = false;
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp min()          { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp max()          { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp lowest()       { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp epsilon()      { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp round_error()  { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp infinity()     { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp quiet_NaN()    { return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp signaling_NaN(){ return _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp denorm_min()   { return _Tp(); }
+    static const int  digits = 0;
+    static const int  digits10 = 0;
+    static const int  max_digits10 = 0;
+    static const bool is_signed = false;
+    static const bool is_integer = false;
+    static const bool is_exact = false;
+    static const int  radix = 0;
+    static const int  min_exponent = 0;
+    static const int  min_exponent10 = 0;
+    static const int  max_exponent = 0;
+    static const int  max_exponent10 = 0;
+    static const bool has_infinity = false;
+    static const bool has_quiet_NaN = false;
+    static const bool has_signaling_NaN = false;
+    static const float_denorm_style has_denorm = denorm_absent;
+    static const bool has_denorm_loss = false;
+    static const bool is_iec559 = false;
+    static const bool is_bounded = false;
+    static const bool is_modulo = false;
+    static const bool traps = false;
+    static const bool tinyness_before = false;
+    static const float_round_style round_style = round_toward_zero;
+};
+
+#define _CCW_LIMITS_INT(T, MIN, MAX, SIGNED, DIGITS)                                   \
+template <> struct numeric_limits<T> {                                                 \
+    static const bool is_specialized = true;                                           \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T min()    { return MIN; }                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T max()    { return MAX; }                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T lowest() { return MIN; }                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T epsilon()    { return 0; }                           \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T round_error(){ return 0; }                           \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T infinity()     { return 0; }                         \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T quiet_NaN()    { return 0; }                         \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T signaling_NaN(){ return 0; }                         \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T denorm_min()   { return 0; }                         \
+    static const int  digits = DIGITS;                                                  \
+    static const int  digits10 = (DIGITS * 301) / 1000;                                 \
+    static const int  max_digits10 = 0;                                                 \
+    static const bool is_signed = SIGNED;                                               \
+    static const bool is_integer = true;                                               \
+    static const bool is_exact = true;                                                 \
+    static const int  radix = 2;                                                       \
+    static const int  min_exponent = 0;                                                 \
+    static const int  min_exponent10 = 0;                                               \
+    static const int  max_exponent = 0;                                                 \
+    static const int  max_exponent10 = 0;                                               \
+    static const bool has_infinity = false;                                            \
+    static const bool has_quiet_NaN = false;                                            \
+    static const bool has_signaling_NaN = false;                                        \
+    static const float_denorm_style has_denorm = denorm_absent;                         \
+    static const bool has_denorm_loss = false;                                          \
+    static const bool is_iec559 = false;                                               \
+    static const bool is_bounded = true;                                                \
+    static const bool is_modulo = !(SIGNED);                                            \
+    static const bool traps = true;                                                     \
+    static const bool tinyness_before = false;                                          \
+    static const float_round_style round_style = round_toward_zero;                     \
+}
+_CCW_LIMITS_INT(bool,               false,     true,      false, 1);
+_CCW_LIMITS_INT(char,               CHAR_MIN,  CHAR_MAX,  (CHAR_MIN < 0), (CHAR_MIN < 0 ? 7 : 8));
+_CCW_LIMITS_INT(signed char,        SCHAR_MIN, SCHAR_MAX, true,  7);
+_CCW_LIMITS_INT(unsigned char,      0,         UCHAR_MAX, false, 8);
+_CCW_LIMITS_INT(short,              SHRT_MIN,  SHRT_MAX,  true,  15);
+_CCW_LIMITS_INT(unsigned short,     0,         USHRT_MAX, false, 16);
+_CCW_LIMITS_INT(int,                INT_MIN,   INT_MAX,   true,  31);
+_CCW_LIMITS_INT(unsigned int,       0,         UINT_MAX,  false, 32);
+_CCW_LIMITS_INT(long,               LONG_MIN,  LONG_MAX,  true,  31);
+_CCW_LIMITS_INT(unsigned long,      0,         ULONG_MAX, false, 32);
+#ifdef LLONG_MAX
+_CCW_LIMITS_INT(long long,          LLONG_MIN, LLONG_MAX, true,  63);
+_CCW_LIMITS_INT(unsigned long long, 0,         ULLONG_MAX,false, 64);
+#endif
+#undef _CCW_LIMITS_INT
+
+template <> struct numeric_limits<wchar_t> {
+    static const bool is_specialized = true;
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t min()          { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t max()          { return (wchar_t)-1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t lowest()       { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t epsilon()      { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t round_error()  { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t infinity()     { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t quiet_NaN()    { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t signaling_NaN(){ return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static wchar_t denorm_min()   { return 0; }
+    static const int  digits = (int)(sizeof(wchar_t) * 8);
+    static const int  digits10 = (int)((sizeof(wchar_t) * 8) * 301 / 1000);
+    static const int  max_digits10 = 0;
+    static const bool is_signed = false;
+    static const bool is_integer = true;
+    static const bool is_exact = true;
+    static const int  radix = 2;
+    static const int  min_exponent = 0;
+    static const int  min_exponent10 = 0;
+    static const int  max_exponent = 0;
+    static const int  max_exponent10 = 0;
+    static const bool has_infinity = false;
+    static const bool has_quiet_NaN = false;
+    static const bool has_signaling_NaN = false;
+    static const float_denorm_style has_denorm = denorm_absent;
+    static const bool has_denorm_loss = false;
+    static const bool is_iec559 = false;
+    static const bool is_bounded = true;
+    static const bool is_modulo = true;
+    static const bool traps = true;
+    static const bool tinyness_before = false;
+    static const float_round_style round_style = round_toward_zero;
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline float  __ccw_f_inf()  { union { unsigned long __u; float  __f; } __x; __x.__u = 0x7F800000UL;         return __x.__f; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline float  __ccw_f_qnan() { union { unsigned long __u; float  __f; } __x; __x.__u = 0x7FC00000UL;         return __x.__f; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline float  __ccw_f_snan() { union { unsigned long __u; float  __f; } __x; __x.__u = 0x7FA00000UL;         return __x.__f; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline float  __ccw_f_den()  { union { unsigned long __u; float  __f; } __x; __x.__u = 0x00000001UL;         return __x.__f; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline double __ccw_d_inf()  { union { unsigned long long __u; double __d; } __x; __x.__u = 0x7FF0000000000000ULL; return __x.__d; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline double __ccw_d_qnan() { union { unsigned long long __u; double __d; } __x; __x.__u = 0x7FF8000000000000ULL; return __x.__d; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline double __ccw_d_snan() { union { unsigned long long __u; double __d; } __x; __x.__u = 0x7FF4000000000000ULL; return __x.__d; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline double __ccw_d_den()  { union { unsigned long long __u; double __d; } __x; __x.__u = 0x0000000000000001ULL; return __x.__d; }
+
+#define _CCW_LIMITS_FLT(T, MINV, MAXV, EPS, DIG, DIG10, MAXDIG10, MINEXP, MAXEXP, MINEXP10, MAXEXP10, INFFN, QNANFN, SNANFN, DENFN) \
+template <> struct numeric_limits<T> {                                                 \
+    static const bool is_specialized = true;                                           \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T min()          { return MINV; }                      \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T max()          { return MAXV; }                      \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T lowest()       { return -MAXV; }                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T epsilon()      { return EPS; }                       \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T round_error()  { return (T)0.5; }                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T infinity()     { return (T)INFFN(); }                \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T quiet_NaN()    { return (T)QNANFN(); }               \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T signaling_NaN(){ return (T)SNANFN(); }               \
+    _CCW_LIBCPP_HIDE_FROM_ABI static T denorm_min()   { return (T)DENFN(); }                \
+    static const int  digits = DIG;                                                    \
+    static const int  digits10 = DIG10;                                                \
+    static const int  max_digits10 = MAXDIG10;                                          \
+    static const bool is_signed = true;                                                \
+    static const bool is_integer = false;                                              \
+    static const bool is_exact = false;                                                \
+    static const int  radix = 2;                                                       \
+    static const int  min_exponent = MINEXP;                                            \
+    static const int  min_exponent10 = MINEXP10;                                        \
+    static const int  max_exponent = MAXEXP;                                            \
+    static const int  max_exponent10 = MAXEXP10;                                        \
+    static const bool has_infinity = true;                                             \
+    static const bool has_quiet_NaN = true;                                             \
+    static const bool has_signaling_NaN = true;                                         \
+    static const float_denorm_style has_denorm = denorm_present;                        \
+    static const bool has_denorm_loss = false;                                          \
+    static const bool is_iec559 = true;                                                \
+    static const bool is_bounded = true;                                                \
+    static const bool is_modulo = false;                                                \
+    static const bool traps = false;                                                    \
+    static const bool tinyness_before = false;                                          \
+    static const float_round_style round_style = round_to_nearest;                      \
+}
+_CCW_LIMITS_FLT(float,       FLT_MIN, FLT_MAX, FLT_EPSILON, FLT_MANT_DIG, FLT_DIG, FLT_DECIMAL_DIG, FLT_MIN_EXP, FLT_MAX_EXP, FLT_MIN_10_EXP, FLT_MAX_10_EXP, __ccw_f_inf, __ccw_f_qnan, __ccw_f_snan, __ccw_f_den);
+_CCW_LIMITS_FLT(double,      DBL_MIN, DBL_MAX, DBL_EPSILON, DBL_MANT_DIG, DBL_DIG, DBL_DECIMAL_DIG, DBL_MIN_EXP, DBL_MAX_EXP, DBL_MIN_10_EXP, DBL_MAX_10_EXP, __ccw_d_inf, __ccw_d_qnan, __ccw_d_snan, __ccw_d_den);
+_CCW_LIMITS_FLT(long double, LDBL_MIN,LDBL_MAX,LDBL_EPSILON,LDBL_MANT_DIG,LDBL_DIG, LDBL_DECIMAL_DIG, LDBL_MIN_EXP, LDBL_MAX_EXP, LDBL_MIN_10_EXP, LDBL_MAX_10_EXP, __ccw_d_inf, __ccw_d_qnan, __ccw_d_snan, __ccw_d_den);
+#undef _CCW_LIMITS_FLT
+
+template <class _Tp> struct numeric_limits<const _Tp>          : numeric_limits<_Tp> {};
+template <class _Tp> struct numeric_limits<volatile _Tp>       : numeric_limits<_Tp> {};
+template <class _Tp> struct numeric_limits<const volatile _Tp> : numeric_limits<_Tp> {};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_LIMITS

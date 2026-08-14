@@ -1,0 +1,28 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <functional> for Open Watcom. libc++ layout; classic C++03.
+//  Function objects, _CCW_STD::hash, and a type-erased _CCW_STD::function (arity 0..3, since
+//  Open Watcom has no variadic templates). bind / mem_fn are not provided (they
+//  need decltype / perfect forwarding).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_FUNCTIONAL
+#define _CCW_LIBCPP_FUNCTIONAL
+#include "__config"
+#include "__functional/unary_function.h"
+#include "__functional/binary_function.h"
+#include "__functional/operations.h"
+#include "__functional/identity.h"
+#include "__functional/hash.h"
+#include "__functional/function.h"
+#include "__functional/mem_fn.h"
+#include "__functional/not_fn.h"
+#include "__functional/invoke.h"
+#include "__functional/bind.h"
+#include "__functional/reference_wrapper.h"
+#include "__functional/unwrap_reference.h"
+#include "__functional/binders.h"
+#include "__functional/bad_function_call.h"
+#include "__functional/default_searcher.h"
+#include "__functional/boyer_moore_searcher.h"
+#endif // _CCW_LIBCPP_FUNCTIONAL

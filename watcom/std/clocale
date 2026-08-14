@@ -1,0 +1,16 @@
+// ccwrap watcom: <clocale>. Forwarder to Open Watcom's native <clocale>
+// (setlocale/localeconv, struct lconv, the LC_* macros, all in namespace std),
+// plus a localeconv that reports unavailable lconv members as CHAR_MAX.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(clocale)
+
+#ifndef _CCW_LOCALECONV_FIXED
+#define _CCW_LOCALECONV_FIXED
+namespace std {
+#include "../../detail/c/lconv_c.h"
+}
+using std::_ccw_localeconv;
+#define localeconv _ccw_localeconv
+#endif

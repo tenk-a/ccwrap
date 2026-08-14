@@ -1,0 +1,2 @@
+// ccwrap <atomic>
+#include "../std/atomic"

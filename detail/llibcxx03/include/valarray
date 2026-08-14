@@ -1,0 +1,389 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <valarray> for Open Watcom -- _CCW_STD::valarray<T>, a numeric array
+//  with element-wise arithmetic, plus the slice / gslice / mask / indirect views and
+//  their proxy arrays, the transcendental functions, and the comparison operators.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_VALARRAY
+#define _CCW_LIBCPP_VALARRAY
+#include "__config"
+#include <cstddef>
+#include "__iterator/access.h"   // [valarray.range]: free begin/end come from the generic forms
+#include "__utility/move.h"      // _CCW_RV_REF / _CCW_MOVED_OBJ -- the C++03 move emulation
+#include <cmath>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp> class valarray;
+template <class _Tp> class slice_array;
+template <class _Tp> class gslice_array;
+template <class _Tp> class mask_array;
+template <class _Tp> class indirect_array;
+
+class slice {
+    _CCW_STD::size_t __start_, __size_, __stride_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI slice() : __start_(0), __size_(0), __stride_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI slice(_CCW_STD::size_t __s, _CCW_STD::size_t __n, _CCW_STD::size_t __d)
+        : __start_(__s), __size_(__n), __stride_(__d) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t start()  const { return __start_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t size()   const { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t stride() const { return __stride_; }
+};
+
+class gslice {
+    _CCW_STD::size_t          __start_;
+    valarray<_CCW_STD::size_t>* __size_;      // held by pointer: valarray is not complete yet
+    valarray<_CCW_STD::size_t>* __stride_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI gslice();
+    _CCW_LIBCPP_HIDE_FROM_ABI gslice(_CCW_STD::size_t __s, const valarray<_CCW_STD::size_t>& __l,
+                                 const valarray<_CCW_STD::size_t>& __d);
+    _CCW_LIBCPP_HIDE_FROM_ABI gslice(const gslice& __o);
+    _CCW_LIBCPP_HIDE_FROM_ABI gslice& operator=(const gslice& __o);
+    _CCW_LIBCPP_HIDE_FROM_ABI ~gslice();
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t start() const { return __start_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray<_CCW_STD::size_t> size() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray<_CCW_STD::size_t> stride() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray<_CCW_STD::size_t> __indices() const;
+};
+
+template <class _Tp>
+class valarray {
+    _Tp*        __p_;
+    _CCW_STD::size_t __n_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __alloc(_CCW_STD::size_t __n) { __p_ = __n ? new _Tp[__n] : 0; __n_ = __n; }
+public:
+    typedef _Tp value_type;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray() : __p_(0), __n_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit valarray(_CCW_STD::size_t __n) { __alloc(__n); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = _Tp(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const _Tp& __v, _CCW_STD::size_t __n) { __alloc(__n); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __v; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const _Tp* __src, _CCW_STD::size_t __n) { __alloc(__n); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __src[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const valarray& __o) { __alloc(__o.__n_); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __o.__p_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const slice_array<_Tp>& __sa);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const gslice_array<_Tp>& __ga);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const mask_array<_Tp>& __ma);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(const indirect_array<_Tp>& __ia);
+    _CCW_LIBCPP_HIDE_FROM_ABI ~valarray() { delete[] __p_; }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(valarray&& __o) _CCW_LIBCPP_NOEXCEPT : __p_(__o.__p_), __n_(__o.__n_) {
+        __o.__p_ = 0; __o.__n_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(valarray&& __o) _CCW_LIBCPP_NOEXCEPT {
+        if (this != &__o) {
+            delete[] __p_;
+            __p_ = __o.__p_; __n_ = __o.__n_;
+            __o.__p_ = 0; __o.__n_ = 0;
+        }
+        return *this;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray(_CCW_RV_REF(valarray) __r) : __p_(0), __n_(0) {
+        valarray& __o = _CCW_MOVED_OBJ(__r);
+        __p_ = __o.__p_; __n_ = __o.__n_;
+        __o.__p_ = 0; __o.__n_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(_CCW_RV_REF(valarray) __r) {
+        valarray& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            delete[] __p_;
+            __p_ = __o.__p_; __n_ = __o.__n_;
+            __o.__p_ = 0; __o.__n_ = 0;
+        }
+        return *this;
+    }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const valarray& __o) {
+        if (this != &__o) {
+            if (__n_ != __o.__n_) { delete[] __p_; __alloc(__o.__n_); }
+            for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __o.__p_[__i];
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const _Tp& __v) { for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __v; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const slice_array<_Tp>& __sa);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const gslice_array<_Tp>& __ga);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const mask_array<_Tp>& __ma);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator=(const indirect_array<_Tp>& __ia);
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t size() const { return __n_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp        operator[](_CCW_STD::size_t __i) const { return __p_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       operator[](_CCW_STD::size_t __i)       { return __p_[__i]; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray          operator[](slice __s) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI slice_array<_Tp>  operator[](slice __s);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray          operator[](const gslice& __g) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI gslice_array<_Tp> operator[](const gslice& __g);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray          operator[](const valarray<bool>& __m) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI mask_array<_Tp>   operator[](const valarray<bool>& __m);
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray            operator[](const valarray<_CCW_STD::size_t>& __i) const;
+    _CCW_LIBCPP_HIDE_FROM_ABI indirect_array<_Tp> operator[](const valarray<_CCW_STD::size_t>& __i);
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void resize(_CCW_STD::size_t __n, _Tp __v = _Tp()) {
+        delete[] __p_; __alloc(__n);
+        for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] = __v;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(valarray& __o) {
+        _Tp* __tp = __p_; __p_ = __o.__p_; __o.__p_ = __tp;
+        _CCW_STD::size_t __tn = __n_; __n_ = __o.__n_; __o.__n_ = __tn;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray operator+() const { return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray operator-() const { valarray __r(*this); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __r.__p_[__i] = -__p_[__i]; return __r; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray operator~() const { valarray __r(*this); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __r.__p_[__i] = ~__p_[__i]; return __r; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray<bool> operator!() const {
+        valarray<bool> __r(__n_);
+        for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __r[__i] = !__p_[__i];
+        return __r;
+    }
+
+#define _CCW_VA_CASSIGN(OP)                                                                                                            \
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator OP(const valarray& __o) { for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] OP __o.__p_[__i]; return *this; } \
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray& operator OP(const _Tp& __v)      { for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __p_[__i] OP __v;          return *this; }
+    _CCW_VA_CASSIGN(+=) _CCW_VA_CASSIGN(-=) _CCW_VA_CASSIGN(*=) _CCW_VA_CASSIGN(/=)
+    _CCW_VA_CASSIGN(%=) _CCW_VA_CASSIGN(&=) _CCW_VA_CASSIGN(|=) _CCW_VA_CASSIGN(^=)
+    _CCW_VA_CASSIGN(<<=) _CCW_VA_CASSIGN(>>=)
+#undef _CCW_VA_CASSIGN
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp sum() const { _Tp __s = _Tp(); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __s += __p_[__i]; return __s; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp min() const { _Tp __m = __p_[0]; for (_CCW_STD::size_t __i = 1; __i < __n_; ++__i) if (__p_[__i] < __m) __m = __p_[__i]; return __m; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp max() const { _Tp __m = __p_[0]; for (_CCW_STD::size_t __i = 1; __i < __n_; ++__i) if (__m < __p_[__i]) __m = __p_[__i]; return __m; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray apply(_Tp __f(_Tp)) const { valarray __r(*this); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __r.__p_[__i] = __f(__p_[__i]); return __r; }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray apply(_Tp __f(const _Tp&)) const { valarray __r(*this); for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) __r.__p_[__i] = __f(__p_[__i]); return __r; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray shift(int __k) const {
+        valarray __r(_Tp(), __n_);
+        for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) {
+            long __j = (long)__i + __k;
+            if (__j >= 0 && (_CCW_STD::size_t)__j < __n_) __r.__p_[__i] = __p_[(_CCW_STD::size_t)__j];
+        }
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray cshift(int __k) const {
+        valarray __r(_Tp(), __n_);
+        if (__n_ == 0) return __r;
+        const long __n = (long)__n_;
+        for (_CCW_STD::size_t __i = 0; __i < __n_; ++__i) {
+            long __j = ((long)__i + __k) % __n;
+            if (__j < 0) __j += __n;                       // C's % may go negative
+            __r.__p_[__i] = __p_[(_CCW_STD::size_t)__j];
+        }
+        return __r;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI       _Tp* __data()       { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* __data() const { return __p_; }
+
+    typedef _Tp*       iterator;
+    typedef const _Tp* const_iterator;
+    _CCW_LIBCPP_HIDE_FROM_ABI       iterator begin()       { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI       iterator end()         { return __p_ + __n_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end()   const { return __p_ + __n_; }
+};
+
+#if !defined(__WATCOMC__)
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI void swap(valarray<_Tp>& __x, valarray<_Tp>& __y) { __x.swap(__y); }
+#endif
+
+inline gslice::gslice() : __start_(0), __size_(new valarray<_CCW_STD::size_t>()), __stride_(new valarray<_CCW_STD::size_t>()) {}
+inline gslice::gslice(_CCW_STD::size_t __s, const valarray<_CCW_STD::size_t>& __l, const valarray<_CCW_STD::size_t>& __d)
+    : __start_(__s), __size_(new valarray<_CCW_STD::size_t>(__l)), __stride_(new valarray<_CCW_STD::size_t>(__d)) {}
+inline gslice::gslice(const gslice& __o)
+    : __start_(__o.__start_), __size_(new valarray<_CCW_STD::size_t>(*__o.__size_)), __stride_(new valarray<_CCW_STD::size_t>(*__o.__stride_)) {}
+inline gslice& gslice::operator=(const gslice& __o) {
+    if (this != &__o) {
+        __start_ = __o.__start_;
+        *__size_ = *__o.__size_;
+        *__stride_ = *__o.__stride_;
+    }
+    return *this;
+}
+inline gslice::~gslice() { delete __size_; delete __stride_; }
+inline valarray<_CCW_STD::size_t> gslice::size()   const { return *__size_; }
+inline valarray<_CCW_STD::size_t> gslice::stride() const { return *__stride_; }
+
+inline valarray<_CCW_STD::size_t> gslice::__indices() const {
+    const _CCW_STD::size_t __r = __size_->size();
+    _CCW_STD::size_t __total = __r ? 1 : 0;
+    for (_CCW_STD::size_t __k = 0; __k < __r; ++__k) __total *= (*__size_)[__k];
+
+    valarray<_CCW_STD::size_t> __out_(__total);
+    if (__total == 0) return __out_;
+
+    valarray<_CCW_STD::size_t> __j(_CCW_STD::size_t(0), __r);       // the current multi-index
+    for (_CCW_STD::size_t __c = 0; __c < __total; ++__c) {
+        _CCW_STD::size_t __off = __start_;
+        for (_CCW_STD::size_t __k = 0; __k < __r; ++__k) __off += __j[__k] * (*__stride_)[__k];
+        __out_[__c] = __off;
+        for (_CCW_STD::size_t __k = __r; __k-- > 0; ) {
+            if (++__j[__k] < (*__size_)[__k]) break;
+            __j[__k] = 0;
+        }
+    }
+    return __out_;
+}
+
+#define _CCW_VA_PROXY(NAME)                                                                                   \
+template <class _Tp>                                                                                          \
+class NAME {                                                                                                  \
+    valarray<_Tp>*        __v_;                                                                               \
+    valarray<_CCW_STD::size_t> __idx_;                                                                             \
+    friend class valarray<_Tp>;                                                                               \
+    _CCW_LIBCPP_HIDE_FROM_ABI NAME(valarray<_Tp>& __v, const valarray<_CCW_STD::size_t>& __i) : __v_(&__v), __idx_(__i) {} \
+    NAME& operator=(const NAME&);   /* not assignable-as-a-handle */                                          \
+public:                                                                                                       \
+    typedef _Tp value_type;                                                                                   \
+    _CCW_LIBCPP_HIDE_FROM_ABI ~NAME() {}                                                                          \
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t __size() const { return __idx_.size(); }                                \
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t __at(_CCW_STD::size_t __k) const { return __idx_[__k]; }                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp>& __parent() const { return *__v_; }                                   \
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator=(const valarray<_Tp>& __o) const                                      \
+        { for (_CCW_STD::size_t __k = 0; __k < __idx_.size(); ++__k) (*__v_)[__idx_[__k]] = __o[__k]; }            \
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator=(const _Tp& __x) const                                                \
+        { for (_CCW_STD::size_t __k = 0; __k < __idx_.size(); ++__k) (*__v_)[__idx_[__k]] = __x; }                 \
+    _CCW_VA_PROXY_CASSIGN(+=) _CCW_VA_PROXY_CASSIGN(-=) _CCW_VA_PROXY_CASSIGN(*=) _CCW_VA_PROXY_CASSIGN(/=)   \
+    _CCW_VA_PROXY_CASSIGN(%=) _CCW_VA_PROXY_CASSIGN(&=) _CCW_VA_PROXY_CASSIGN(|=) _CCW_VA_PROXY_CASSIGN(^=)   \
+    _CCW_VA_PROXY_CASSIGN(<<=) _CCW_VA_PROXY_CASSIGN(>>=)                                                     \
+};
+
+#define _CCW_VA_PROXY_CASSIGN(OP)                                                                  \
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator OP(const valarray<_Tp>& __o) const                         \
+        { for (_CCW_STD::size_t __k = 0; __k < __idx_.size(); ++__k) (*__v_)[__idx_[__k]] OP __o[__k]; } \
+    _CCW_LIBCPP_HIDE_FROM_ABI void operator OP(const _Tp& __x) const                                   \
+        { for (_CCW_STD::size_t __k = 0; __k < __idx_.size(); ++__k) (*__v_)[__idx_[__k]] OP __x; }
+
+_CCW_VA_PROXY(slice_array)
+_CCW_VA_PROXY(gslice_array)
+_CCW_VA_PROXY(mask_array)
+_CCW_VA_PROXY(indirect_array)
+
+#undef _CCW_VA_PROXY_CASSIGN
+#undef _CCW_VA_PROXY
+
+namespace __ccw_va {
+_CCW_LIBCPP_HIDE_FROM_ABI inline valarray<_CCW_STD::size_t> __slice_idx(const slice& __s) {
+    valarray<_CCW_STD::size_t> __i(__s.size());
+    for (_CCW_STD::size_t __k = 0; __k < __s.size(); ++__k) __i[__k] = __s.start() + __k * __s.stride();
+    return __i;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline valarray<_CCW_STD::size_t> __mask_idx(const valarray<bool>& __m) {
+    _CCW_STD::size_t __n = 0;
+    for (_CCW_STD::size_t __k = 0; __k < __m.size(); ++__k) if (__m[__k]) ++__n;
+    valarray<_CCW_STD::size_t> __i(__n);
+    _CCW_STD::size_t __c = 0;
+    for (_CCW_STD::size_t __k = 0; __k < __m.size(); ++__k) if (__m[__k]) __i[__c++] = __k;
+    return __i;
+}
+}   // namespace __ccw_va
+
+#define _CCW_VA_FROM_PROXY(NAME)                                                                    \
+template <class _Tp> valarray<_Tp>::valarray(const NAME<_Tp>& __a) {                                \
+    __alloc(__a.__size());                                                                          \
+    for (_CCW_STD::size_t __k = 0; __k < __n_; ++__k) __p_[__k] = __a.__parent()[__a.__at(__k)];         \
+}                                                                                                   \
+template <class _Tp> valarray<_Tp>& valarray<_Tp>::operator=(const NAME<_Tp>& __a) {                \
+    if (__n_ != __a.__size()) { delete[] __p_; __alloc(__a.__size()); }                             \
+    for (_CCW_STD::size_t __k = 0; __k < __n_; ++__k) __p_[__k] = __a.__parent()[__a.__at(__k)];         \
+    return *this;                                                                                   \
+}
+_CCW_VA_FROM_PROXY(slice_array)
+_CCW_VA_FROM_PROXY(gslice_array)
+_CCW_VA_FROM_PROXY(mask_array)
+_CCW_VA_FROM_PROXY(indirect_array)
+#undef _CCW_VA_FROM_PROXY
+
+template <class _Tp> valarray<_Tp> valarray<_Tp>::operator[](slice __s) const {
+    valarray __r(__s.size());
+    for (_CCW_STD::size_t __k = 0; __k < __s.size(); ++__k) __r[__k] = __p_[__s.start() + __k * __s.stride()];
+    return __r;
+}
+template <class _Tp> slice_array<_Tp> valarray<_Tp>::operator[](slice __s) {
+    return slice_array<_Tp>(*this, __ccw_va::__slice_idx(__s));
+}
+template <class _Tp> valarray<_Tp> valarray<_Tp>::operator[](const gslice& __g) const {
+    valarray<_CCW_STD::size_t> __i = __g.__indices();
+    valarray __r(__i.size());
+    for (_CCW_STD::size_t __k = 0; __k < __i.size(); ++__k) __r[__k] = __p_[__i[__k]];
+    return __r;
+}
+template <class _Tp> gslice_array<_Tp> valarray<_Tp>::operator[](const gslice& __g) {
+    return gslice_array<_Tp>(*this, __g.__indices());
+}
+template <class _Tp> valarray<_Tp> valarray<_Tp>::operator[](const valarray<bool>& __m) const {
+    valarray<_CCW_STD::size_t> __i = __ccw_va::__mask_idx(__m);
+    valarray __r(__i.size());
+    for (_CCW_STD::size_t __k = 0; __k < __i.size(); ++__k) __r[__k] = __p_[__i[__k]];
+    return __r;
+}
+template <class _Tp> mask_array<_Tp> valarray<_Tp>::operator[](const valarray<bool>& __m) {
+    return mask_array<_Tp>(*this, __ccw_va::__mask_idx(__m));
+}
+template <class _Tp> valarray<_Tp> valarray<_Tp>::operator[](const valarray<_CCW_STD::size_t>& __i) const {
+    valarray __r(__i.size());
+    for (_CCW_STD::size_t __k = 0; __k < __i.size(); ++__k) __r[__k] = __p_[__i[__k]];
+    return __r;
+}
+template <class _Tp> indirect_array<_Tp> valarray<_Tp>::operator[](const valarray<_CCW_STD::size_t>& __i) {
+    return indirect_array<_Tp>(*this, __i);
+}
+
+#define _CCW_VA_BINOP(OP)                                                                                                                        \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> operator OP(const valarray<_Tp>& __x, const valarray<_Tp>& __y) { valarray<_Tp> __r(__x); __r OP##= __y; return __r; } \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> operator OP(const valarray<_Tp>& __x, const _Tp& __y)           { valarray<_Tp> __r(__x); __r OP##= __y; return __r; } \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> operator OP(const _Tp& __x, const valarray<_Tp>& __y)           { valarray<_Tp> __r(__x, __y.size()); __r OP##= __y; return __r; }
+_CCW_VA_BINOP(+) _CCW_VA_BINOP(-) _CCW_VA_BINOP(*) _CCW_VA_BINOP(/)
+_CCW_VA_BINOP(%) _CCW_VA_BINOP(&) _CCW_VA_BINOP(|) _CCW_VA_BINOP(^)
+_CCW_VA_BINOP(<<) _CCW_VA_BINOP(>>)
+#undef _CCW_VA_BINOP
+
+#define _CCW_VA_CMP(OP)                                                                                              \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<bool> operator OP(const valarray<_Tp>& __x, const valarray<_Tp>& __y) { \
+    valarray<bool> __r(__x.size());                                                                                  \
+    for (_CCW_STD::size_t __i = 0; __i < __x.size(); ++__i) __r[__i] = __x[__i] OP __y[__i];                              \
+    return __r; }                                                                                                    \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<bool> operator OP(const valarray<_Tp>& __x, const _Tp& __y) {    \
+    valarray<bool> __r(__x.size());                                                                                  \
+    for (_CCW_STD::size_t __i = 0; __i < __x.size(); ++__i) __r[__i] = __x[__i] OP __y;                                   \
+    return __r; }                                                                                                    \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<bool> operator OP(const _Tp& __x, const valarray<_Tp>& __y) {    \
+    valarray<bool> __r(__y.size());                                                                                  \
+    for (_CCW_STD::size_t __i = 0; __i < __y.size(); ++__i) __r[__i] = __x OP __y[__i];                                   \
+    return __r; }
+_CCW_VA_CMP(==) _CCW_VA_CMP(!=) _CCW_VA_CMP(<) _CCW_VA_CMP(>) _CCW_VA_CMP(<=) _CCW_VA_CMP(>=)
+_CCW_VA_CMP(&&) _CCW_VA_CMP(||)
+#undef _CCW_VA_CMP
+
+#define _CCW_VA_FN1(NAME)                                                                        \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> NAME(const valarray<_Tp>& __x) {        \
+    valarray<_Tp> __r(__x.size());                                                               \
+    for (_CCW_STD::size_t __i = 0; __i < __x.size(); ++__i) __r[__i] = _CCW_STD::NAME(__x[__i]);           \
+    return __r; }
+_CCW_VA_FN1(abs)  _CCW_VA_FN1(sqrt) _CCW_VA_FN1(exp)  _CCW_VA_FN1(log)  _CCW_VA_FN1(log10)
+_CCW_VA_FN1(sin)  _CCW_VA_FN1(cos)  _CCW_VA_FN1(tan)
+_CCW_VA_FN1(asin) _CCW_VA_FN1(acos) _CCW_VA_FN1(atan)
+_CCW_VA_FN1(sinh) _CCW_VA_FN1(cosh) _CCW_VA_FN1(tanh)
+#undef _CCW_VA_FN1
+
+#define _CCW_VA_FN2(NAME)                                                                                       \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> NAME(const valarray<_Tp>& __x, const valarray<_Tp>& __y) { \
+    valarray<_Tp> __r(__x.size());                                                                              \
+    for (_CCW_STD::size_t __i = 0; __i < __x.size(); ++__i) __r[__i] = _CCW_STD::NAME(__x[__i], __y[__i]);                \
+    return __r; }                                                                                               \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> NAME(const valarray<_Tp>& __x, const _Tp& __y) {       \
+    valarray<_Tp> __r(__x.size());                                                                              \
+    for (_CCW_STD::size_t __i = 0; __i < __x.size(); ++__i) __r[__i] = _CCW_STD::NAME(__x[__i], __y);                     \
+    return __r; }                                                                                               \
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI valarray<_Tp> NAME(const _Tp& __x, const valarray<_Tp>& __y) {       \
+    valarray<_Tp> __r(__y.size());                                                                              \
+    for (_CCW_STD::size_t __i = 0; __i < __y.size(); ++__i) __r[__i] = _CCW_STD::NAME(__x, __y[__i]);                     \
+    return __r; }
+_CCW_VA_FN2(pow) _CCW_VA_FN2(atan2)
+#undef _CCW_VA_FN2
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_VALARRAY

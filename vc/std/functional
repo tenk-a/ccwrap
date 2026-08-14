@@ -1,0 +1,29 @@
+// ccwrap <functional>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(functional)
+
+#include <../../detail/cxx/functional.hpp>
+
+#if defined(__cplusplus) && _MSC_VER < 1600
+#include <../../detail/llibcxx03/include/__functional/bad_function_call.h>
+#include <../../detail/llibcxx03/include/__functional/function.h>
+#include <../../detail/llibcxx03/include/__functional/bind.h>
+#include <../../detail/llibcxx03/include/__functional/mem_fn.h>
+#endif
+#if defined(__cplusplus) && !defined(__cpp_lib_boyer_moore_searcher)
+#include <../../detail/llibcxx03/include/__functional/default_searcher.h>
+#include <../../detail/llibcxx03/include/__functional/boyer_moore_searcher.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges) \
+	&& (_MSC_VER < 1600 || _MSC_VER >= 1900) \
+	&& (!defined(_HAS_IDENTITY_STRUCT) || !_HAS_IDENTITY_STRUCT)
+#include <../../detail/llibcxx03/include/__functional/identity.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_unwrap_ref)
+#include <../../detail/llibcxx03/include/__functional/unwrap_reference.h>
+#endif

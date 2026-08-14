@@ -1,0 +1,146 @@
+// ccwrap <syncstream>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+
+ #include _CCW_NATIVE_STL_HEADER_PATH(syncstream)
+ namespace _ccw {
+     using std::basic_syncbuf; using std::basic_osyncstream;
+     using std::syncbuf; using std::wsyncbuf; using std::osyncstream; using std::wosyncstream;
+ }
+
+#else
+
+#include <streambuf>
+#include <ostream>
+#include <string>
+#include <ios>
+#include <memory>   /* allocator */
+#include <mutex>
+
+namespace _CCW_STD20 {
+using namespace ::std;
+
+namespace __ccw_sync {
+inline std::mutex& global() { static std::mutex m; return m; }
+}
+
+template<class CharT, class Traits = std::char_traits<CharT>, class Alloc = std::allocator<CharT> >
+class basic_syncbuf : public std::basic_streambuf<CharT, Traits> {
+    std::basic_streambuf<CharT, Traits>*        wrapped_;
+    std::basic_string<CharT, Traits, Alloc>     buf_;
+    bool                                        emit_on_sync_;
+    basic_syncbuf(const basic_syncbuf&);
+    basic_syncbuf& operator=(const basic_syncbuf&);
+public:
+    typedef CharT                     char_type;
+    typedef Traits                    traits_type;
+    typedef typename Traits::int_type int_type;
+    typedef Alloc                     allocator_type;
+    typedef std::basic_streambuf<CharT, Traits> streambuf_type;
+
+    explicit basic_syncbuf(streambuf_type* obuf = 0)
+        : wrapped_(obuf), emit_on_sync_(false) {}
+    ~basic_syncbuf() { emit(); }
+
+    bool emit() {
+        if (!wrapped_)
+            return false;
+        std::lock_guard<std::mutex> lk(__ccw_sync::global());
+        bool ok = true;
+        if (!buf_.empty()) {
+            std::streamsize n = (std::streamsize)buf_.size();
+            ok = (this->wrapped_->sputn(buf_.data(), n) == n);
+            buf_.clear();
+        }
+        if (emit_on_sync_ && this->wrapped_->pubsync() != 0)
+            ok = false;
+        return ok;
+    }
+    streambuf_type* get_wrapped() const { return wrapped_; }
+    allocator_type  get_allocator() const { return buf_.get_allocator(); }
+    void set_emit_on_sync(bool b) { emit_on_sync_ = b; }
+
+    void swap(basic_syncbuf& __o) {
+        streambuf_type* __w = wrapped_; wrapped_ = __o.wrapped_; __o.wrapped_ = __w;
+        buf_.swap(__o.buf_);
+        bool __e = emit_on_sync_; emit_on_sync_ = __o.emit_on_sync_; __o.emit_on_sync_ = __e;
+    }
+
+protected:
+    virtual int_type overflow(int_type c) {
+        if (!Traits::eq_int_type(c, Traits::eof()))
+            buf_.push_back(Traits::to_char_type(c));
+        return Traits::not_eof(c);
+    }
+    virtual std::streamsize xsputn(const CharT* s, std::streamsize n) {
+        buf_.append(s, (typename std::basic_string<CharT, Traits, Alloc>::size_type)n);
+        return n;
+    }
+    virtual int sync() {
+        if (emit_on_sync_)
+            return emit() ? 0 : -1;
+        return 0;
+    }
+};
+
+template<class CharT, class Traits, class Alloc>
+struct __ccw_syncbuf_holder {
+    basic_syncbuf<CharT, Traits, Alloc> __sb;
+    explicit __ccw_syncbuf_holder(std::basic_streambuf<CharT, Traits>* o) : __sb(o) {}
+};
+
+template<class CharT, class Traits = std::char_traits<CharT>, class Alloc = std::allocator<CharT> >
+class basic_osyncstream
+    : private __ccw_syncbuf_holder<CharT, Traits, Alloc>
+    , public std::basic_ostream<CharT, Traits> {
+    typedef __ccw_syncbuf_holder<CharT, Traits, Alloc> holder_;
+    basic_osyncstream(const basic_osyncstream&);
+    basic_osyncstream& operator=(const basic_osyncstream&);
+public:
+    typedef CharT                     char_type;
+    typedef Traits                    traits_type;
+    typedef Alloc                     allocator_type;
+    typedef basic_syncbuf<CharT, Traits, Alloc> syncbuf_type;
+    typedef std::basic_streambuf<CharT, Traits> streambuf_type;
+
+    explicit basic_osyncstream(streambuf_type* obuf)
+        : holder_(obuf), std::basic_ostream<CharT, Traits>(&this->__sb) {}
+    explicit basic_osyncstream(std::basic_ostream<CharT, Traits>& os)
+        : holder_(os.rdbuf()), std::basic_ostream<CharT, Traits>(&this->__sb) {}
+    ~basic_osyncstream() {}
+
+#if _MSC_VER >= 1600
+    basic_osyncstream(basic_osyncstream&& __o)
+        : holder_(0), std::basic_ostream<CharT, Traits>(&this->__sb) {
+        this->__sb.swap(__o.__sb);
+    }
+    basic_osyncstream& operator=(basic_osyncstream&& __o) {
+        if (this != &__o) {
+            this->__sb.emit();
+            this->__sb.swap(__o.__sb);
+        }
+        return *this;
+    }
+#endif
+
+    syncbuf_type*   rdbuf() const { return const_cast<syncbuf_type*>(&this->__sb); }
+    streambuf_type* get_wrapped() const { return this->__sb.get_wrapped(); }
+    void            emit() { this->__sb.emit(); }
+};
+
+typedef basic_syncbuf<char>        syncbuf;
+typedef basic_syncbuf<wchar_t>     wsyncbuf;
+typedef basic_osyncstream<char>    osyncstream;
+typedef basic_osyncstream<wchar_t> wosyncstream;
+
+}   // namespace _CCW_STD20
+
+namespace _ccw {
+    using _CCW_STD20::basic_syncbuf; using _CCW_STD20::basic_osyncstream;
+    using _CCW_STD20::syncbuf; using _CCW_STD20::wsyncbuf; using _CCW_STD20::osyncstream; using _CCW_STD20::wosyncstream;
+}
+
+#endif

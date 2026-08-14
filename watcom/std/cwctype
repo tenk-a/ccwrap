@@ -1,0 +1,7 @@
+// ccwrap watcom: <cwctype>. Thin forwarder to Open Watcom's native <cwctype> (wide
+// character classification -- wctype_t, wint_t, isw*/tow*, in namespace std),
+// guaranteeing ccwrap_common.h is pulled in first. No supplements are needed yet.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cwctype)

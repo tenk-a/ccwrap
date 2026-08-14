@@ -1,0 +1,5 @@
+"suite"	"pass"	"status"	"note"
+"stdckdint"	"cxx26:__cpp_lib_stdckdint_h=202603L"	"skip"	""
+"stdckdint"	"cxx26:ckd_add"	"tested"	""
+"stdckdint"	"cxx26:ckd_mul"	"tested"	""
+"stdckdint"	"cxx26:ckd_sub"	"tested"	""

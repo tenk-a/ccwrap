@@ -1,0 +1,68 @@
+//  ccwrap llibcxx03: <semaphore> (C++20) for Open Watcom -- counting_semaphore and
+//  binary_semaphore built on <mutex> + <condition_variable>. Classic C++03 body.
+//
+//  Complete: acquire / try_acquire / try_acquire_for / try_acquire_until / release /
+//  max, plus the binary_semaphore alias.
+#ifndef _CCW_LIBCPP_SEMAPHORE
+#define _CCW_LIBCPP_SEMAPHORE
+#include "__config"
+#include <mutex>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <ptrdiff_t _LeastMax = PTRDIFF_MAX>
+class counting_semaphore {
+    ptrdiff_t          __count_;
+    mutex              __m_;
+    condition_variable __cv_;
+
+    struct __avail { ptrdiff_t* __c; _CCW_LIBCPP_HIDE_FROM_ABI bool operator()() const { return *__c > 0; } };
+
+    counting_semaphore(const counting_semaphore&);
+    counting_semaphore& operator=(const counting_semaphore&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit counting_semaphore(ptrdiff_t __desired) : __count_(__desired) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~counting_semaphore() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void release(ptrdiff_t __update = 1) {
+        unique_lock<mutex> __lk(__m_);
+        __count_ += __update;
+        if (__update == 1) __cv_.notify_one(); else __cv_.notify_all();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void acquire() {
+        unique_lock<mutex> __lk(__m_);
+        __avail __p; __p.__c = &__count_;
+        __cv_.wait(__lk, __p);
+        --__count_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_acquire() {
+        unique_lock<mutex> __lk(__m_);
+        if (__count_ <= 0) return false;
+        --__count_;
+        return true;
+    }
+    template <class _Rep, class _Period>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_acquire_for(const chrono::duration<_Rep, _Period>& __rt) {
+        unique_lock<mutex> __lk(__m_);
+        __avail __p; __p.__c = &__count_;
+        if (!__cv_.wait_for(__lk, __rt, __p)) return false;
+        --__count_;
+        return true;
+    }
+    template <class _Clock, class _Duration>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_acquire_until(const chrono::time_point<_Clock, _Duration>& __tp) {
+        unique_lock<mutex> __lk(__m_);
+        __avail __p; __p.__c = &__count_;
+        if (!__cv_.wait_until(__lk, __tp, __p)) return false;
+        --__count_;
+        return true;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static ptrdiff_t max() { return _LeastMax; }
+};
+
+typedef counting_semaphore<1> binary_semaphore;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SEMAPHORE

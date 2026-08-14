@@ -1,0 +1,275 @@
+//  ccwrap llibcxx03: <optional> for Open Watcom -- _CCW_STD::optional<T>. Classic C++03
+//  body: a raw aligned buffer + engaged flag, placement-new construction. Copy
+//  semantics only (no move on Open Watcom). emplace via the fnctmpl emulation.
+//
+#ifndef _CCW_LIBCPP_OPTIONAL
+#define _CCW_LIBCPP_OPTIONAL
+#include "__config"
+#include "__utility/in_place.h"   // in_place_t / in_place_type_t / in_place_index_t
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include "__functional/hash.h"
+#include <new>
+#include <cstddef>
+#include <exception>
+#if _CCW_HAS_INIT_LIST
+#  include <initializer_list>
+#endif
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct nullopt_t { _CCW_LIBCPP_HIDE_FROM_ABI nullopt_t() {} };
+static const nullopt_t nullopt = nullopt_t();
+
+#ifndef _CCW_LIBCPP___UTILITY_IN_PLACE_DEFINED
+#define _CCW_LIBCPP___UTILITY_IN_PLACE_DEFINED
+struct in_place_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit in_place_t() {} };
+static const in_place_t in_place = in_place_t();
+#endif
+
+class bad_optional_access : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_optional_access() _CCW_LIBCPP_NOEXCEPT {}
+    virtual ~bad_optional_access() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "bad_optional_access"; }
+};
+
+template <class _Tp> class optional;
+
+struct __ccw_opt_not_optional_tag {};
+struct __ccw_opt_is_optional_tag  {};
+template <class _Up> struct __ccw_opt_is_optional              { typedef __ccw_opt_not_optional_tag _Tag; };
+template <class _Up> struct __ccw_opt_is_optional< optional<_Up> > { typedef __ccw_opt_is_optional_tag _Tag; };
+
+template <class _Tp>
+class optional {
+    union __storage_t { char __b_[sizeof(_Tp)]; double __d_; void* __p_; long __l_; };
+    __storage_t __s_;
+    bool        __has_;
+    typedef void (optional::*__bool_type)() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __true_bool() const {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       __ptr()       { return reinterpret_cast<_Tp*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* __ptr() const { return reinterpret_cast<const _Tp*>(__s_.__b_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct(const _Tp& __v) { ::new (static_cast<void*>(__ptr())) _Tp(__v); __has_ = true; }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_moved(_Up& __v) { ::new (static_cast<void*>(__ptr())) _Tp(__v); __has_ = true; }
+
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ctor_moved_disp(_Up& __v, __ccw_opt_not_optional_tag) { __construct_moved(__v); }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __assign_moved_disp(_Up& __v, __ccw_opt_not_optional_tag) {
+        if (__has_) *__ptr() = __v; else __construct_moved(__v);
+    }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ctor_moved_disp(_Up& __o, __ccw_opt_is_optional_tag) {
+        if (__o.has_value()) __construct_moved(_ccw::move(*__o));
+    }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __assign_moved_disp(_Up& __o, __ccw_opt_is_optional_tag) {
+        if (!__o.has_value()) { __destroy(); return; }
+        if (__has_) *__ptr() = _ccw::move(*__o); else __construct_moved(_ccw::move(*__o));
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void __destroy() { if (__has_) { __ptr()->~_Tp(); __has_ = false; } }
+
+public:
+    typedef _Tp value_type;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI optional() : __has_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(nullopt_t) : __has_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(const _Tp& __v) : __has_(false) { __construct(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(const optional& __o) : __has_(false) { if (__o.__has_) __construct(*__o.__ptr()); }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(const optional<_Up>& __o) : __has_(false) {
+        if (__o.has_value()) __construct(*__o);
+    }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(::_ccw::rv<_Up>& __v) : __has_(false) {
+        __ctor_moved_disp(__v, typename __ccw_opt_is_optional<_Up>::_Tag());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(_CCW_RV_REF(optional) __r) : __has_(false) {
+        optional& __o = _CCW_MOVED_OBJ(__r);
+        if (__o.__has_) __construct_moved(_ccw::move(*__o.__ptr()));
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(optional&& __o) : __has_(false) {
+        if (__o.__has_) { ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Tp&&>(*__o.__ptr())); __has_ = true; }
+    }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(optional<_Up>&& __o) : __has_(false) {
+        if (__o.has_value()) { ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Up&&>(*__o)); __has_ = true; }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional(_Tp&& __v) : __has_(false) {
+        ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Tp&&>(__v)); __has_ = true;
+    }
+#endif
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit optional(in_place_t) : __has_(false) { ::new (static_cast<void*>(__ptr())) _Tp(); __has_ = true; }
+#  define _CCW_GEN_OPT_INPLACE(N)                                                                    \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                               \
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit optional(in_place_t, _CCW_FNCTMPL_DECLARG(N)) : __has_(false) { ::new (static_cast<void*>(__ptr())) _Tp(_CCW_FNCTMPL_FNCARG(N)); __has_ = true; }
+    _CCW_GEN_OPT_INPLACE(1) _CCW_GEN_OPT_INPLACE(2) _CCW_GEN_OPT_INPLACE(3) _CCW_GEN_OPT_INPLACE(4)
+#  undef _CCW_GEN_OPT_INPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit optional(in_place_t, _Args&&... __a) : __has_(false) { ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Args&&>(__a)...); __has_ = true; }
+#  if _CCW_HAS_INIT_LIST
+    template <class _Up, class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit optional(in_place_t, _CCW_STD::initializer_list<_Up> __il, _Args&&... __a) : __has_(false) { ::new (static_cast<void*>(__ptr())) _Tp(__il, static_cast<_Args&&>(__a)...); __has_ = true; }
+#  endif
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ~optional() { __destroy(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(nullopt_t) { __destroy(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(const _Tp& __v) { if (__has_) *__ptr() = __v; else __construct(__v); return *this; }
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(const optional<_Up>& __o) {
+        if (!__o.has_value()) { __destroy(); return *this; }
+        if (__has_) *__ptr() = *__o; else __construct(*__o);
+        return *this;
+    }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    template <class _Up>
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(::_ccw::rv<_Up>& __v) {
+        __assign_moved_disp(__v, typename __ccw_opt_is_optional<_Up>::_Tag());
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(_CCW_RV_REF(optional) __r) {
+        optional& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) {
+            if (__o.__has_) {
+                if (__has_) *__ptr() = _ccw::move(*__o.__ptr());
+                else        __construct_moved(_ccw::move(*__o.__ptr()));
+            } else {
+                __destroy();
+            }
+        }
+        return *this;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(optional&& __o) {
+        if (this != &__o) {
+            if (__o.__has_) {
+                if (__has_) *__ptr() = static_cast<_Tp&&>(*__o.__ptr());
+                else { ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Tp&&>(*__o.__ptr())); __has_ = true; }
+            } else {
+                __destroy();
+            }
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(_Tp&& __v) {
+        if (__has_) *__ptr() = static_cast<_Tp&&>(__v);
+        else { ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Tp&&>(__v)); __has_ = true; }
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI optional& operator=(const optional& __o) {
+        if (this != &__o) {
+            if (__o.__has_) { if (__has_) *__ptr() = *__o.__ptr(); else __construct(*__o.__ptr()); }
+            else __destroy();
+        }
+        return *this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_value() const { return __has_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const { return __has_ ? &optional::__true_bool : 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       operator*()        { return *__ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& operator*()  const { return *__ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*       operator->()       { return __ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp* operator->() const { return __ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp&       value()       { if (!__has_) _CCW_THROW(bad_optional_access()); return *__ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _Tp& value() const { if (!__has_) _CCW_THROW(bad_optional_access()); return *__ptr(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp        value_or(const _Tp& __d) const { return __has_ ? *__ptr() : __d; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void reset() { __destroy(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(optional& __o) {
+        if (__has_ && __o.__has_) { _Tp __t = *__ptr(); *__ptr() = *__o.__ptr(); *__o.__ptr() = __t; }
+        else if (__has_)      { __o.__construct(*__ptr()); __destroy(); }
+        else if (__o.__has_)  { __construct(*__o.__ptr()); __o.__destroy(); }
+    }
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace() { __destroy(); ::new (static_cast<void*>(__ptr())) _Tp(); __has_ = true; return *__ptr(); }
+#  define _CCW_GEN_OPT_EMPLACE(N)                                                                    \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                               \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_FNCTMPL_DECLARG(N)) { __destroy(); ::new (static_cast<void*>(__ptr())) _Tp(_CCW_FNCTMPL_FNCARG(N)); __has_ = true; return *__ptr(); }
+    _CCW_GEN_OPT_EMPLACE(1) _CCW_GEN_OPT_EMPLACE(2) _CCW_GEN_OPT_EMPLACE(3) _CCW_GEN_OPT_EMPLACE(4)
+#  undef _CCW_GEN_OPT_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_Args&&... __a) { __destroy(); ::new (static_cast<void*>(__ptr())) _Tp(static_cast<_Args&&>(__a)...); __has_ = true; return *__ptr(); }
+#  if _CCW_HAS_INIT_LIST
+    template <class _Up, class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_STD::initializer_list<_Up> __il, _Args&&... __a) { __destroy(); ::new (static_cast<void*>(__ptr())) _Tp(__il, static_cast<_Args&&>(__a)...); __has_ = true; return *__ptr(); }
+#  endif
+#endif
+};
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI optional<_Tp> make_optional(const _Tp& __v) { return optional<_Tp>(__v); }
+#if _CCW_NO_VARIADIC_TEMPLATES
+#  define _CCW_GEN_MAKE_OPTIONAL(N)                                                        template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                        _CCW_LIBCPP_HIDE_FROM_ABI optional<_Tp> make_optional(_CCW_FNCTMPL_DECLARG(N)) {           return optional<_Tp>(in_place, _CCW_FNCTMPL_FNCARG(N));                            }
+    _CCW_GEN_MAKE_OPTIONAL(2) _CCW_GEN_MAKE_OPTIONAL(3) _CCW_GEN_MAKE_OPTIONAL(4)
+#  undef _CCW_GEN_MAKE_OPTIONAL
+#else
+template <class _Tp, class _A0, class _A1, class... _Args>
+_CCW_LIBCPP_HIDE_FROM_ABI optional<_Tp> make_optional(_A0&& __a0, _A1&& __a1, _Args&&... __a) {
+    return optional<_Tp>(in_place, static_cast<_A0&&>(__a0), static_cast<_A1&&>(__a1),
+                         static_cast<_Args&&>(__a)...);
+}
+#endif
+#if !_CCW_HAS_REAL_RVALUE_REF
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI optional<_Tp> make_optional(_CCW_RV_REF(_Tp) __v) { return optional<_Tp>(__v); }
+#endif
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const optional<_Tp>& __x, const optional<_Tp>& __y) {
+    if (__x.has_value() != __y.has_value()) return false;
+    return !__x.has_value() || (*__x == *__y);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const optional<_Tp>& __x, const optional<_Tp>& __y) { return !(__x == __y); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const optional<_Tp>& __x, const optional<_Tp>& __y) {
+    if (!__y.has_value()) return false; if (!__x.has_value()) return true; return *__x < *__y; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const optional<_Tp>& __x, const optional<_Tp>& __y)  { return __y < __x; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const optional<_Tp>& __x, const optional<_Tp>& __y) { return !(__y < __x); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const optional<_Tp>& __x, const optional<_Tp>& __y) { return !(__x < __y); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const optional<_Tp>& __x, nullopt_t) { return !__x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(nullopt_t, const optional<_Tp>& __x) { return !__x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const optional<_Tp>& __x, nullopt_t) { return __x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(nullopt_t, const optional<_Tp>& __x) { return __x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const optional<_Tp>&, nullopt_t) { return false; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(nullopt_t, const optional<_Tp>& __x) { return __x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const optional<_Tp>& __x, nullopt_t) { return __x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(nullopt_t, const optional<_Tp>&) { return false; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const optional<_Tp>& __x, nullopt_t) { return !__x.has_value(); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(nullopt_t, const optional<_Tp>&) { return true; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const optional<_Tp>&, nullopt_t) { return true; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(nullopt_t, const optional<_Tp>& __x) { return !__x.has_value(); }
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const optional<_Tp>& __x, const _Tp& __v) { return __x.has_value() && *__x == __v; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const _Tp& __v, const optional<_Tp>& __x) { return __x.has_value() && __v == *__x; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const optional<_Tp>& __x, const _Tp& __v) { return !(__x == __v); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const _Tp& __v, const optional<_Tp>& __x) { return !(__v == __x); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const optional<_Tp>& __x, const _Tp& __v) { return !__x.has_value() || *__x < __v; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const _Tp& __v, const optional<_Tp>& __x) { return __x.has_value() && __v < *__x; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const optional<_Tp>& __x, const _Tp& __v) { return __x.has_value() && __v < *__x; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const _Tp& __v, const optional<_Tp>& __x) { return !__x.has_value() || *__x < __v; }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const optional<_Tp>& __x, const _Tp& __v) { return !__x.has_value() || !(__v < *__x); }
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const optional<_Tp>& __x, const _Tp& __v) { return __x.has_value() && !(*__x < __v); }
+
+template <class _Tp>
+struct hash<optional<_Tp> > {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const optional<_Tp>& __o) const {
+        return __o.has_value() ? hash<_Tp>()(*__o) : (_CCW_STD::size_t)0;
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(eopt, bad_optional_access, bad_optional_access)
+
+#endif // _CCW_LIBCPP_OPTIONAL

@@ -1,0 +1,2 @@
+// ccwrap <functional>
+#include "../std/functional"

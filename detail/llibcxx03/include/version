@@ -1,0 +1,14 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <version> for Open Watcom.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_VERSION
+#define _CCW_LIBCPP_VERSION
+#include "__config"
+
+#ifndef _CCW_LIBCXX03
+#define _CCW_LIBCXX03 1
+#endif
+
+#endif // _CCW_LIBCPP_VERSION

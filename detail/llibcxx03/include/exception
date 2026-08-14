@@ -1,0 +1,212 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <exception> for Open Watcom. llibcxx03 owns the whole
+//  exception + string stack (rather than reusing the native <exception>/<new>/
+//  <string>, which are entangled via _strdef.h and each other), so there is a
+//  single _CCW_STD::basic_string and a single _CCW_STD::exception hierarchy. Native <new>
+//  is avoided by providing a llibcxx03 <new> (placement new is trivial), which
+//  is what lets us define _CCW_STD::exception / _CCW_STD::bad_alloc here without clashing.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_EXCEPTION
+#define _CCW_LIBCPP_EXCEPTION
+#include "__config"
+#include <cstddef>   // _CCW_STD::size_t
+#include <cstdlib>   // _CCW_STD::abort
+#include "__type_traits/is_class.h"
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI exception() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI exception(const exception&) _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI exception& operator=(const exception&) _CCW_LIBCPP_NOEXCEPT { return *this; }
+    virtual ~exception() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "std::exception"; }
+};
+
+class bad_exception : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_exception() _CCW_LIBCPP_NOEXCEPT {}
+    virtual ~bad_exception() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "std::bad_exception"; }
+};
+
+class bad_alloc : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_alloc() _CCW_LIBCPP_NOEXCEPT {}
+    virtual ~bad_alloc() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "std::bad_alloc"; }
+};
+
+class bad_cast : public exception {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_cast() _CCW_LIBCPP_NOEXCEPT {}
+    virtual ~bad_cast() _CCW_LIBCPP_NOEXCEPT {}
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "std::bad_cast"; }
+};
+
+typedef void (*terminate_handler)();
+typedef void (*unexpected_handler)();
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline terminate_handler& __ccw_terminate_slot()   { static terminate_handler  __h = 0; return __h; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline unexpected_handler& __ccw_unexpected_slot() { static unexpected_handler __h = 0; return __h; }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline terminate_handler set_terminate(terminate_handler __f) _CCW_LIBCPP_NOEXCEPT {
+    terminate_handler __o = __ccw_terminate_slot(); __ccw_terminate_slot() = __f; return __o; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline terminate_handler get_terminate() _CCW_LIBCPP_NOEXCEPT { return __ccw_terminate_slot(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void terminate() { terminate_handler __h = __ccw_terminate_slot(); if (__h) __h(); _CCW_STD::abort(); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline unexpected_handler set_unexpected(unexpected_handler __f) _CCW_LIBCPP_NOEXCEPT {
+    unexpected_handler __o = __ccw_unexpected_slot(); __ccw_unexpected_slot() = __f; return __o; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline unexpected_handler get_unexpected() _CCW_LIBCPP_NOEXCEPT { return __ccw_unexpected_slot(); }
+#if _CCW_TARGET_CXX < 2017
+_CCW_LIBCPP_HIDE_FROM_ABI inline void unexpected() { unexpected_handler __h = __ccw_unexpected_slot(); if (__h) __h(); _CCW_STD::terminate(); }
+#endif
+
+class _CCW_LIBCPP_HIDE_FROM_ABI __exception_ptr_holder {
+public:
+    int __rc_;
+    __exception_ptr_holder() : __rc_(1) {}
+    virtual ~__exception_ptr_holder() {}
+    virtual void __rethrow() const = 0;    // never returns (throws)
+};
+
+template <class _Ep>
+class __ex_holder : public __exception_ptr_holder {
+    _Ep __ex_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __ex_holder(const _Ep& __e) : __ex_(__e) {}
+    virtual void __rethrow() const { _CCW_THROW(__ex_); }
+};
+
+class __ccw_captured_exception : public exception {
+    char __buf_[256];
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __ccw_captured_exception(const char* __m) _CCW_LIBCPP_NOEXCEPT {
+        _CCW_STD::size_t __i = 0;
+        if (__m) for (; __m[__i] != 0 && __i < 255; ++__i) __buf_[__i] = __m[__i];
+        __buf_[__i] = 0;
+    }
+    virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return __buf_; }
+};
+
+class __ex_holder_msg : public __exception_ptr_holder {
+    char __buf_[256];
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __ex_holder_msg(const char* __m) {
+        _CCW_STD::size_t __i = 0;
+        if (__m) for (; __m[__i] != 0 && __i < 255; ++__i) __buf_[__i] = __m[__i];
+        __buf_[__i] = 0;
+    }
+    virtual void __rethrow() const { _CCW_THROW(__ccw_captured_exception(__buf_)); }
+};
+
+class __ex_holder_unknown : public __exception_ptr_holder {
+public:
+    virtual void __rethrow() const { _CCW_THROW(bad_exception()); }
+};
+
+class exception_ptr {
+    __exception_ptr_holder* __p_;
+    typedef void (exception_ptr::*__bool_type)() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __true_value() const {}
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI exception_ptr() _CCW_LIBCPP_NOEXCEPT : __p_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI exception_ptr(const exception_ptr& __o) _CCW_LIBCPP_NOEXCEPT : __p_(__o.__p_) {
+        if (__p_) ++__p_->__rc_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI exception_ptr& operator=(const exception_ptr& __o) _CCW_LIBCPP_NOEXCEPT {
+        if (__o.__p_) ++__o.__p_->__rc_;
+        if (__p_ && --__p_->__rc_ == 0) delete __p_;
+        __p_ = __o.__p_;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~exception_ptr() _CCW_LIBCPP_NOEXCEPT { if (__p_ && --__p_->__rc_ == 0) delete __p_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const _CCW_LIBCPP_NOEXCEPT { return __p_ ? &exception_ptr::__true_value : 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(exception_ptr& __o) _CCW_LIBCPP_NOEXCEPT { __exception_ptr_holder* __t = __p_; __p_ = __o.__p_; __o.__p_ = __t; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static exception_ptr __adopt(__exception_ptr_holder* __h) _CCW_LIBCPP_NOEXCEPT {
+        exception_ptr __r; __r.__p_ = __h; return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const __exception_ptr_holder* __get() const _CCW_LIBCPP_NOEXCEPT { return __p_; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const exception_ptr& __x, const exception_ptr& __y) _CCW_LIBCPP_NOEXCEPT { return __x.__get() == __y.__get(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const exception_ptr& __x, const exception_ptr& __y) _CCW_LIBCPP_NOEXCEPT { return !(__x == __y); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(exception_ptr& __x, exception_ptr& __y) _CCW_LIBCPP_NOEXCEPT { __x.swap(__y); }
+
+template <class _Ep>
+_CCW_LIBCPP_HIDE_FROM_ABI exception_ptr make_exception_ptr(_Ep __e) _CCW_LIBCPP_NOEXCEPT {
+    return exception_ptr::__adopt(new __ex_holder<_Ep>(__e));
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline exception_ptr current_exception() _CCW_LIBCPP_NOEXCEPT {
+#if _CCW_HAS_EXCEPTIONS
+    try {
+        throw;
+    } catch (const bad_alloc& __e)     { return exception_ptr::__adopt(new __ex_holder<bad_alloc>(__e)); }
+      catch (const bad_cast& __e)      { return exception_ptr::__adopt(new __ex_holder<bad_cast>(__e)); }
+      catch (const bad_exception& __e) { return exception_ptr::__adopt(new __ex_holder<bad_exception>(__e)); }
+      catch (const exception& __e)     { return exception_ptr::__adopt(new __ex_holder_msg(__e.what())); }
+      catch (...)                      { return exception_ptr::__adopt(new __ex_holder_unknown()); }
+#else
+    return exception_ptr();
+#endif
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void rethrow_exception(exception_ptr __p) {
+    if (__p) __p.__get()->__rethrow();
+    _CCW_STD::terminate();   // __rethrow never returns; this is the null case
+}
+
+class nested_exception {
+    exception_ptr __ptr_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI nested_exception() _CCW_LIBCPP_NOEXCEPT : __ptr_(current_exception()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI nested_exception(const nested_exception& __o) _CCW_LIBCPP_NOEXCEPT : __ptr_(__o.__ptr_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI nested_exception& operator=(const nested_exception& __o) _CCW_LIBCPP_NOEXCEPT
+        { __ptr_ = __o.__ptr_; return *this; }
+    virtual ~nested_exception() _CCW_LIBCPP_NOEXCEPT {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void rethrow_nested() const {
+        if (__ptr_) rethrow_exception(__ptr_);
+        _CCW_STD::terminate();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI exception_ptr nested_ptr() const _CCW_LIBCPP_NOEXCEPT { return __ptr_; }
+};
+
+template <class _Tp, bool _IsClass>
+struct __throw_with_nested_impl;
+template <class _Tp>
+struct __throw_with_nested_impl<_Tp, true> {
+    struct __nested : public _Tp, public nested_exception {
+        _CCW_LIBCPP_HIDE_FROM_ABI __nested(const _Tp& __t) : _Tp(__t) {}
+    };
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __go(const _Tp& __t) { _CCW_THROW(__nested(__t)); }
+};
+template <class _Tp>
+struct __throw_with_nested_impl<_Tp, false> {
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __go(const _Tp& __t) { _CCW_THROW(__t); }
+};
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI void throw_with_nested(_Tp __t) {
+    __throw_with_nested_impl<_Tp, is_class<_Tp>::value>::__go(__t);
+}
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI void rethrow_if_nested(const _Tp& __t) {
+    const nested_exception* __n = dynamic_cast<const nested_exception*>(&__t);
+    if (__n) __n->rethrow_nested();
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+
+_CCW_EH_ANCHOR(exc, exception, exception)
+_CCW_EH_ANCHOR(bexc, bad_exception, bad_exception)
+_CCW_EH_ANCHOR(balc, bad_alloc, bad_alloc)
+_CCW_EH_ANCHOR(bcst, bad_cast, bad_cast)
+
+#endif // _CCW_LIBCPP_EXCEPTION

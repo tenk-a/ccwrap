@@ -1,0 +1,8 @@
+"suite"	"pass"	"status"	"note"
+"cstdarg_h"	"cxx03:<cstdarg> header compiles"	"tested"	""
+"cstdarg_h"	"cxx03:va_arg"	"tested"	""
+"cstdarg_h"	"cxx03:va_arg (multiple types)"	"tested"	""
+"cstdarg_h"	"cxx03:va_end"	"tested"	""
+"cstdarg_h"	"cxx03:va_list passed to another function"	"tested"	""
+"cstdarg_h"	"cxx03:va_start"	"tested"	""
+"cstdarg_h"	"cxx11:va_copy"	"tested"	""

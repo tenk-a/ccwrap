@@ -1,0 +1,12 @@
+// ccwrap <memory_resource>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include _CCW_NATIVE_STL_HEADER_PATH(memory_resource)
+ namespace _ccw { namespace pmr = std::pmr; }
+#else
+ #include <../../detail/llibcxx03/include/memory_resource>
+ namespace _ccw { namespace pmr = std::pmr; }
+#endif

@@ -1,0 +1,48 @@
+//  ccwrap llibcxx03: <latch> (C++20) for Open Watcom -- a single-use thread barrier
+//  built on <mutex> + <condition_variable>. Classic C++03 body. On the
+//  single-threaded stub build the mutex/condvar are no-ops (count_down and wait run
+//  on the one thread in program order, so the count has already reached 0 by wait).
+#ifndef _CCW_LIBCPP_LATCH
+#define _CCW_LIBCPP_LATCH
+#include "__config"
+#include <mutex>
+#include <condition_variable>
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class latch {
+    mutable ptrdiff_t          __count_;
+    mutable mutex              __m_;
+    mutable condition_variable __cv_;
+
+    struct __ready { ptrdiff_t* __c; _CCW_LIBCPP_HIDE_FROM_ABI bool operator()() const { return *__c <= 0; } };
+
+    latch(const latch&);
+    latch& operator=(const latch&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit latch(ptrdiff_t __expected) : __count_(__expected) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~latch() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void count_down(ptrdiff_t __n = 1) {
+        unique_lock<mutex> __lk(__m_);
+        __count_ -= __n;
+        if (__count_ <= 0) __cv_.notify_all();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool try_wait() const {
+        unique_lock<mutex> __lk(__m_);
+        return __count_ <= 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void wait() const {
+        unique_lock<mutex> __lk(__m_);
+        __ready __p; __p.__c = &__count_;
+        __cv_.wait(__lk, __p);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void arrive_and_wait(ptrdiff_t __n = 1) {
+        count_down(__n);
+        wait();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static ptrdiff_t max() { return ~(ptrdiff_t(1) << (sizeof(ptrdiff_t) * 8 - 1)); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_LATCH

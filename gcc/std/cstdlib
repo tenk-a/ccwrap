@@ -1,0 +1,16 @@
+// ccwrap gcc/clang forwarder for <cstdlib>.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <cstdlib>
+
+#if defined(__MINGW32__) && defined(__cplusplus)
+# if !defined(_UCRT)
+#  include <../../detail/c/stdlib_c11.h>
+# endif
+namespace std {
+    using ::quick_exit;
+    using ::at_quick_exit;
+}
+#endif

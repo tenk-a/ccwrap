@@ -1,0 +1,37 @@
+//  ccwrap llibcxx03: <execution> for Open Watcom. The execution policy types and their
+//  objects, plus is_execution_policy. Classic C++03.
+//
+//  The policy-taking overloads of the algorithms live in
+//  __algorithm/execution_overloads.h and __numeric/execution_overloads.h; each of them
+//  forwards to the serial algorithm, which the standard permits.
+#ifndef _CCW_LIBCPP_EXECUTION
+#define _CCW_LIBCPP_EXECUTION
+#include "__config"
+#include "__type_traits/integral_constant.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+namespace execution {
+
+class sequenced_policy {};
+class parallel_policy {};
+class parallel_unsequenced_policy {};
+class unsequenced_policy {};   // C++20
+
+static const sequenced_policy            seq       = sequenced_policy();
+static const parallel_policy             par       = parallel_policy();
+static const parallel_unsequenced_policy par_unseq = parallel_unsequenced_policy();
+static const unsequenced_policy          unseq     = unsequenced_policy();   // C++20
+
+}  // namespace execution
+
+template <class _Tp> struct is_execution_policy : public false_type {};
+template <> struct is_execution_policy<execution::sequenced_policy>            : public true_type {};
+template <> struct is_execution_policy<execution::parallel_policy>             : public true_type {};
+template <> struct is_execution_policy<execution::parallel_unsequenced_policy> : public true_type {};
+template <> struct is_execution_policy<execution::unsequenced_policy>          : public true_type {};
+#if _CCW_HAS_VAR_TEMPLATE
+template <class _Tp> const bool is_execution_policy_v = is_execution_policy<_Tp>::value;
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_EXECUTION

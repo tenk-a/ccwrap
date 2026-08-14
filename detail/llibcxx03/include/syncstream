@@ -1,0 +1,123 @@
+//  ccwrap llibcxx03: <syncstream> (C++20) for Open Watcom -- basic_syncbuf and
+//  basic_osyncstream. Output is accumulated in an internal buffer and written to
+//  the wrapped streambuf atomically on emit() (and on destruction). Classic C++03
+//  body; char-only tower. There is no cross-thread mutex on the wrapped buffer
+//  (the ccwrap streams are not shared across threads), but the emit-on-destruction
+//  batching -- the observable behaviour callers rely on -- is preserved.
+#ifndef _CCW_LIBCPP_SYNCSTREAM
+#define _CCW_LIBCPP_SYNCSTREAM
+#include "__config"
+#include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
+#include "__fwd/syncstream.h"
+#include <streambuf>
+#include <ostream>
+#include <string>
+#include <memory>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits, class _Alloc>
+class basic_syncbuf : public basic_streambuf<_CharT, _Traits> {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef _Alloc                     allocator_type;
+    typedef basic_streambuf<_CharT, _Traits> streambuf_type;
+private:
+    streambuf_type*                 __wrapped_;
+    basic_string<_CharT, _Traits>   __buf_;
+    bool                            __emit_on_sync_;
+
+    basic_syncbuf(const basic_syncbuf&);
+    basic_syncbuf& operator=(const basic_syncbuf&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_syncbuf() : __wrapped_(0), __emit_on_sync_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_syncbuf(streambuf_type* __obuf) : __wrapped_(__obuf), __emit_on_sync_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_syncbuf() { emit(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool emit() {
+        if (!__wrapped_) return false;
+        bool __ok = true;
+        if (!__buf_.empty()) {
+            _CCW_STD::streamsize __n = (_CCW_STD::streamsize)__buf_.size();
+            __ok = (__wrapped_->sputn(__buf_.data(), __n) == __n);
+            __buf_.clear();
+        }
+        if (__emit_on_sync_) __ok = (__wrapped_->pubsync() == 0) && __ok;
+        return __ok;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI streambuf_type* get_wrapped() const { return __wrapped_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type  get_allocator() const { return allocator_type(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void set_emit_on_sync(bool __b) { __emit_on_sync_ = __b; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_syncbuf(_CCW_RV_REF_BEG basic_syncbuf _CCW_RV_REF_END __rr)
+        : __wrapped_(0), __emit_on_sync_(false) {
+        basic_syncbuf& __r = _CCW_MOVED_OBJ(__rr);
+        __wrapped_ = __r.__wrapped_; __buf_ = _CCW_MOVE(__r.__buf_); __emit_on_sync_ = __r.__emit_on_sync_;
+        __r.__wrapped_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_syncbuf& operator=(_CCW_RV_REF_BEG basic_syncbuf _CCW_RV_REF_END __rr) {
+        basic_syncbuf& __r = _CCW_MOVED_OBJ(__rr);
+        if (this != &__r) {
+            emit();                       // flush our own pending characters first
+            __wrapped_ = __r.__wrapped_; __buf_ = _CCW_MOVE(__r.__buf_); __emit_on_sync_ = __r.__emit_on_sync_;
+            __r.__wrapped_ = 0;
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_syncbuf& __r) {
+        streambuf_type* __tw = __wrapped_; __wrapped_ = __r.__wrapped_; __r.__wrapped_ = __tw;
+        __buf_.swap(__r.__buf_);
+        bool __te = __emit_on_sync_; __emit_on_sync_ = __r.__emit_on_sync_; __r.__emit_on_sync_ = __te;
+    }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type __c = _Traits::eof()) {
+        if (!_Traits::eq_int_type(__c, _Traits::eof())) __buf_.push_back(_Traits::to_char_type(__c));
+        return _Traits::not_eof(__c);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsputn(const _CharT* __s, _CCW_STD::streamsize __n) {
+        __buf_.append(__s, (typename basic_string<_CharT, _Traits>::size_type)__n);
+        return __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int sync() { return __emit_on_sync_ ? (emit() ? 0 : -1) : 0; }
+};
+
+template <class _CharT, class _Traits, class _Alloc>
+class basic_osyncstream : public basic_ostream<_CharT, _Traits> {
+public:
+    typedef _CharT                                     char_type;
+    typedef _Traits                                    traits_type;
+    typedef basic_streambuf<_CharT, _Traits>           streambuf_type;
+    typedef basic_syncbuf<_CharT, _Traits, _Alloc>     syncbuf_type;
+private:
+    syncbuf_type __sb_;
+
+    basic_osyncstream(const basic_osyncstream&);
+    basic_osyncstream& operator=(const basic_osyncstream&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_osyncstream(streambuf_type* __obuf)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(__obuf) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_osyncstream(basic_ostream<_CharT, _Traits>& __os)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(__os.rdbuf()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_osyncstream(_CCW_RV_REF_BEG basic_osyncstream _CCW_RV_REF_END __rr)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_osyncstream& operator=(_CCW_RV_REF_BEG basic_osyncstream _CCW_RV_REF_END __rr) {
+        basic_osyncstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_osyncstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_osyncstream() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void            emit() { __sb_.emit(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI streambuf_type* get_wrapped() const { return __sb_.get_wrapped(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI syncbuf_type*   rdbuf() const { return const_cast<syncbuf_type*>(&__sb_); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SYNCSTREAM

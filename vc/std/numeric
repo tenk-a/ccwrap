@@ -1,0 +1,13 @@
+// ccwrap <numeric>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(numeric)
+
+#include <../../detail/cxx/numeric.hpp>
+
+#if defined(__cplusplus) && (!defined(_MSC_VER) || _MSC_VER < 1914)
+#include <execution>
+#include <../../detail/llibcxx03/include/__numeric/execution_overloads.h>
+#endif

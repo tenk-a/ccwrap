@@ -1,0 +1,460 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "TEST_TARGET_C": "2023",
+        "TEST_TARGET_CXX": "2023"
+      }
+    },
+    {
+      "name": "vc145",
+      "displayName": "VC 14.5 (VS2026), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64"
+    },
+    {
+      "name": "vc143",
+      "displayName": "VC 14.3 (VS2022), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "nmake-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "NMake Makefiles",
+      "description": "vc80..vc145 を NMake で回すための土台。cl / nmake などを ../../bin/*_with_setcc.bat 経由で呼ぶので、事前に setcc を叩く必要はない (preset の environment で渡した CCWRAP_VC_VERSION / CCWRAP_VC_ARCH をラッパーが bin/setcc.bat に渡し、その環境で本物を起動する)。CMake には VS2015 より前のジェネレータが無いので、古い vc は NMake でしか回せない。",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MAKE_PROGRAM": "${sourceDir}/../../bin/nmake_with_setcc.bat",
+        "CMAKE_C_COMPILER": "${sourceDir}/../../bin/cl_with_setcc.bat",
+        "CMAKE_CXX_COMPILER": "${sourceDir}/../../bin/cl_with_setcc.bat",
+        "CMAKE_RC_COMPILER": "${sourceDir}/../../bin/rc_with_setcc.bat",
+        "CMAKE_LINKER": "${sourceDir}/../../bin/link_with_setcc.bat",
+        "CMAKE_AR": "${sourceDir}/../../bin/lib_with_setcc.bat",
+        "CMAKE_MT": "${sourceDir}/../../bin/mt_with_setcc.bat"
+      }
+    },
+    {
+      "name": "vc80-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc80",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc80-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc80",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc90-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc90",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc90-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc90",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc100-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc100",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc100-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc100",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc110-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc110",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc110-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc110",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc120-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc120",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc120-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc120",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc140-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc140",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc140-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc140",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc141-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc141",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc141-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc141",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc142-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc142",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc142-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc142",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc143-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc143",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc143-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc143",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc145-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc145",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc145-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc145",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc80-x86",
+      "configurePreset": "vc80-x86"
+    },
+    {
+      "name": "vc80-x64",
+      "configurePreset": "vc80-x64"
+    },
+    {
+      "name": "vc90-x86",
+      "configurePreset": "vc90-x86"
+    },
+    {
+      "name": "vc90-x64",
+      "configurePreset": "vc90-x64"
+    },
+    {
+      "name": "vc100-x86",
+      "configurePreset": "vc100-x86"
+    },
+    {
+      "name": "vc100-x64",
+      "configurePreset": "vc100-x64"
+    },
+    {
+      "name": "vc110-x86",
+      "configurePreset": "vc110-x86"
+    },
+    {
+      "name": "vc110-x64",
+      "configurePreset": "vc110-x64"
+    },
+    {
+      "name": "vc120-x86",
+      "configurePreset": "vc120-x86"
+    },
+    {
+      "name": "vc120-x64",
+      "configurePreset": "vc120-x64"
+    },
+    {
+      "name": "vc140-x86",
+      "configurePreset": "vc140-x86"
+    },
+    {
+      "name": "vc140-x64",
+      "configurePreset": "vc140-x64"
+    },
+    {
+      "name": "vc141-x86",
+      "configurePreset": "vc141-x86"
+    },
+    {
+      "name": "vc141-x64",
+      "configurePreset": "vc141-x64"
+    },
+    {
+      "name": "vc142-x86",
+      "configurePreset": "vc142-x86"
+    },
+    {
+      "name": "vc142-x64",
+      "configurePreset": "vc142-x64"
+    },
+    {
+      "name": "vc143-x86",
+      "configurePreset": "vc143-x86"
+    },
+    {
+      "name": "vc143-x64",
+      "configurePreset": "vc143-x64"
+    },
+    {
+      "name": "vc145-x86",
+      "configurePreset": "vc145-x86"
+    },
+    {
+      "name": "vc145-x64",
+      "configurePreset": "vc145-x64"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "output": {
+        "outputOnFailure": true
+      },
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "output": {
+        "outputOnFailure": true
+      },
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc80-x86",
+      "configurePreset": "vc80-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc80-x64",
+      "configurePreset": "vc80-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc90-x86",
+      "configurePreset": "vc90-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc90-x64",
+      "configurePreset": "vc90-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc100-x86",
+      "configurePreset": "vc100-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc100-x64",
+      "configurePreset": "vc100-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc110-x86",
+      "configurePreset": "vc110-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc110-x64",
+      "configurePreset": "vc110-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc120-x86",
+      "configurePreset": "vc120-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc120-x64",
+      "configurePreset": "vc120-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc140-x86",
+      "configurePreset": "vc140-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc140-x64",
+      "configurePreset": "vc140-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc141-x86",
+      "configurePreset": "vc141-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc141-x64",
+      "configurePreset": "vc141-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc142-x86",
+      "configurePreset": "vc142-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc142-x64",
+      "configurePreset": "vc142-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143-x86",
+      "configurePreset": "vc143-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143-x64",
+      "configurePreset": "vc143-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc145-x86",
+      "configurePreset": "vc145-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc145-x64",
+      "configurePreset": "vc145-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

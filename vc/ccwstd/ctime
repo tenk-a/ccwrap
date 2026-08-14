@@ -1,0 +1,17 @@
+// ccwrap vc/ccwstd: <ctime> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CTIME_
+#define _CCW_CCWSTD_CTIME_
+#include "../std/ctime"
+namespace _CCW_STD {
+using ::std::size_t; using ::std::clock_t; using ::std::time_t; using ::std::tm;
+using ::std::asctime; using ::std::clock; using ::std::ctime; using ::std::difftime;
+using ::std::gmtime; using ::std::localtime; using ::std::mktime; using ::std::strftime;
+using ::std::time;
+using ::std::timespec;
+using ::std::timespec_get;
+#if _MSC_VER < 1900 && defined(_CCW_C_CONFORM)   /* same gate as vc/ctime */
+using ::__ccw_asctime_cxx;
+using ::__ccw_ctime_cxx;
+#endif   // C++17 (ccwrap supplement; TIME_UTC is a macro)
+}
+#endif

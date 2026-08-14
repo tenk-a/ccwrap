@@ -1,0 +1,8 @@
+// ccwrap <numeric>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <numeric>
+
+#include <../../detail/cxx/numeric.hpp>

@@ -1,0 +1,11 @@
+// ccwrap <cuchar>
+#pragma once
+
+#include <ccwrap_common.h>
+
+// native <cuchar> #errors below C++11; fall back to the language-neutral body
+#if __cplusplus >= 201103L
+# include_next <cuchar>
+#else
+# include <uchar.h>
+#endif

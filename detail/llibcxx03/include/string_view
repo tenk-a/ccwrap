@@ -1,0 +1,272 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <string_view> for Open Watcom -- a non-owning view (pointer +
+//  length) over a character sequence, over char_traits. Classic C++03 body. Does
+//  NOT depend on <string>; construct from a _CCW_STD::string via s.data()/s.size()
+//  (or s.c_str()).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STRING_VIEW
+#define _CCW_LIBCPP_STRING_VIEW
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__fwd/string_view.h"
+#include "__string/char_traits.h"
+#include "__iterator/reverse_iterator.h"
+#include <cstddef>
+#include <stdexcept>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits >
+class basic_string_view {
+    const _CharT* __data_;
+    _CCW_STD::size_t   __size_;
+public:
+    typedef _Traits                                traits_type;
+    typedef _CharT                                 value_type;
+    typedef _CCW_STD::size_t                            size_type;
+    typedef _CCW_STD::ptrdiff_t                         difference_type;
+    typedef const _CharT&                          const_reference;
+    typedef _CharT&                                reference;
+    typedef const _CharT*                          const_pointer;
+    typedef _CharT*                                pointer;
+    typedef const _CharT*                          const_iterator;
+    typedef const _CharT*                          iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator>  const_reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator>  reverse_iterator;
+
+    static const size_type npos = (size_type)-1;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view() : __data_(0), __size_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _CharT* __s) : __data_(__s), __size_(_Traits::length(__s)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _CharT* __s, size_type __n) : __data_(__s), __size_(__n) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const basic_string_view& __o) : __data_(__o.__data_), __size_(__o.__size_) {}
+    template <class _Str>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _Str& __s, void (_Str::*)() = 0,
+                                                typename _Str::allocator_type* = 0)
+        : __data_(__s.data()), __size_(__s.size()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _CharT* __first, const _CharT* __last)
+        : __data_(__first), __size_((_CCW_STD::size_t)(__last - __first)) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const   { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type length() const { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return size_type(-1) / sizeof(_CharT); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const  { return __size_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const _CharT* data() const { return __data_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference operator[](size_type __i) const { return __data_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference at(size_type __i) const { if (__i >= __size_) _CCW_THROW(_CCW_STD::out_of_range("string_view::at")); return __data_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference front() const { return __data_[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference back() const  { return __data_[__size_ - 1]; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const { return __data_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const   { return __data_ + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __data_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return __data_ + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend() const   { return const_reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend() const   { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void remove_prefix(size_type __n) { __data_ += __n; __size_ -= __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void remove_suffix(size_type __n) { __size_ -= __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_string_view& __o) {
+        const _CharT* __d = __data_; __data_ = __o.__data_; __o.__data_ = __d;
+        size_type __s = __size_; __size_ = __o.__size_; __o.__size_ = __s;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view substr(size_type __pos = 0, size_type __n = npos) const {
+        if (__pos > __size_) _CCW_THROW(_CCW_STD::out_of_range("string_view::substr"));
+        size_type __rn = __size_ - __pos; if (__n < __rn) __rn = __n;
+        return basic_string_view(__data_ + __pos, __rn);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(basic_string_view __o) const {
+        size_type __n = __size_ < __o.__size_ ? __size_ : __o.__size_;
+        int __r = _Traits::compare(__data_, __o.__data_, __n);
+        if (__r != 0) return __r;
+        if (__size_ < __o.__size_) return -1;
+        if (__size_ > __o.__size_) return 1;
+        return 0;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find(basic_string_view __v, size_type __pos = 0) const {
+        if (__v.__size_ == 0) return __pos <= __size_ ? __pos : npos;
+        if (__size_ < __v.__size_) return npos;
+        for (size_type __i = __pos; __i + __v.__size_ <= __size_; ++__i)
+            if (_Traits::compare(__data_ + __i, __v.__data_, __v.__size_) == 0) return __i;
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find(_CharT __c, size_type __pos = 0) const {
+        for (size_type __i = __pos; __i < __size_; ++__i) if (_Traits::eq(__data_[__i], __c)) return __i;
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type rfind(basic_string_view __v, size_type __pos = npos) const {
+        if (__v.__size_ == 0) return __pos < __size_ ? __pos : __size_;
+        if (__v.__size_ > __size_) return npos;
+        size_type __start = __size_ - __v.__size_; if (__pos < __start) __start = __pos;
+        for (size_type __i = __start;; --__i) { if (_Traits::compare(__data_ + __i, __v.__data_, __v.__size_) == 0) return __i; if (__i == 0) break; }
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type rfind(_CharT __c, size_type __pos = npos) const {
+        if (__size_ == 0) return npos;
+        size_type __i = (__pos < __size_ ? __pos : __size_ - 1);
+        for (;; --__i) { if (_Traits::eq(__data_[__i], __c)) return __i; if (__i == 0) break; }
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_of(basic_string_view __v, size_type __pos = 0) const {
+        for (size_type __i = __pos; __i < __size_; ++__i) if (_Traits::find(__v.__data_, __v.__size_, __data_[__i])) return __i;
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_of(basic_string_view __v, size_type __pos = npos) const {
+        if (__size_ == 0) return npos;
+        size_type __i = (__pos < __size_ ? __pos : __size_ - 1);
+        for (;; --__i) { if (_Traits::find(__v.__data_, __v.__size_, __data_[__i])) return __i; if (__i == 0) break; }
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_not_of(basic_string_view __v, size_type __pos = 0) const {
+        for (size_type __i = __pos; __i < __size_; ++__i) if (!_Traits::find(__v.__data_, __v.__size_, __data_[__i])) return __i;
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_not_of(basic_string_view __v, size_type __pos = npos) const {
+        if (__size_ == 0) return npos;
+        size_type __i = (__pos < __size_ ? __pos : __size_ - 1);
+        for (;; --__i) { if (!_Traits::find(__v.__data_, __v.__size_, __data_[__i])) return __i; if (__i == 0) break; }
+        return npos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type copy(_CharT* __s, size_type __n, size_type __pos = 0) const {
+        if (__pos > __size_) _CCW_THROW(_CCW_STD::out_of_range("string_view::copy"));
+        size_type __rn = __size_ - __pos; if (__n < __rn) __rn = __n;
+        _Traits::copy(__s, __data_ + __pos, __rn); return __rn;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool contains(basic_string_view __v) const { return find(__v) != npos; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool contains(_CharT __c) const { return find(__c) != npos; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool starts_with(basic_string_view __v) const { return __size_ >= __v.__size_ && _Traits::compare(__data_, __v.__data_, __v.__size_) == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool ends_with(basic_string_view __v) const   { return __size_ >= __v.__size_ && _Traits::compare(__data_ + (__size_ - __v.__size_), __v.__data_, __v.__size_) == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool starts_with(_CharT __c) const { return __size_ != 0 && _Traits::eq(__data_[0], __c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool ends_with(_CharT __c) const   { return __size_ != 0 && _Traits::eq(__data_[__size_ - 1], __c); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(size_type __pos1, size_type __n1, basic_string_view __o) const {
+        return substr(__pos1, __n1).compare(__o);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(size_type __pos1, size_type __n1, basic_string_view __o,
+                                          size_type __pos2, size_type __n2) const {
+        return substr(__pos1, __n1).compare(__o.substr(__pos2, __n2));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const _CharT* __s) const {
+        return compare(basic_string_view(__s));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(size_type __pos1, size_type __n1, const _CharT* __s) const {
+        return substr(__pos1, __n1).compare(basic_string_view(__s));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(size_type __pos1, size_type __n1,
+                                          const _CharT* __s, size_type __n2) const {
+        return substr(__pos1, __n1).compare(basic_string_view(__s, __n2));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find(const _CharT* __s, size_type __pos, size_type __n) const {
+        return find(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find(const _CharT* __s, size_type __pos = 0) const {
+        return find(basic_string_view(__s), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type rfind(const _CharT* __s, size_type __pos, size_type __n) const {
+        return rfind(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type rfind(const _CharT* __s, size_type __pos = npos) const {
+        return rfind(basic_string_view(__s), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_of(_CharT __c, size_type __pos = 0) const {
+        return find(__c, __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_of(const _CharT* __s, size_type __pos, size_type __n) const {
+        return find_first_of(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_of(const _CharT* __s, size_type __pos = 0) const {
+        return find_first_of(basic_string_view(__s), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_of(_CharT __c, size_type __pos = npos) const {
+        return rfind(__c, __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_of(const _CharT* __s, size_type __pos, size_type __n) const {
+        return find_last_of(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_of(const _CharT* __s, size_type __pos = npos) const {
+        return find_last_of(basic_string_view(__s), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_not_of(_CharT __c, size_type __pos = 0) const {
+        return find_first_not_of(basic_string_view(&__c, 1), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const {
+        return find_first_not_of(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_first_not_of(const _CharT* __s, size_type __pos = 0) const {
+        return find_first_not_of(basic_string_view(__s), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_not_of(_CharT __c, size_type __pos = npos) const {
+        return find_last_not_of(basic_string_view(&__c, 1), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const {
+        return find_last_not_of(basic_string_view(__s, __n), __pos);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type find_last_not_of(const _CharT* __s, size_type __pos = npos) const {
+        return find_last_not_of(basic_string_view(__s), __pos);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool starts_with(const _CharT* __s) const { return starts_with(basic_string_view(__s)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool ends_with(const _CharT* __s) const   { return ends_with(basic_string_view(__s)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool contains(const _CharT* __s) const    { return contains(basic_string_view(__s)); }
+};
+
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y) { return __x.compare(__y) == 0; }
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y) { return __x.compare(__y) != 0; }
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y)  { return __x.compare(__y) < 0; }
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y)  { return __x.compare(__y) > 0; }
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y) { return __x.compare(__y) <= 0; }
+template <class _CharT, class _Traits> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(basic_string_view<_CharT, _Traits> __x, basic_string_view<_CharT, _Traits> __y) { return __x.compare(__y) >= 0; }
+
+typedef basic_string_view<char>    string_view;
+typedef basic_string_view<wchar_t> wstring_view;
+typedef basic_string_view<char16_t> u16string_view;
+typedef basic_string_view<char32_t> u32string_view;
+#if defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T)
+typedef basic_string_view<char8_t>  u8string_view;
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+
+#include "__functional/hash.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+template <class _CharT, class _Traits> struct hash<basic_string_view<_CharT, _Traits> > {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(basic_string_view<_CharT, _Traits> __v) const {
+        _CCW_STD::size_t __h = 2166136261u;
+        for (typename basic_string_view<_CharT, _Traits>::size_type __i = 0; __i < __v.size(); ++__i) {
+            __h ^= (_CCW_STD::size_t)(_CharT)__v[__i];
+            __h *= 16777619u;
+        }
+        return __h;
+    }
+};
+_CCW_LIBCPP_END_NAMESPACE_STD
+
+#include <ostream>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT, _Traits> __sv) {
+    _CCW_STD::streamsize __n   = (_CCW_STD::streamsize)__sv.size();
+    _CCW_STD::streamsize __w   = __os.width();
+    _CCW_STD::streamsize __pad = __w > __n ? __w - __n : 0;
+    bool __left = (__os.flags() & ios_base::left) != 0;
+    if (__os.rdbuf()) {
+        if (__pad && !__left) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i) __os.rdbuf()->sputc(__os.fill());
+        __os.rdbuf()->sputn(__sv.data(), __n);
+        if (__pad &&  __left) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i) __os.rdbuf()->sputc(__os.fill());
+    }
+    __os.width(0);
+    return __os;
+}
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STRING_VIEW

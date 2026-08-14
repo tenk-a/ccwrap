@@ -1,0 +1,2 @@
+// ccwrap <typeindex>
+#include "../std/typeindex"

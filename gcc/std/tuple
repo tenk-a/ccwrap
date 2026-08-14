@@ -1,0 +1,10 @@
+// ccwrap <tuple>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <tuple>
+#else
+ #include <../../detail/cxx/tuple.hpp>
+#endif

@@ -1,0 +1,17 @@
+// ccwrap vc forwarder for <stack>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(stack)
+
+#if defined(__cplusplus) && _MSC_VER < 1700
+#include <memory>
+namespace std {
+template <class _Tp, class _Cont, class _Alloc>
+struct uses_allocator<stack<_Tp, _Cont>, _Alloc> { static const bool value = uses_allocator<_Cont, _Alloc>::value; };
+}
+#endif

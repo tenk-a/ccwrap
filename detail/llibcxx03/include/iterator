@@ -1,0 +1,26 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <iterator> for Open Watcom. libc++ layout; classic C++03.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_ITERATOR
+#define _CCW_LIBCPP_ITERATOR
+#include "__config"
+#include "__iterator/iterator_traits.h"
+#include "__iterator/incrementable_traits.h"
+#include "__iterator/readable_traits.h"
+#include "__iterator/iterator.h"
+#include "__iterator/advance.h"
+#include "__iterator/distance.h"
+#include "__iterator/reverse_iterator.h"
+#include "__iterator/move_iterator.h"
+#include "__iterator/insert_iterators.h"
+#include "__iterator/ostream_iterator.h"
+#include "__iterator/istream_iterator.h"
+#include "__iterator/streambuf_iterators.h"
+#include "__iterator/next_prev.h"
+#include "__iterator/ranges_iter_ops.h"
+#include "__iterator/access.h"
+#include "__iterator/default_sentinel.h"
+#include "__iterator/unreachable_sentinel.h"
+#endif // _CCW_LIBCPP_ITERATOR

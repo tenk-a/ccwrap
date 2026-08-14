@@ -1,0 +1,33 @@
+// ccwrap <bit>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include _CCW_NATIVE_STL_HEADER_PATH(bit)
+ namespace _ccw {
+     using std::endian;      using std::bit_cast;
+     using std::rotl;        using std::rotr;
+     using std::has_single_bit;
+     using std::countl_zero; using std::countl_one; using std::countr_zero; using std::countr_one;
+     using std::popcount;    using std::bit_width;  using std::bit_ceil;    using std::bit_floor;
+ }
+ #if __cplusplus < 202302L
+ #include <cstddef>
+ namespace _CCW_STD23 {
+ using namespace ::std;
+ template<class T>
+ inline T byteswap(T v) noexcept {
+     unsigned char* p = reinterpret_cast<unsigned char*>(&v);
+     for (std::size_t i = 0, j = sizeof(T) - 1; i < j; ++i, --j) {
+         unsigned char t = p[i]; p[i] = p[j]; p[j] = t;
+     }
+     return v;
+ }
+ }   // _CCW_STD23
+ namespace _ccw { using _CCW_STD23::byteswap; }
+ #endif
+#else
+ #include <../../detail/llibcxx03/include/bit>
+ namespace _ccw { using _CCW_STD23::byteswap; }
+#endif

@@ -1,0 +1,60 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <ranges> for Open Watcom -- a C++03 SUBSET.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_RANGES
+#define _CCW_LIBCPP_RANGES
+#include "__config"
+#include <cstddef>   // size_t, ptrdiff_t
+#include <iterator>  // advance / distance, which the ranges:: forms forward to
+#include "__iterator/ranges_iter_ops.h"   // the ranges:: traversal ops themselves
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+namespace ranges {
+
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::iterator       begin(_Cp& __c)       { return __c.begin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_iterator begin(const _Cp& __c) { return __c.begin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::iterator       end(_Cp& __c)         { return __c.end(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_iterator end(const _Cp& __c)   { return __c.end(); }
+
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_iterator cbegin(const _Cp& __c) { return __c.begin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_iterator cend(const _Cp& __c)   { return __c.end(); }
+
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::reverse_iterator       rbegin(_Cp& __c)        { return __c.rbegin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_reverse_iterator rbegin(const _Cp& __c)  { return __c.rbegin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::reverse_iterator       rend(_Cp& __c)          { return __c.rend(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_reverse_iterator rend(const _Cp& __c)    { return __c.rend(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_reverse_iterator crbegin(const _Cp& __c) { return __c.rbegin(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_reverse_iterator crend(const _Cp& __c)   { return __c.rend(); }
+
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::size_type size(const _Cp& __c) { return __c.size(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::ptrdiff_t ssize(const _Cp& __c) { return (_CCW_STD::ptrdiff_t)__c.size(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI bool empty(const _Cp& __c) { return __c.empty(); }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::pointer       data(_Cp& __c)       { return __c.empty() ? (typename _Cp::pointer)0       : &__c[0]; }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_pointer data(const _Cp& __c) { return __c.empty() ? (typename _Cp::const_pointer)0 : &__c[0]; }
+template <class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI typename _Cp::const_pointer cdata(const _Cp& __c) { return __c.empty() ? (typename _Cp::const_pointer)0 : &__c[0]; }
+
+struct dangling { _CCW_LIBCPP_HIDE_FROM_ABI dangling() {} };
+
+struct view_base {};
+
+template <class _It, class _Sent = _It>
+class subrange : public view_base {
+    _It   __b_;
+    _Sent __e_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI subrange() : __b_(), __e_() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI subrange(_It __b, _Sent __e) : __b_(__b), __e_(__e) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI _It   begin() const { return __b_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Sent end()   const { return __e_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool  empty() const { return __b_ == __e_; }
+};
+
+} // namespace ranges
+
+struct from_range_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit from_range_t() {} };
+static const from_range_t from_range = from_range_t();
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_RANGES

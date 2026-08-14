@@ -1,0 +1,193 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <stacktrace> (C++23) for Open Watcom -- a SUBSET.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STACKTRACE
+#define _CCW_LIBCPP_STACKTRACE
+#include "__config"
+
+#if defined(__WATCOMC__) && !defined(_CCW_OS_WIN)
+# error "ccwrap llibcxx03: <stacktrace> is Win32-only on Open Watcom -- std::stacktrace needs Win32 RtlCaptureStackBackTrace."
+#endif
+#include "cstddef"
+#include "string"
+#include "vector"
+#include "iosfwd"
+#include "stdexcept"
+#include "__functional/hash.h"
+
+extern "C" _CCW_WINAPI(unsigned short) RtlCaptureStackBackTrace(unsigned long __skip,
+                                                               unsigned long __count,
+                                                               void**        __frames,
+                                                               unsigned long* __hash);
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class stacktrace_entry {
+public:
+    typedef _CCW_STD::size_t native_handle_type;
+private:
+    native_handle_type __h_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI stacktrace_entry() : __h_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit stacktrace_entry(native_handle_type __h) : __h_(__h) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() const { return __h_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator bool() const { return __h_ != 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI string       description() const { return string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI string       source_file() const { return string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI unsigned int source_line() const { return 0; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return __a.native_handle() == __b.native_handle(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return !(__a == __b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return __a.native_handle() < __b.native_handle(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return __b < __a; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<=(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return !(__b < __a); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>=(const stacktrace_entry& __a, const stacktrace_entry& __b)
+    { return !(__a < __b); }
+
+template <class _Allocator>
+class basic_stacktrace {
+public:
+    typedef stacktrace_entry              value_type;
+    typedef const stacktrace_entry&       const_reference;
+    typedef stacktrace_entry&             reference;
+    typedef _CCW_STD::size_t              size_type;
+    typedef _CCW_STD::ptrdiff_t           difference_type;
+    typedef _Allocator                    allocator_type;
+private:
+    typedef vector<stacktrace_entry, _Allocator> __vec;
+    __vec __v_;
+public:
+    typedef typename __vec::const_iterator         const_iterator;
+    typedef typename __vec::const_iterator         iterator;
+    typedef typename __vec::const_reverse_iterator const_reverse_iterator;
+    typedef typename __vec::const_reverse_iterator reverse_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stacktrace() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_stacktrace(const allocator_type& __a) : __v_(__a) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stacktrace(const basic_stacktrace& __o) : __v_(__o.__v_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stacktrace& operator=(const basic_stacktrace& __o)
+        { if (this != &__o) __v_ = __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_stacktrace() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static basic_stacktrace current(size_type __skip = 0) {
+        return __capture(__skip, (size_type)62);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static basic_stacktrace current(size_type __skip, size_type __max) {
+        return __capture(__skip, __max);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static basic_stacktrace current(const allocator_type&) { return current(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return __v_.get_allocator(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size()  const { return __v_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __v_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __v_.max_size(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference operator[](size_type __i) const { return __v_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference at(size_type __i) const {
+        if (__i >= __v_.size()) _CCW_THROW(out_of_range("basic_stacktrace::at"));
+        return __v_[__i];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin()  const { return __v_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end()    const { return __v_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __v_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend()   const { return __v_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin()  const { return __v_.rbegin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend()    const { return __v_.rend(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return __v_.rbegin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend()   const { return __v_.rend(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_stacktrace& __o) { __v_.swap(__o.__v_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const __vec& __frames() const { return __v_; }
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI static basic_stacktrace __capture(size_type __skip, size_type __max) {
+        basic_stacktrace __r;
+        if (__max == 0) return __r;
+        if (__max > 62) __max = 62;                 // the Win32 call's own ceiling
+        void* __buf[62];
+        unsigned short __n = RtlCaptureStackBackTrace((unsigned long)(__skip + 1),
+                                                      (unsigned long)__max, __buf, 0);
+        for (unsigned short __k = 0; __k < __n; ++__k)
+            __r.__v_.push_back(stacktrace_entry((stacktrace_entry::native_handle_type)__buf[__k]));
+        return __r;
+    }
+};
+
+template <class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const basic_stacktrace<_Allocator>& __a,
+                                                 const basic_stacktrace<_Allocator>& __b) {
+    if (__a.size() != __b.size()) return false;
+    for (typename basic_stacktrace<_Allocator>::size_type __i = 0; __i < __a.size(); ++__i)
+        if (!(__a[__i] == __b[__i])) return false;
+    return true;
+}
+template <class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const basic_stacktrace<_Allocator>& __a,
+                                                 const basic_stacktrace<_Allocator>& __b)
+    { return !(__a == __b); }
+template <class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<(const basic_stacktrace<_Allocator>& __a,
+                                                const basic_stacktrace<_Allocator>& __b) {
+    typedef typename basic_stacktrace<_Allocator>::size_type _Sz;
+    _Sz __n = __a.size() < __b.size() ? __a.size() : __b.size();
+    for (_Sz __i = 0; __i < __n; ++__i) {
+        if (__a[__i] < __b[__i]) return true;
+        if (__b[__i] < __a[__i]) return false;
+    }
+    return __a.size() < __b.size();
+}
+#if !defined(__WATCOMC__)
+template <class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(basic_stacktrace<_Allocator>& __a,
+                                           basic_stacktrace<_Allocator>& __b) { __a.swap(__b); }
+#endif
+
+typedef basic_stacktrace<allocator<stacktrace_entry> > stacktrace;
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline string to_string(const stacktrace_entry& __e) {
+    char __b[32];
+    _CCW_STD::sprintf(__b, "0x%lx", (unsigned long)__e.native_handle());
+    return string(__b);
+}
+template <class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI string to_string(const basic_stacktrace<_Allocator>& __st) {
+    string __s;
+    for (typename basic_stacktrace<_Allocator>::size_type __i = 0; __i < __st.size(); ++__i) {
+        if (__i) __s += '\n';
+        __s += to_string(__st[__i]);
+    }
+    return __s;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const stacktrace_entry& __e)
+    { return __os << to_string(__e); }
+template <class _CharT, class _Traits, class _Allocator>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const basic_stacktrace<_Allocator>& __st)
+    { return __os << to_string(__st); }
+
+template <> struct hash<stacktrace_entry> {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const stacktrace_entry& __e) const
+        { return (_CCW_STD::size_t)__e.native_handle(); }
+};
+template <class _Allocator> struct hash<basic_stacktrace<_Allocator> > {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const basic_stacktrace<_Allocator>& __st) const {
+        _CCW_STD::size_t __h = 0;
+        for (typename basic_stacktrace<_Allocator>::size_type __i = 0; __i < __st.size(); ++__i)
+            __h = __h * 31u + (_CCW_STD::size_t)__st[__i].native_handle();
+        return __h;
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STACKTRACE

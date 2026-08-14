@@ -1,0 +1,23 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <memory> for Open Watcom. libc++ layout; classic C++03.
+//  allocator + addressof + uninitialized_* so far (smart pointers later).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_MEMORY
+#define _CCW_LIBCPP_MEMORY
+#include "__config"
+#include "__memory/addressof.h"
+#include "__memory/allocator_arg_t.h"
+#include "__memory/allocate_at_least.h"
+#include "__memory/assume_aligned.h"
+#include "__memory/pointer_traits.h"
+#include "__memory/allocator.h"
+#include "__memory/allocator_traits.h"
+#include "__memory/uninitialized_algorithms.h"
+#include "__memory/misc.h"
+#include "__memory/auto_ptr.h"
+#include "__memory/unique_ptr.h"
+#include "__memory/shared_ptr.h"
+#include "__memory/atomic_smart_ptr.h"   // _CCW_STD::atomic<shared_ptr<T>> / atomic<weak_ptr<T>>
+#endif // _CCW_LIBCPP_MEMORY

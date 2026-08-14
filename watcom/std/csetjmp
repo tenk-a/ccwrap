@@ -1,0 +1,14 @@
+// ccwrap watcom: <csetjmp>. Thin forwarder to Open Watcom's native <csetjmp>
+// (jmp_buf, setjmp/longjmp), guaranteeing ccwrap_common.h is pulled in first.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(csetjmp)
+
+#ifndef _CCW_CSETJMP_STD_DEFINED
+#define _CCW_CSETJMP_STD_DEFINED
+namespace std {
+using ::jmp_buf;
+using ::longjmp;
+}
+#endif

@@ -1,0 +1,7 @@
+// ccwrap watcom: <cstdio>. Thin forwarder to Open Watcom's native <cstdio> (the C
+// stdio library declared in namespace std), guaranteeing ccwrap_common.h is pulled
+// in first. No supplements are needed yet.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstdio)

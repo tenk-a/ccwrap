@@ -1,0 +1,8 @@
+"suite"	"pass"	"status"	"note"
+"csetjmp_h"	"cxx03:jmp_buf"	"tested"	""
+"csetjmp_h"	"cxx03:jmp_buf reuse"	"tested"	""
+"csetjmp_h"	"cxx03:longjmp"	"tested"	""
+"csetjmp_h"	"cxx03:longjmp delivers the value to setjmp"	"tested"	""
+"csetjmp_h"	"cxx03:longjmp value 0 is replaced by 1"	"tested"	""
+"csetjmp_h"	"cxx03:setjmp"	"tested"	""
+"csetjmp_h"	"cxx03:setjmp direct return is 0"	"tested"	""

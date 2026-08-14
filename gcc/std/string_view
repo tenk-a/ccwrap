@@ -1,0 +1,16 @@
+// ccwrap <string_view>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include_next <string_view>
+ namespace _ccw {
+     using std::basic_string_view; using std::string_view; using std::wstring_view;
+     using std::u16string_view; using std::u32string_view;
+ }
+#else
+ #include <../../detail/llibcxx03/include/string_view>
+#endif
+
+#include <../../detail/cxx/iterator.hpp>

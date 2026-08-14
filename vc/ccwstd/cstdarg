@@ -1,0 +1,8 @@
+// ccwrap vc/ccwstd: <cstdarg> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CSTDARG_
+#define _CCW_CCWSTD_CSTDARG_
+#include "../std/cstdarg"
+namespace _CCW_STD {
+using ::std::va_list;
+}
+#endif

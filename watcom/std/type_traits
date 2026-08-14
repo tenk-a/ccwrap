@@ -1,0 +1,4 @@
+// ccwrap <type_traits>
+#pragma once
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_STL_HEADER_PATH(type_traits)

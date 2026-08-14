@@ -1,0 +1,149 @@
+//===----------------------------------------------------------------------===//
+//  ccwrap llibcxx03: <strstream> (deprecated, C++03..23) for Open Watcom -- the
+//  legacy char* streams strstreambuf / istrstream / ostrstream / strstream.
+//  Classic C++03 body. Dynamic output buffers grow with realloc; freeze()/str()
+//  transfer ownership to the caller as the standard specifies.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STRSTREAM
+#define _CCW_LIBCPP_STRSTREAM
+#include "__config"
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <cstdlib>
+#include <cstring>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class strstreambuf : public basic_streambuf<char, char_traits<char> > {
+    typedef char_traits<char> _Tr;
+    char*  __buf_;
+    size_t __cap_;
+    bool   __dynamic_;
+    bool   __own_;
+    bool   __frozen_;
+
+    strstreambuf(const strstreambuf&);
+    strstreambuf& operator=(const strstreambuf&);
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf() : __buf_(0), __cap_(0), __dynamic_(true), __own_(true), __frozen_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit strstreambuf(_CCW_STD::streamsize __alsize)
+        : __buf_(0), __cap_(0), __dynamic_(true), __own_(true), __frozen_(false) { (void)__alsize; }
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf(char* __gnext, _CCW_STD::streamsize __n, char* __pbeg = 0)
+        : __buf_(__gnext), __cap_((size_t)(__n <= 0 ? _CCW_STD::strlen(__gnext) : (size_t)__n)),
+          __dynamic_(false), __own_(false), __frozen_(false) {
+        this->setg(__gnext, __gnext, __gnext + __cap_);
+        if (__pbeg) this->setp(__pbeg, __gnext + __cap_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf(const char* __gnext, _CCW_STD::streamsize __n)
+        : __buf_(0), __cap_((size_t)(__n <= 0 ? _CCW_STD::strlen(__gnext) : (size_t)__n)),
+          __dynamic_(false), __own_(false), __frozen_(false) {
+        char* __p = const_cast<char*>(__gnext);
+        this->setg(__p, __p, __p + __cap_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~strstreambuf() { if (__dynamic_ && __own_ && !__frozen_) _CCW_STD::free(__buf_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void freeze(bool __f = true) { if (__dynamic_) __frozen_ = __f; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char* str() { freeze(true); return __dynamic_ ? __buf_ : this->eback(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int pcount() const { return this->pptr() ? (int)(this->pptr() - this->pbase()) : 0; }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type __c = _Tr::eof()) {
+        if (_Tr::eq_int_type(__c, _Tr::eof())) return _Tr::not_eof(__c);
+        if (!__dynamic_ || __frozen_) return _Tr::eof();
+        size_t __oldlen = this->pptr() ? (size_t)(this->pptr() - this->pbase()) : 0;
+        size_t __newcap = __cap_ ? __cap_ * 2 : 64;
+        char* __nb = (char*)_CCW_STD::realloc(__buf_, __newcap);
+        if (!__nb) return _Tr::eof();
+        __buf_ = __nb; __cap_ = __newcap;
+        this->setp(__buf_, __buf_ + __cap_);
+        this->pbump((int)__oldlen);
+        this->setg(__buf_, __buf_, __buf_ + __oldlen);
+        *this->pptr() = (char)__c;
+        this->pbump(1);
+        return _Tr::to_int_type((char)__c);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type underflow() {
+        if (this->gptr() < this->egptr()) return _Tr::to_int_type(*this->gptr());
+        if (__dynamic_ && this->pptr() && this->gptr() < this->pptr()) {
+            this->setg(__buf_, this->gptr(), this->pptr());
+            return _Tr::to_int_type(*this->gptr());
+        }
+        return _Tr::eof();
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekoff(off_type __off, ios_base::seekdir __way,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        const bool __gi = (__which & ios_base::in)  && this->eback() != 0;
+        const bool __pi = (__which & ios_base::out) && this->pbase() != 0;
+        if (!__gi && !__pi) return pos_type(-1);
+        if (__gi && __pi && __way == ios_base::cur) return pos_type(-1);   // no single base
+
+        const off_type __gsize = (off_type)(this->egptr() - this->eback());
+        const off_type __psize = (off_type)(this->epptr() - this->pbase());
+
+        off_type __np;
+        if (__gi) {
+            const off_type __base = __way == ios_base::beg ? 0
+                                  : __way == ios_base::end ? __gsize
+                                  : (off_type)(this->gptr() - this->eback());
+            __np = __base + __off;
+            if (__np < 0 || __np > __gsize) return pos_type(-1);
+            this->setg(this->eback(), this->eback() + __np, this->egptr());
+        }
+        if (__pi) {
+            const off_type __base = __way == ios_base::beg ? 0
+                                  : __way == ios_base::end ? __psize
+                                  : (off_type)(this->pptr() - this->pbase());
+            const off_type __p = __base + __off;
+            if (__p < 0 || __p > __psize) return pos_type(-1);
+            char* __pb = this->pbase();
+            this->setp(__pb, this->epptr());
+            this->pbump((int)__p);
+            __np = __p;
+        }
+        return pos_type(__np);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekpos(pos_type __pos,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        return seekoff((off_type)__pos, ios_base::beg, __which);
+    }
+};
+
+class istrstream : public basic_istream<char, char_traits<char> > {
+    strstreambuf __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit istrstream(const char* __s) : basic_istream<char, char_traits<char> >(&__sb_), __sb_(__s, 0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI istrstream(const char* __s, _CCW_STD::streamsize __n) : basic_istream<char, char_traits<char> >(&__sb_), __sb_(__s, __n) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~istrstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf* rdbuf() const { return const_cast<strstreambuf*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI char* str() { return __sb_.str(); }
+};
+
+class ostrstream : public basic_ostream<char, char_traits<char> > {
+    strstreambuf __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI ostrstream() : basic_ostream<char, char_traits<char> >(&__sb_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ostrstream(char* __s, int __n, openmode __m = out)
+        : basic_ostream<char, char_traits<char> >(&__sb_), __sb_(__s, __n, (__m & app) ? __s + _CCW_STD::strlen(__s) : __s) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~ostrstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf* rdbuf() const { return const_cast<strstreambuf*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void  freeze(bool __f = true) { __sb_.freeze(__f); }
+    _CCW_LIBCPP_HIDE_FROM_ABI char* str() { return __sb_.str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int   pcount() const { return __sb_.pcount(); }
+};
+
+class strstream : public basic_iostream<char, char_traits<char> > {
+    strstreambuf __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI strstream() : basic_iostream<char, char_traits<char> >(&__sb_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI strstream(char* __s, int __n, openmode __m = in | out)
+        : basic_iostream<char, char_traits<char> >(&__sb_), __sb_(__s, __n, (__m & app) ? __s + _CCW_STD::strlen(__s) : __s) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI ~strstream() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI strstreambuf* rdbuf() const { return const_cast<strstreambuf*>(&__sb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void  freeze(bool __f = true) { __sb_.freeze(__f); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int   pcount() const { return __sb_.pcount(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI char* str() { return __sb_.str(); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STRSTREAM

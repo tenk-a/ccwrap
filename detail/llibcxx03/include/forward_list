@@ -1,0 +1,398 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <forward_list> for Open Watcom -- a classic singly-linked list
+//  with a before-begin sentinel and the _after operations. Modern-first: emplace_
+//  front / emplace_after via the fnctmpl emulation; move ctor/assign under
+//  (_ccw_cplusplus >= 201103L).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_FORWARD_LIST
+#define _CCW_LIBCPP_FORWARD_LIST
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__memory/misc.h"   // uses_allocator
+#include <new>
+#include "__fnctmpl.h"
+#include "__type_traits/integral_dispatch.h"
+#include "__utility/move.h"
+#include "__memory/allocator.h"
+#include "__iterator/iterator_traits.h"
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct __fl_node_base { __fl_node_base* __next_; };
+template <class _Tp> struct __fl_node : public __fl_node_base {
+    _Tp __value_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_node(const _Tp& __v) : __value_(__v) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_node(_CCW_RV_REF(_Tp) __v) : __value_(__v) {}
+#endif
+};
+
+template <class _Tp, class _Ref, class _Ptr>
+class __fl_iterator {
+    __fl_node_base* __p_;
+public:
+    typedef forward_iterator_tag iterator_category;
+    typedef _Tp                  value_type;
+    typedef _CCW_STD::ptrdiff_t       difference_type;
+    typedef _Ptr                 pointer;
+    typedef _Ref                 reference;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_iterator() : __p_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __fl_iterator(__fl_node_base* __p) : __p_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_iterator(const __fl_iterator<_Tp, _Tp&, _Tp*>& __o) : __p_(__o.__node()) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_node_base* __node() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator*()  const { return static_cast<__fl_node<_Tp>*>(__p_)->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer   operator->() const { return &static_cast<__fl_node<_Tp>*>(__p_)->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_iterator& operator++()    { __p_ = __p_->__next_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __fl_iterator  operator++(int) { __fl_iterator __t = *this; __p_ = __p_->__next_; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const __fl_iterator& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const __fl_iterator& __o) const { return __p_ != __o.__p_; }
+};
+
+template <class _Tp, class _Alloc = allocator<_Tp> >
+class _CCW_LIBCPP_TEMPLATE_VIS forward_list {
+public:
+    typedef _Tp                                          value_type;
+    typedef _Alloc                                       allocator_type;
+    typedef _CCW_STD::size_t                                  size_type;
+    typedef _CCW_STD::ptrdiff_t                               difference_type;
+    typedef _Tp&                                         reference;
+    typedef const _Tp&                                   const_reference;
+    typedef _Tp*                                         pointer;
+    typedef const _Tp*                                   const_pointer;
+    typedef __fl_iterator<_Tp, _Tp&, _Tp*>               iterator;
+    typedef __fl_iterator<_Tp, const _Tp&, const _Tp*>   const_iterator;
+
+private:
+    typedef __fl_node<_Tp>                                  __node;
+    typedef typename _Alloc::template rebind<__node>::other   __node_allocator;
+    struct __alloc_bb : __node_allocator {
+        __fl_node_base __bb_;   // before-begin sentinel; __bb_.__next_ == first node
+        _CCW_LIBCPP_HIDE_FROM_ABI __alloc_bb() {}
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit __alloc_bb(const __node_allocator& __a) : __node_allocator(__a) {}
+    };
+    __alloc_bb __ae_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __node_allocator&       __alloc()       { return __ae_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const __node_allocator& __alloc() const { return __ae_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __new_node(const _Tp& __v) {
+        __node* __p = __alloc().allocate(1);
+        _CCW_TRY {
+            ::new (static_cast<void*>(__p)) __node(__v);
+        } _CCW_CATCH_ALL {
+            __alloc().deallocate(__p, 1);
+            _CCW_RETHROW;
+        }
+        return __p;
+    }
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI __node* __new_node(_CCW_RV_REF(_Tp) __v) {
+        __node* __p = __alloc().allocate(1);
+        _CCW_TRY {
+            ::new (static_cast<void*>(__p)) __node(__v);
+        } _CCW_CATCH_ALL {
+            __alloc().deallocate(__p, 1);
+            _CCW_RETHROW;
+        }
+        return __p;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void __delete_node(__fl_node_base* __b) {
+        __node* __p = static_cast<__node*>(__b);
+        __p->~__node();
+        __alloc().deallocate(__p, 1);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init() { __ae_.__bb_.__next_ = 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __steal(forward_list& __o) {
+        __ae_.__bb_.__next_ = __o.__ae_.__bb_.__next_;
+        __o.__ae_.__bb_.__next_ = 0;
+    }
+
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list() { __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit forward_list(const allocator_type& __a) : __ae_(__a) { __init(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit forward_list(size_type __n, const _Tp& __v = _Tp()) { __init(); for (; __n; --__n) push_front(__v); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(_InputIt __f, _InputIt __l) { __init(); __ctor_disp(__f, __l, typename __ccw_dispatch_is_int<_InputIt>::_Tag()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(const forward_list& __o) : __ae_(__o.__alloc()) { __init(); __copy_from(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(const forward_list& __o, const allocator_type& __a) : __ae_(__a) { __init(); __copy_from(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list& operator=(const forward_list& __o) { if (this != &__o) { clear(); __copy_from(__o); } return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~forward_list() { clear(); }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(forward_list&& __o) { __init(); __steal(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(forward_list&& __o, const allocator_type& __a) : __ae_(__a) { __init(); __steal(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list& operator=(forward_list&& __o) { if (this != &__o) { clear(); __steal(__o); } return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void push_front(_Tp&& __v) { __node* __n = __new_node(static_cast<_Tp&&>(__v)); __n->__next_ = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert_after(iterator __pos, _Tp&& __v) {
+        __fl_node_base* __p = __pos.__node();
+        __node* __n = __new_node(static_cast<_Tp&&>(__v)); __n->__next_ = __p->__next_; __p->__next_ = __n; return iterator(__n);
+    }
+#else // !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(_CCW_RV_REF(forward_list) __r) { __init(); __steal(_CCW_MOVED_OBJ(__r)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list(_CCW_RV_REF(forward_list) __r, const allocator_type& __a) : __ae_(__a) { __init(); __steal(_CCW_MOVED_OBJ(__r)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI forward_list& operator=(_CCW_RV_REF(forward_list) __r) {
+        forward_list& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { clear(); __steal(__o); }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void push_front(_CCW_RV_REF(_Tp) __v) { __node* __n = __new_node(__v); __n->__next_ = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert_after(iterator __pos, _CCW_RV_REF(_Tp) __v) {
+        __fl_node_base* __p = __pos.__node();
+        __node* __n = __new_node(__v); __n->__next_ = __p->__next_; __p->__next_ = __n; return iterator(__n);
+    }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       before_begin()       { return iterator(&__ae_.__bb_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator before_begin() const { return const_iterator(const_cast<__fl_node_base*>(&__ae_.__bb_)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()       { return iterator(__ae_.__bb_.__next_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const { return const_iterator(__ae_.__bb_.__next_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()         { return iterator(0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const   { return const_iterator(0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return end(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __ae_.__bb_.__next_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       front()       { return static_cast<__fl_node<_Tp>*>(__ae_.__bb_.__next_)->__value_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference front() const { return static_cast<__fl_node<_Tp>*>(__ae_.__bb_.__next_)->__value_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void push_front(const _Tp& __v) { __node* __n = __new_node(__v); __n->__next_ = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void pop_front() { __fl_node_base* __n = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = __n->__next_; __delete_node(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert_after(iterator __pos, const _Tp& __v) {
+        __fl_node_base* __p = __pos.__node();
+        __node* __n = __new_node(__v); __n->__next_ = __p->__next_; __p->__next_ = __n; return iterator(__n);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase_after(iterator __pos) {
+        __fl_node_base* __p = __pos.__node();
+        __fl_node_base* __d = __p->__next_;
+        if (__d) { __p->__next_ = __d->__next_; __delete_node(__d); }
+        return iterator(__p->__next_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { while (!empty()) pop_front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(size_type __n, const _Tp& __v) { clear(); for (; __n; --__n) push_front(__v); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_InputIt __f, _InputIt __l) { clear(); __assign_disp(__f, __l, typename __ccw_dispatch_is_int<_InputIt>::_Tag()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void remove(const _Tp& __v) {
+        __fl_node_base* __p = &__ae_.__bb_;
+        while (__p->__next_) {
+            if (static_cast<__fl_node<_Tp>*>(__p->__next_)->__value_ == __v) { __fl_node_base* __d = __p->__next_; __p->__next_ = __d->__next_; __delete_node(__d); }
+            else __p = __p->__next_;
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reverse() {
+        __fl_node_base* __prev = 0; __fl_node_base* __cur = __ae_.__bb_.__next_;
+        while (__cur) { __fl_node_base* __nx = __cur->__next_; __cur->__next_ = __prev; __prev = __cur; __cur = __nx; }
+        __ae_.__bb_.__next_ = __prev;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbefore_begin() const { return before_begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return ~(size_type)0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(forward_list& __o) {
+        __alloc_bb __t = __ae_; __ae_ = __o.__ae_; __o.__ae_ = __t;
+    }
+
+    template <class _A1, class _A2>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert_after(iterator __pos, _A1 __a1, _A2 __a2) {
+        return __ins_disp(__pos, __a1, __a2, typename __ccw_dispatch_is_int<_A1>::_Tag());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase_after(iterator __pos, iterator __last) {
+        while (iterator(__pos.__node()->__next_) != __last) erase_after(__pos);
+        return __last;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void resize(size_type __n, const _Tp& __v = _Tp()) {
+        iterator __p = before_begin(), __i = begin(); size_type __c = 0;
+        while (__i != end() && __c < __n) { __p = __i; ++__i; ++__c; }
+        if (__c == __n) { while (iterator(__p.__node()->__next_) != end()) erase_after(__p); }
+        else for (; __c < __n; ++__c) __p = insert_after(__p, __v);
+    }
+
+    template <class _Pred>
+    _CCW_LIBCPP_HIDE_FROM_ABI void remove_if(_Pred __pred) {
+        __fl_node_base* __p = &__ae_.__bb_;
+        while (__p->__next_) {
+            if (__pred(__vref(__p->__next_))) { __fl_node_base* __d = __p->__next_; __p->__next_ = __d->__next_; __delete_node(__d); }
+            else __p = __p->__next_;
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void unique() {
+        __fl_node_base* __p = __ae_.__bb_.__next_;
+        while (__p && __p->__next_) {
+            if (__vref(__p) == __vref(__p->__next_)) { __fl_node_base* __d = __p->__next_; __p->__next_ = __d->__next_; __delete_node(__d); }
+            else __p = __p->__next_;
+        }
+    }
+    template <class _Pred>
+    _CCW_LIBCPP_HIDE_FROM_ABI void unique(_Pred __pred) {
+        __fl_node_base* __p = __ae_.__bb_.__next_;
+        while (__p && __p->__next_) {
+            if (__pred(__vref(__p), __vref(__p->__next_))) { __fl_node_base* __d = __p->__next_; __p->__next_ = __d->__next_; __delete_node(__d); }
+            else __p = __p->__next_;
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(forward_list& __o) {
+        if (this == &__o) return;
+        __fl_node_base* __p = &__ae_.__bb_; __fl_node_base* __a = __ae_.__bb_.__next_; __fl_node_base* __b = __o.__ae_.__bb_.__next_;
+        while (__a && __b) {
+            if (__vref(__b) < __vref(__a)) { __p->__next_ = __b; __b = __b->__next_; } else { __p->__next_ = __a; __a = __a->__next_; }
+            __p = __p->__next_;
+        }
+        __p->__next_ = __a ? __a : __b; __o.__ae_.__bb_.__next_ = 0;
+    }
+    template <class _Comp>
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(forward_list& __o, _Comp __comp) {
+        if (this == &__o) return;
+        __fl_node_base* __p = &__ae_.__bb_; __fl_node_base* __a = __ae_.__bb_.__next_; __fl_node_base* __b = __o.__ae_.__bb_.__next_;
+        while (__a && __b) {
+            if (__comp(__vref(__b), __vref(__a))) { __p->__next_ = __b; __b = __b->__next_; } else { __p->__next_ = __a; __a = __a->__next_; }
+            __p = __p->__next_;
+        }
+        __p->__next_ = __a ? __a : __b; __o.__ae_.__bb_.__next_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void sort() {
+        __fl_node_base* __src = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = 0;
+        while (__src) {
+            __fl_node_base* __n = __src; __src = __src->__next_;
+            __fl_node_base* __p = &__ae_.__bb_;
+            while (__p->__next_ && !(__vref(__n) < __vref(__p->__next_))) __p = __p->__next_;
+            __n->__next_ = __p->__next_; __p->__next_ = __n;
+        }
+    }
+    template <class _Comp>
+    _CCW_LIBCPP_HIDE_FROM_ABI void sort(_Comp __comp) {
+        __fl_node_base* __src = __ae_.__bb_.__next_; __ae_.__bb_.__next_ = 0;
+        while (__src) {
+            __fl_node_base* __n = __src; __src = __src->__next_;
+            __fl_node_base* __p = &__ae_.__bb_;
+            while (__p->__next_ && !__comp(__vref(__n), __vref(__p->__next_))) __p = __p->__next_;
+            __n->__next_ = __p->__next_; __p->__next_ = __n;
+        }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list& __o) {
+        if (!__o.__ae_.__bb_.__next_) return;
+        __fl_node_base* __p = __pos.__node(); __fl_node_base* __last = __o.__ae_.__bb_.__next_;
+        while (__last->__next_) __last = __last->__next_;
+        __last->__next_ = __p->__next_; __p->__next_ = __o.__ae_.__bb_.__next_; __o.__ae_.__bb_.__next_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list& __o, iterator __it) {
+        (void)__o;
+        __fl_node_base* __p = __pos.__node(); __fl_node_base* __i = __it.__node(); __fl_node_base* __n = __i->__next_;
+        if (!__n || __n == __p) return;
+        __i->__next_ = __n->__next_; __n->__next_ = __p->__next_; __p->__next_ = __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list& __o, iterator __first, iterator __last) {
+        (void)__o;
+        __fl_node_base* __p = __pos.__node(); __fl_node_base* __f = __first.__node(); __fl_node_base* __l = __last.__node();
+        if (__f->__next_ == __l) return;
+        __fl_node_base* __begin = __f->__next_; __fl_node_base* __end = __f;
+        while (__end->__next_ != __l) __end = __end->__next_;
+        __f->__next_ = __l; __end->__next_ = __p->__next_; __p->__next_ = __begin;
+    }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list&& __o) { splice_after(__pos, __o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list&& __o, iterator __it) { splice_after(__pos, __o, __it); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, forward_list&& __o, iterator __f, iterator __l) { splice_after(__pos, __o, __f, __l); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(forward_list&& __o) { merge(__o); }
+    template <class _Comp>
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(forward_list&& __o, _Comp __c) { merge(__o, __c); }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, _CCW_RV_REF(forward_list) __r) { splice_after(__pos, _CCW_MOVED_OBJ(__r)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, _CCW_RV_REF(forward_list) __r, iterator __it) { splice_after(__pos, _CCW_MOVED_OBJ(__r), __it); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void splice_after(iterator __pos, _CCW_RV_REF(forward_list) __r, iterator __f, iterator __l) { splice_after(__pos, _CCW_MOVED_OBJ(__r), __f, __l); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(_CCW_RV_REF(forward_list) __r) { merge(_CCW_MOVED_OBJ(__r)); }
+    template <class _Comp>
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(_CCW_RV_REF(forward_list) __r, _Comp __c) { merge(_CCW_MOVED_OBJ(__r), __c); }
+#endif
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_front() { push_front(value_type()); return front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace_after(iterator __pos) { return insert_after(__pos, value_type()); }
+#  define _CCW_GEN_FL_EMPLACE(N)                                                                          \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_front(_CCW_FNCTMPL_DECLARG(N)) { push_front(value_type(_CCW_FNCTMPL_FNCARG(N))); return front(); } \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                    \
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace_after(iterator __pos _CCW_FNCTMPL_CM_DECLARG(N)) { return insert_after(__pos, value_type(_CCW_FNCTMPL_FNCARG(N))); }
+    _CCW_GEN_FL_EMPLACE(1) _CCW_GEN_FL_EMPLACE(2) _CCW_GEN_FL_EMPLACE(3) _CCW_GEN_FL_EMPLACE(4)
+#  undef _CCW_GEN_FL_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI reference emplace_front(_Args&&... __a) { push_front(value_type(static_cast<_Args&&>(__a)...)); return front(); }
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace_after(iterator __pos, _Args&&... __a) { return insert_after(__pos, value_type(static_cast<_Args&&>(__a)...)); }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return allocator_type(__alloc()); }
+
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI static _Tp& __vref(__fl_node_base* __p) { return static_cast<__fl_node<_Tp>*>(__p)->__value_; }
+    template <class _NN, class _VV>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __ins_disp(iterator __pos, _NN __n, _VV __v, __ccw_int_true_tag) {
+        for (size_type __c = (size_type)__n; __c; --__c) __pos = insert_after(__pos, (_Tp)__v);
+        return __pos;
+    }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator __ins_disp(iterator __pos, _InputIt __f, _InputIt __l, __ccw_int_false_tag) {
+        for (; __f != __l; ++__f) __pos = insert_after(__pos, *__f);
+        return __pos;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __copy_from(const forward_list& __o) {
+        __fl_node_base* __tail = &__ae_.__bb_;
+        for (const_iterator __i = __o.begin(); __i != __o.end(); ++__i) {
+            __node* __n = __new_node(*__i); __n->__next_ = 0; __tail->__next_ = __n; __tail = __n;
+        }
+    }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __append_range(_InputIt __f, _InputIt __l) {
+        __fl_node_base* __tail = &__ae_.__bb_;
+        while (__tail->__next_) __tail = __tail->__next_;
+        for (; __f != __l; ++__f) { __node* __n = __new_node(*__f); __n->__next_ = 0; __tail->__next_ = __n; __tail = __n; }
+    }
+    template <class _Integer>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ctor_disp(_Integer __n, _Integer __v, __ccw_int_true_tag) { for (size_type __c = (size_type)__n; __c; --__c) push_front((_Tp)__v); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ctor_disp(_InputIt __f, _InputIt __l, __ccw_int_false_tag) { __append_range(__f, __l); }
+    template <class _Integer>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __assign_disp(_Integer __n, _Integer __v, __ccw_int_true_tag) { for (size_type __c = (size_type)__n; __c; --__c) push_front((_Tp)__v); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __assign_disp(_InputIt __f, _InputIt __l, __ccw_int_false_tag) { __append_range(__f, __l); }
+};
+
+template <class _Tp, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y) {
+    typename forward_list<_Tp, _Alloc>::const_iterator __i = __x.begin(), __j = __y.begin();
+    for (; __i != __x.end() && __j != __y.end(); ++__i, ++__j) if (!(*__i == *__j)) return false;
+    return __i == __x.end() && __j == __y.end();
+}
+template <class _Tp, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y) { return !(__x == __y); }
+template <class _Tp, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y) {
+    typename forward_list<_Tp, _Alloc>::const_iterator __i = __x.begin(), __j = __y.begin();
+    for (; __i != __x.end() && __j != __y.end(); ++__i, ++__j) { if (*__i < *__j) return true; if (*__j < *__i) return false; }
+    return __i == __x.end() && __j != __y.end();
+}
+template <class _Tp, class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y)  { return __y < __x; }
+template <class _Tp, class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y) { return !(__y < __x); }
+template <class _Tp, class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const forward_list<_Tp, _Alloc>& __x, const forward_list<_Tp, _Alloc>& __y) { return !(__x < __y); }
+
+template <class _Tp, class _Alloc, class _Up>
+_CCW_LIBCPP_HIDE_FROM_ABI typename forward_list<_Tp, _Alloc>::size_type erase(forward_list<_Tp, _Alloc>& __c, const _Up& __v) {
+    typename forward_list<_Tp, _Alloc>::size_type __n = 0;
+    for (typename forward_list<_Tp, _Alloc>::iterator __i = __c.begin(); __i != __c.end(); ++__i) if (*__i == __v) ++__n;
+    __c.remove(__v); return __n;
+}
+template <class _Tp, class _Alloc, class _Pred>
+_CCW_LIBCPP_HIDE_FROM_ABI typename forward_list<_Tp, _Alloc>::size_type erase_if(forward_list<_Tp, _Alloc>& __c, _Pred __pred) {
+    typename forward_list<_Tp, _Alloc>::size_type __n = 0;
+    for (typename forward_list<_Tp, _Alloc>::iterator __i = __c.begin(); __i != __c.end(); ++__i) if (__pred(*__i)) ++__n;
+    __c.remove_if(__pred); return __n;
+}
+
+template <class _Tp, class _Alloc>
+struct uses_allocator<forward_list<_Tp, _Alloc>, _Alloc> { static const bool value = true; };
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_FORWARD_LIST

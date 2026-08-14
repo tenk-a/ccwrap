@@ -1,0 +1,100 @@
+// ccwrap <mutex>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1700
+ #include _CCW_NATIVE_STL_HEADER_PATH(mutex)
+#else
+ #include <../../detail/cxx/win/mutex.hpp>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_scoped_lock) && \
+    (!defined(_MSC_VER) || _MSC_VER >= 1800)
+namespace _CCW_STD17 {
+
+template <class... _Mutexes>
+class scoped_lock {
+    std::tuple<_Mutexes&...> __m_;
+    scoped_lock(const scoped_lock&);
+    scoped_lock& operator=(const scoped_lock&);
+    template <class _Tuple, size_t... _Is> struct __unlock_helper;
+public:
+    explicit scoped_lock(_Mutexes&... __m) : __m_(__m...) { std::lock(__m...); }
+    scoped_lock(std::adopt_lock_t, _Mutexes&... __m) : __m_(__m...) {}
+    ~scoped_lock() { __unlock(__m_); }
+private:
+    template <class _M0> static void __unlock1(_M0& __m) { __m.unlock(); }
+    template <class _Tp> static void __unlock(std::tuple<_Tp&>& __t) { std::get<0>(__t).unlock(); }
+    template <class _T0, class _T1> static void __unlock(std::tuple<_T0&, _T1&>& __t)
+        { std::get<1>(__t).unlock(); std::get<0>(__t).unlock(); }
+    template <class _T0, class _T1, class _T2> static void __unlock(std::tuple<_T0&, _T1&, _T2&>& __t)
+        { std::get<2>(__t).unlock(); std::get<1>(__t).unlock(); std::get<0>(__t).unlock(); }
+};
+
+template <> class scoped_lock<> {
+public:
+    explicit scoped_lock() {}
+    explicit scoped_lock(std::adopt_lock_t) {}
+    ~scoped_lock() {}
+};
+template <class _Mutex> class scoped_lock<_Mutex> {
+    _Mutex& __m_;
+    scoped_lock(const scoped_lock&);
+    scoped_lock& operator=(const scoped_lock&);
+public:
+    explicit scoped_lock(_Mutex& __m) : __m_(__m) { __m_.lock(); }
+    scoped_lock(std::adopt_lock_t, _Mutex& __m) : __m_(__m) {}
+    ~scoped_lock() { __m_.unlock(); }
+};
+
+}   // _CCW_STD17
+#endif
+
+/* Below 1700 the backport above owns scoped_lock (and __ccw_sl_nil) already. */
+#if defined(__cplusplus) && !defined(__cpp_lib_scoped_lock) && \
+    defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
+namespace _CCW_STD17 {
+
+class __ccw_sl_nil {
+public:
+    void lock() {}
+    bool try_lock() { return true; }
+    void unlock() {}
+};
+
+template <class _M0 = __ccw_sl_nil, class _M1 = __ccw_sl_nil,
+          class _M2 = __ccw_sl_nil, class _M3 = __ccw_sl_nil>
+class scoped_lock {
+    _M0* __p0_; _M1* __p1_; _M2* __p2_; _M3* __p3_;
+    scoped_lock(const scoped_lock&);
+    scoped_lock& operator=(const scoped_lock&);
+public:
+    scoped_lock() : __p0_(0), __p1_(0), __p2_(0), __p3_(0) {}
+    explicit scoped_lock(std::adopt_lock_t) : __p0_(0), __p1_(0), __p2_(0), __p3_(0) {}
+    explicit scoped_lock(_M0& __m0)
+        : __p0_(&__m0), __p1_(0), __p2_(0), __p3_(0) { __m0.lock(); }
+    scoped_lock(_M0& __m0, _M1& __m1)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(0), __p3_(0) { std::lock(__m0, __m1); }
+    scoped_lock(_M0& __m0, _M1& __m1, _M2& __m2)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(0) { std::lock(__m0, __m1, __m2); }
+    scoped_lock(_M0& __m0, _M1& __m1, _M2& __m2, _M3& __m3)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(&__m3) { std::lock(__m0, __m1, __m2, __m3); }
+    scoped_lock(std::adopt_lock_t, _M0& __m0)
+        : __p0_(&__m0), __p1_(0), __p2_(0), __p3_(0) {}
+    scoped_lock(std::adopt_lock_t, _M0& __m0, _M1& __m1)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(0), __p3_(0) {}
+    scoped_lock(std::adopt_lock_t, _M0& __m0, _M1& __m1, _M2& __m2)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(0) {}
+    scoped_lock(std::adopt_lock_t, _M0& __m0, _M1& __m1, _M2& __m2, _M3& __m3)
+        : __p0_(&__m0), __p1_(&__m1), __p2_(&__m2), __p3_(&__m3) {}
+    ~scoped_lock() {
+        if (__p3_) __p3_->unlock();
+        if (__p2_) __p2_->unlock();
+        if (__p1_) __p1_->unlock();
+        if (__p0_) __p0_->unlock();
+    }
+};
+
+}   // _CCW_STD17
+#endif

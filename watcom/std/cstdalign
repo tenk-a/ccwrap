@@ -1,0 +1,16 @@
+// ccwrap watcom: <cstdalign> (C++11). Open Watcom's C++03 library predates this
+// header, so instead of forwarding to a possibly-absent native <cstdalign> we pull
+// the C <stdalign.h> (our wrapper) and expose the two feature macros the header is
+// required to provide. In C++, alignas/alignof are keywords, so <stdalign.h> defines
+// no macros of its own.
+#pragma once
+
+#include <ccwrap_common.h>
+#include <stdalign.h>
+
+#ifndef __alignas_is_defined
+#define __alignas_is_defined 1
+#endif
+#ifndef __alignof_is_defined
+#define __alignof_is_defined 1
+#endif

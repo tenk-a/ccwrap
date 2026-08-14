@@ -1,0 +1,5 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"stdbool"	"c1999:__bool_true_false_are_defined"	"1999"	"*"	""	"C23 で obsolescent (7.33.11)"
+"stdbool"	"c1999:bool"	"1999"	"2017"	""	"C23 7.19 は __bool_true_false_are_defined のみ。bool はキーワード化 (6.7.2) されヘッダの提供物ではなくなった"
+"stdbool"	"c1999:false"	"1999"	"2017"	""	"C23 では定義済み定数 (6.4.4.5)。<stdbool.h> は定義しない"
+"stdbool"	"c1999:true"	"1999"	"2017"	""	"C23 では定義済み定数 (6.4.4.5)。<stdbool.h> は定義しない"

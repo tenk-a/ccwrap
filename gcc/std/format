@@ -1,0 +1,76 @@
+// ccwrap <format>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+
+ #include_next <format>
+ namespace _ccw { using std::format; }
+
+#else
+
+#include <string>
+#include <../../detail/cxx/fmt_runtime.hpp>
+
+namespace _CCW_STD20 {
+using namespace ::std;
+
+inline std::string format(const char* fmt) { return std::__ccw_fmt::vformat(fmt, 0, 0); }
+
+template<class A0>
+inline std::string format(const char* fmt, const A0& a0) {
+    std::string a[1]; a[0] = std::__ccw_fmt::to_str(a0);
+    return std::__ccw_fmt::vformat(fmt, a, 1);
+}
+template<class A0, class A1>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1) {
+    std::string a[2]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1);
+    return std::__ccw_fmt::vformat(fmt, a, 2);
+}
+template<class A0, class A1, class A2>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2) {
+    std::string a[3]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2);
+    return std::__ccw_fmt::vformat(fmt, a, 3);
+}
+template<class A0, class A1, class A2, class A3>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3) {
+    std::string a[4]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3);
+    return std::__ccw_fmt::vformat(fmt, a, 4);
+}
+template<class A0, class A1, class A2, class A3, class A4>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4) {
+    std::string a[5]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4);
+    return std::__ccw_fmt::vformat(fmt, a, 5);
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5) {
+    std::string a[6]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5);
+    return std::__ccw_fmt::vformat(fmt, a, 6);
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6) {
+    std::string a[7]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6);
+    return std::__ccw_fmt::vformat(fmt, a, 7);
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7) {
+    std::string a[8]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7);
+    return std::__ccw_fmt::vformat(fmt, a, 8);
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8) {
+    std::string a[9]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7); a[8] = std::__ccw_fmt::to_str(a8);
+    return std::__ccw_fmt::vformat(fmt, a, 9);
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+inline std::string format(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8, const A9& a9) {
+    std::string a[10]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7); a[8] = std::__ccw_fmt::to_str(a8); a[9] = std::__ccw_fmt::to_str(a9);
+    return std::__ccw_fmt::vformat(fmt, a, 10);
+}
+
+}   // namespace _CCW_STD20
+
+namespace _ccw { using _CCW_STD20::format; }
+
+#endif

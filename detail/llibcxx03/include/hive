@@ -1,0 +1,183 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <hive> (C++26) for Open Watcom -- _CCW_STD::hive, an unordered
+//  container with stable element addresses and O(1) insert/erase. Not in the
+//  libc++ reference snapshot, so this is a from-scratch C++03 SUBSET.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_HIVE
+#define _CCW_LIBCPP_HIVE
+#include "__config"
+#include "__fnctmpl.h"
+#include <vector>
+#include <new>
+#include <cstddef>
+#include <iterator>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct hive_limits {
+    size_t min;
+    size_t max;
+    _CCW_LIBCPP_HIDE_FROM_ABI hive_limits(size_t __mn, size_t __mx) : min(__mn), max(__mx) {}
+};
+
+template <class _Tp, class _Vec, class _Rp>
+class __hive_iter {
+    _Vec*  __v_;
+    size_t __i_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __skip_fwd() { while (__v_ && __i_ < __v_->size() && (*__v_)[__i_] == 0) ++__i_; }
+public:
+    typedef _CCW_STD::bidirectional_iterator_tag iterator_category;
+    typedef _Tp                             value_type;
+    typedef _CCW_STD::ptrdiff_t                  difference_type;
+    typedef _Rp                             reference;
+    typedef _Tp*                            pointer;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter() : __v_(0), __i_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter(_Vec* __v, size_t __i) : __v_(__v), __i_(__i) { __skip_fwd(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator*() const  { return *(*__v_)[__i_]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer   operator->() const { return (*__v_)[__i_]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter& operator++() { ++__i_; __skip_fwd(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter  operator++(int) { __hive_iter __t(*this); ++*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter& operator--() { while (__i_ > 0) { --__i_; if ((*__v_)[__i_]) break; } return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __hive_iter  operator--(int) { __hive_iter __t(*this); --*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const __hive_iter& __o) const { return __i_ == __o.__i_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const __hive_iter& __o) const { return __i_ != __o.__i_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __index() const { return __i_; }
+};
+
+template <class _Tp, class _Alloc = allocator<_Tp> >
+class hive {
+    vector<_Tp*>    __slots_;
+    vector<size_t>  __free_;
+    size_t          __size_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __emplace_slot(_Tp* __p) {
+        if (!__free_.empty()) { size_t __i = __free_.back(); __free_.pop_back(); __slots_[__i] = __p; ++__size_; return __i; }
+        __slots_.push_back(__p); ++__size_; return __slots_.size() - 1;
+    }
+public:
+    typedef _Tp             value_type;
+    typedef _Alloc          allocator_type;
+    typedef _Tp*            pointer;
+    typedef const _Tp*      const_pointer;
+    typedef _Tp&            reference;
+    typedef const _Tp&      const_reference;
+    typedef size_t          size_type;
+    typedef _CCW_STD::ptrdiff_t  difference_type;
+    typedef __hive_iter<_Tp, vector<_Tp*>, _Tp&>             iterator;
+    typedef __hive_iter<_Tp, const vector<_Tp*>, const _Tp&> const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>          reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator>    const_reverse_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI hive() : __size_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit hive(hive_limits) : __size_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI hive(const hive& __o) : __size_(0) {
+        for (const_iterator __it = __o.begin(); __it != __o.end(); ++__it) insert(*__it);
+    }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI hive(_InputIt __f, _InputIt __l) : __size_(0) { for (; __f != __l; ++__f) insert(*__f); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~hive() { clear(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI hive& operator=(const hive& __o) {
+        if (this != &__o) { clear(); for (const_iterator __it = __o.begin(); __it != __o.end(); ++__it) insert(*__it); }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return allocator_type(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()        { return iterator(&__slots_, 0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()          { return iterator(&__slots_, __slots_.size()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const  { return const_iterator(&__slots_, 0); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const    { return const_iterator(&__slots_, __slots_.size()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rbegin()        { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rend()          { return reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const  { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend() const    { return const_reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend() const   { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __size_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __slots_.max_size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type capacity() const { return __slots_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reserve(size_type) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void shrink_to_fit() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void trim_capacity() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const _Tp& __v) {
+        _Tp* __p = new _Tp(__v);
+        size_t __i = __emplace_slot(__p);
+        return iterator(&__slots_, __i);
+    }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert(_InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) insert(*__f); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace() {
+        _Tp* __p = new _Tp();
+        size_t __i = __emplace_slot(__p);
+        return iterator(&__slots_, __i);
+    }
+#if _CCW_NO_VARIADIC_TEMPLATES
+#  define _CCW_GEN_HIVE_EMPLACE(N)                                                                    \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                                \
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace(_CCW_FNCTMPL_DECLARG(N)) {                                 \
+        _Tp* __p = new _Tp(_CCW_FNCTMPL_FNCARG(N));                                                   \
+        size_t __i = __emplace_slot(__p); return iterator(&__slots_, __i); }
+    _CCW_GEN_HIVE_EMPLACE(1) _CCW_GEN_HIVE_EMPLACE(2) _CCW_GEN_HIVE_EMPLACE(3) _CCW_GEN_HIVE_EMPLACE(4)
+#  undef _CCW_GEN_HIVE_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace(_Args&&... __a) {
+        _Tp* __p = new _Tp(static_cast<_Args&&>(__a)...);
+        size_t __i = __emplace_slot(__p); return iterator(&__slots_, __i);
+    }
+#endif
+
+    template <class _It> _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(_It __pos) {
+        size_t __i = __pos.__index();
+        delete __slots_[__i]; __slots_[__i] = 0; __free_.push_back(__i); --__size_;
+        return iterator(&__slots_, __i + 1);
+    }
+    template <class _It> _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(_It __f, _It __l) {
+        for (size_t __i = __f.__index(); __i < __l.__index(); ++__i)
+            if (__slots_[__i]) { delete __slots_[__i]; __slots_[__i] = 0; __free_.push_back(__i); --__size_; }
+        return iterator(&__slots_, __l.__index());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() {
+        for (size_t __i = 0; __i < __slots_.size(); ++__i) if (__slots_[__i]) delete __slots_[__i];
+        __slots_.clear(); __free_.clear(); __size_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(hive& __o) {
+        vector<_Tp*> __ts = __slots_; __slots_ = __o.__slots_; __o.__slots_ = __ts;
+        vector<size_t> __tf = __free_; __free_ = __o.__free_; __o.__free_ = __tf;
+        size_t __t = __size_; __size_ = __o.__size_; __o.__size_ = __t;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator get_iterator(pointer __p) {
+        for (size_t __i = 0; __i < __slots_.size(); ++__i) if (__slots_[__i] == __p) return iterator(&__slots_, __i);
+        return end();
+    }
+};
+
+template <class _Tp, class _Alloc>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(hive<_Tp, _Alloc>& __x, hive<_Tp, _Alloc>& __y) { __x.swap(__y); }
+
+template <class _Tp, class _Alloc, class _Up>
+_CCW_LIBCPP_HIDE_FROM_ABI typename hive<_Tp, _Alloc>::size_type erase(hive<_Tp, _Alloc>& __h, const _Up& __v) {
+    typename hive<_Tp, _Alloc>::size_type __n = 0;
+    for (typename hive<_Tp, _Alloc>::iterator __it = __h.begin(); __it != __h.end(); )
+        { if (*__it == __v) { __it = __h.erase(__it); ++__n; } else ++__it; }
+    return __n;
+}
+template <class _Tp, class _Alloc, class _Pred>
+_CCW_LIBCPP_HIDE_FROM_ABI typename hive<_Tp, _Alloc>::size_type erase_if(hive<_Tp, _Alloc>& __h, _Pred __p) {
+    typename hive<_Tp, _Alloc>::size_type __n = 0;
+    for (typename hive<_Tp, _Alloc>::iterator __it = __h.begin(); __it != __h.end(); )
+        { if (__p(*__it)) { __it = __h.erase(__it); ++__n; } else ++__it; }
+    return __n;
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_HIVE

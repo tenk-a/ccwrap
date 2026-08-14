@@ -1,0 +1,10 @@
+// ccwrap <cstdbool>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1800
+ #include _CCW_NATIVE_STL_HEADER_PATH(cstdbool)
+#else   // vc11 and earlier: no native <cstdbool>
+ #include <stdbool.h>
+#endif

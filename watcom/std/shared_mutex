@@ -1,0 +1,8 @@
+// ccwrap watcom forwarder: pull the genuine C++ <shared_mutex> from detail/llibcxx03/include.
+#pragma once
+#include <ccwrap_common.h>
+
+#if !defined(_CCW_OS_WIN)
+# error "ccwrap: <shared_mutex> is Win32-only on Open Watcom -- std::shared_mutex rests on Win32 SRW locks."
+#endif
+#include _CCW_NATIVE_STL_HEADER_PATH(shared_mutex)

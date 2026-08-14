@@ -1,0 +1,50 @@
+// ccwrap vc forwarder for <new>. MSVC ships this one, so ccwrap only needs a door here:
+// the door exists so that nothing resolves into detail/llibcxx03/include by accident (that
+// directory is on the include path for the headers MSVC does NOT have), and so there is
+// somewhere to add supplements later.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(new)
+
+#if defined(__cplusplus) && !defined(__cpp_lib_launder)
+namespace _CCW_STD17 {
+template <class _Tp> inline _Tp* launder(_Tp* __p) { return __p; }
+}
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_hardware_interference_size)
+namespace _CCW_STD17 {
+const _CCW_STD::size_t hardware_destructive_interference_size  = 64;
+const _CCW_STD::size_t hardware_constructive_interference_size = 64;
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1700
+namespace std {
+inline new_handler get_new_handler() {
+    new_handler __h = set_new_handler(0);
+    set_new_handler(__h);
+    return __h;
+}
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1600
+namespace std {
+class bad_array_new_length : public bad_alloc {
+public:
+    bad_array_new_length() throw() {}
+    virtual ~bad_array_new_length() throw() {}
+    virtual const char* what() const throw() { return "bad array new length"; }
+};
+}
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_impl_destroying_delete)
+namespace _CCW_STD20 {
+struct destroying_delete_t { explicit destroying_delete_t() {} };
+static const destroying_delete_t destroying_delete = destroying_delete_t();
+}
+#endif

@@ -1,0 +1,8 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"csetjmp_h"	"cxx03:jmp_buf"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:jmp_buf reuse"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:longjmp"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:longjmp delivers the value to setjmp"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:longjmp value 0 is replaced by 1"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:setjmp"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"
+"csetjmp_h"	"cxx03:setjmp direct return is 0"	"2003"	"*"	""	"<xxx.h> は <cxxx> が namespace std に置く名前を大域名前空間にも置く ([depr.c.headers])"

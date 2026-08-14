@@ -1,0 +1,11 @@
+このフォルダは llvm libc++ 
+
+https://github.com/llvm/llvm-project.git  8466750c230d5e51d509a8071c8a50e7de390029
+
+あたりをベースに、c++03 コンパイラ(watcom や 旧vc) 専用の
+c++標準ライブラリとして改造を施したものです。
+
+ほぼほぼ AI 作業。
+
+ccwrap の各種ヘッダから実装本体として include される前提で、
+このフォルダ単体で使える状態にはなっていません。

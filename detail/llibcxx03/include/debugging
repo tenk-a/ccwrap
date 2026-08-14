@@ -1,0 +1,44 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <debugging> (C++26) for Open Watcom. is_debugger_present /
+//  breakpoint / breakpoint_if_debugging. On the Win32 (NT) target these map to
+//  the Win32 debugging APIs; on other targets is_debugger_present() is false and
+//  breakpoint() is a no-op. Classic C++03.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_DEBUGGING
+#define _CCW_LIBCPP_DEBUGGING
+#include "__config"
+
+#if defined(__WATCOMC__) && !defined(_CCW_OS_WIN)
+# error "ccwrap llibcxx03: <debugging> is Win32-only on Open Watcom -- std::is_debugger_present needs Win32 IsDebuggerPresent."
+#endif
+
+#if defined(__NT__) || defined(_WIN32)
+extern "C" __declspec(dllimport) int  __stdcall IsDebuggerPresent(void);
+extern "C" __declspec(dllimport) void __stdcall DebugBreak(void);
+#endif
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_debugger_present() {
+#if defined(__NT__) || defined(_WIN32)
+    return IsDebuggerPresent() != 0;
+#else
+    return false;
+#endif
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void breakpoint() {
+#if defined(__NT__) || defined(_WIN32)
+    DebugBreak();
+#endif
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void breakpoint_if_debugging() {
+    if (is_debugger_present())
+        breakpoint();
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_DEBUGGING

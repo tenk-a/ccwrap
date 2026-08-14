@@ -1,0 +1,3 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"stdnoreturn"	"c2011:_Noreturn"	"2011"	"*"	""	"言語キーワード。<stdnoreturn.h> の提供物ではない。C23 では属性 [[noreturn]] / [[_Noreturn]] が推奨される"
+"stdnoreturn"	"c2011:noreturn"	"2011"	"*"	""	"C23 7.25 で noreturn マクロと <stdnoreturn.h> ともに obsolescent"

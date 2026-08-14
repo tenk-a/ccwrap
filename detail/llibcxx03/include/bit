@@ -1,0 +1,97 @@
+/*
+ * ccwrap: libc++ layout. classic C++03 body for Open Watcom.
+ * C++20 bit manipulation on unsigned integers.
+ *
+ * The counting / rounding operations forward to ../../c/bit_impl.h, the language-neutral
+ * bodies <stdbit.h> already uses -- one implementation for C and C++ instead of two, and
+ * the intrinsics that file picks (bsr / bsf / popcnt where the toolchain has them) come
+ * along for free. Dispatch is by sizeof through __ccw_bit_ops<N>, since C++03 has no way
+ * to pick an overload on the width of a dependent type.
+ *
+ * bit_cast / byteswap / rotl / rotr / endian stay here: they are not part of C's
+ * <stdbit.h>, so bit_impl.h has no counterpart to call.
+ */
+#ifndef _CCW_LIBCPP_BIT
+#define _CCW_LIBCPP_BIT
+#include "__config"
+#include <cstddef>
+#include <cstring>
+#include "../../c/bit_impl.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <unsigned _Sz> struct __ccw_bit_ops;
+
+#define _CCW_BIT_OPS(SZ, U, SFX)                                                        \
+    template <> struct __ccw_bit_ops<SZ> {                                              \
+        typedef U __u;                                                                  \
+        static unsigned __popcount(__u __v)  { return _ccw_stdbit_popcount_##SFX(__v); } \
+        static unsigned __ctz(__u __v)       { return _ccw_stdbit_countr_zero_##SFX(__v); } \
+        static unsigned __cto(__u __v)       { return _ccw_stdbit_countr_one_##SFX(__v); }  \
+        static unsigned __clz(__u __v)       { return _ccw_stdbit_countl_zero_##SFX(__v); } \
+        static unsigned __clo(__u __v)       { return _ccw_stdbit_countl_one_##SFX(__v); }  \
+        static unsigned __width(__u __v)     { return _ccw_stdbit_bit_width_##SFX(__v); }   \
+        static bool     __single(__u __v)    { return _ccw_stdbit_has_single_bit_##SFX(__v); } \
+        static __u      __floor(__u __v)     { return _ccw_stdbit_bit_floor_##SFX(__v); }   \
+        static __u      __ceil(__u __v)      { return _ccw_stdbit_bit_ceil_##SFX(__v); }    \
+    }
+_CCW_BIT_OPS(1, _ccw_uint8,  u8);
+_CCW_BIT_OPS(2, _ccw_uint16, u16);
+_CCW_BIT_OPS(4, _ccw_uint32, u32);
+_CCW_BIT_OPS(8, _ccw_uint64, u64);
+#undef _CCW_BIT_OPS
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int popcount(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__popcount(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int countr_zero(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__ctz(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int countr_one(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__cto(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int countl_zero(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__clz(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int countl_one(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__clo(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int bit_width(_Tp __x) {
+    return (int)__ccw_bit_ops<sizeof(_Tp)>::__width(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool has_single_bit(_Tp __x) {
+    return __ccw_bit_ops<sizeof(_Tp)>::__single(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp bit_floor(_Tp __x) {
+    return (_Tp)__ccw_bit_ops<sizeof(_Tp)>::__floor(__x);
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp bit_ceil(_Tp __x) {
+    return (_Tp)__ccw_bit_ops<sizeof(_Tp)>::__ceil(__x);
+}
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp rotl(_Tp __x, int __s) {
+    int __n = int(sizeof(_Tp) * 8); __s %= __n; if (__s < 0) __s += __n;
+    return __s == 0 ? __x : _Tp((__x << __s) | (__x >> (__n - __s)));
+}
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp rotr(_Tp __x, int __s) {
+    int __n = int(sizeof(_Tp) * 8); __s %= __n; if (__s < 0) __s += __n;
+    return __s == 0 ? __x : _Tp((__x >> __s) | (__x << (__n - __s)));
+}
+
+template <class _To, class _From> _CCW_LIBCPP_HIDE_FROM_ABI _To bit_cast(const _From& __from) {
+    _To __to; _CCW_STD::memcpy(&__to, &__from, sizeof(_To)); return __to;
+}
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp byteswap(_Tp __x) {
+    unsigned char __b[sizeof(_Tp)]; _CCW_STD::memcpy(__b, &__x, sizeof(_Tp));
+    for (unsigned __i = 0, __j = sizeof(_Tp) - 1; __i < __j; ++__i, --__j) {
+        unsigned char __t = __b[__i]; __b[__i] = __b[__j]; __b[__j] = __t;
+    }
+    _Tp __r; _CCW_STD::memcpy(&__r, __b, sizeof(_Tp)); return __r;
+}
+
+struct endian {
+    enum __e { little = 0, big = 1, native = 0 };
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_BIT

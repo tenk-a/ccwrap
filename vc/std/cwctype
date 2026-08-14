@@ -1,0 +1,16 @@
+// ccwrap <cwctype>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cwctype)
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+#include <wctype.h>     /* ::iswblank etc., so that <wctype.h> alone provides them */
+namespace std {
+using ::iswblank;
+using ::wctrans;
+using ::towctrans;
+using ::wctype;
+}
+#endif

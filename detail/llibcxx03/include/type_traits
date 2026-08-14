@@ -1,0 +1,73 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//
+//  ccwrap llibcxx03: <type_traits> for Open Watcom. libc++'s folder layout /
+//  header names / macro vocabulary are preserved; each __type_traits/*.h is a
+//  classic C++03 implementation (Watcom has no type-trait builtins nor alias
+//  templates). Ported least-dependent-first; more traits are added over time.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_TYPE_TRAITS
+#define _CCW_LIBCPP_TYPE_TRAITS
+
+#include "__config"
+
+#include "__type_traits/integral_constant.h"
+#include "__type_traits/is_same.h"
+#include "__type_traits/enable_if.h"
+#include "__type_traits/conditional.h"
+#include "__type_traits/remove_const.h"
+#include "__type_traits/remove_volatile.h"
+#include "__type_traits/remove_cv.h"
+#include "__type_traits/remove_reference.h"
+#include "__type_traits/remove_pointer.h"
+#include "__type_traits/remove_extent.h"
+#include "__type_traits/remove_all_extents.h"
+#include "__type_traits/rank.h"
+#include "__type_traits/extent.h"
+#include "__type_traits/add_const.h"
+#include "__type_traits/add_volatile.h"
+#include "__type_traits/add_cv.h"
+#include "__type_traits/add_pointer.h"
+#include "__type_traits/add_lvalue_reference.h"
+#include "__type_traits/is_const.h"
+#include "__type_traits/is_volatile.h"
+#include "__type_traits/is_void.h"
+#include "__type_traits/is_integral.h"
+#include "__type_traits/is_floating_point.h"
+#include "__type_traits/is_arithmetic.h"
+#include "__type_traits/is_fundamental.h"
+#include "__type_traits/is_pointer.h"
+#include "__type_traits/is_member_pointer.h"
+#include "__type_traits/is_member_function_pointer.h"
+#include "__type_traits/is_member_object_pointer.h"
+#include "__type_traits/remove_cvref.h"
+#include "__type_traits/is_class.h"
+#include "__type_traits/__ccw_intrinsic_traits.h"
+#include "__type_traits/is_base_of.h"
+#include "__type_traits/is_scalar.h"
+#include "__type_traits/is_compound.h"
+#include "__type_traits/is_function.h"
+#include "__type_traits/is_object.h"
+#include "__type_traits/type_identity.h"
+#include "__type_traits/underlying_type.h"
+#include "__type_traits/negation.h"
+#include "__type_traits/conjunction.h"
+#include "__type_traits/disjunction.h"
+#include "__type_traits/is_destructible.h"
+#include "__type_traits/is_constructible.h"
+#include "__type_traits/is_assignable.h"
+#include "__type_traits/is_array.h"
+#include "__type_traits/is_reference.h"
+#include "__type_traits/is_lvalue_reference.h"
+#include "__type_traits/is_rvalue_reference.h"
+#include "__type_traits/is_signed.h"
+#include "__type_traits/is_unsigned.h"
+#include "__type_traits/make_signed.h"
+#include "__type_traits/make_unsigned.h"
+#include "__type_traits/alignment_of.h"
+#include "__type_traits/decay.h"
+#include "__type_traits/common_type.h"
+#include "__type_traits/aligned_storage.h"
+#include "__type_traits/is_convertible.h"
+
+#endif // _CCW_LIBCPP_TYPE_TRAITS

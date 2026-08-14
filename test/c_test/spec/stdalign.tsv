@@ -1,0 +1,7 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"stdalign"	"c2011:_Alignas"	"2011"	"*"	""	"元々 <stdalign.h> の提供物ではなく言語キーワード。C23 でも代替綴りとして残る"
+"stdalign"	"c2011:_Alignof"	"2011"	"*"	""	"元々 <stdalign.h> の提供物ではなく言語キーワード。C23 でも代替綴りとして残る"
+"stdalign"	"c2011:__alignas_is_defined"	"2011"	"2017"	""	"C23 で削除 (7.15 は空)。削除推奨"
+"stdalign"	"c2011:__alignof_is_defined"	"2011"	"2017"	""	"C23 で削除 (7.15 は空)。削除推奨"
+"stdalign"	"c2011:alignas"	"2011"	"2017"	""	"C23 7.15「<stdalign.h> provides no content」。alignas はキーワード化 (6.7.5) されヘッダは定義しない"
+"stdalign"	"c2011:alignof"	"2011"	"2017"	""	"C23 7.15「provides no content」。alignof はキーワード化 (6.5.3.4)"

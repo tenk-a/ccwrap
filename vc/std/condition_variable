@@ -1,0 +1,10 @@
+// ccwrap <condition_variable>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1700
+ #include _CCW_NATIVE_STL_HEADER_PATH(condition_variable)
+#else
+ #include <../../detail/cxx/win/condition_variable.hpp>
+#endif

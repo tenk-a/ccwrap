@@ -1,0 +1,161 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <queue> for Open Watcom -- classic FIFO adaptor (queue) and a
+//  binary-heap priority_queue, both over an underlying container. Pure library;
+//  emplace forwards through the fnctmpl emulation to the container's emplace_back.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_QUEUE
+#define _CCW_LIBCPP_QUEUE
+#include "__config"
+#include "__memory/misc.h"   // uses_allocator
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include <deque>
+#include <vector>
+#include "__functional/operations.h"
+#include "__algorithm/push_heap.h"
+#include "__algorithm/pop_heap.h"
+#include "__algorithm/make_heap.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp, class _Container = deque<_Tp> >
+class _CCW_LIBCPP_TEMPLATE_VIS queue {
+public:
+    typedef _Container                           container_type;
+    typedef typename _Container::value_type      value_type;
+    typedef typename _Container::size_type       size_type;
+    typedef typename _Container::reference        reference;
+    typedef typename _Container::const_reference  const_reference;
+protected:
+    container_type c;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI queue() : c() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit queue(const container_type& __c) : c(__c) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit queue(_CCW_RV_REF(container_type) __r) : c(_ccw::move(_CCW_MOVED_OBJ(__r))) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI queue(_CCW_RV_REF(queue) __r) : c(_ccw::move(_CCW_MOVED_OBJ(__r).c)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI queue& operator=(_CCW_RV_REF(queue) __r) {
+        c = _ccw::move(_CCW_MOVED_OBJ(__r).c); return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void push(_CCW_RV_REF(value_type) __v) { c.push_back(__v); }
+#endif
+
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI explicit queue(const _Alloc& __a) : c(__a) {}
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI queue(const container_type& __c, const _Alloc& __a) : c(__c, __a) {}
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI queue(const queue& __q, const _Alloc& __a) : c(__q.c, __a) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool            empty() const { return c.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type       size()  const { return c.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       front()       { return c.front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference front() const { return c.front(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       back()        { return c.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference back()  const { return c.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void            push(const value_type& __v) { c.push_back(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void            pop()         { c.pop_front(); }
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace() { c.emplace_back(); }
+#  define _CCW_GEN_QUEUE_EMPLACE(N)                                                       \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                     \
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_CCW_FNCTMPL_DECLARG(N)) { c.emplace_back(_CCW_FNCTMPL_FNCARG(N)); }
+    _CCW_GEN_QUEUE_EMPLACE(1) _CCW_GEN_QUEUE_EMPLACE(2) _CCW_GEN_QUEUE_EMPLACE(3) _CCW_GEN_QUEUE_EMPLACE(4)
+#  undef _CCW_GEN_QUEUE_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_Args&&... __a) { c.emplace_back(static_cast<_Args&&>(__a)...); }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(queue& __q) { c.swap(__q.c); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const container_type& __get_container() const { return c; }
+};
+
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return __x.__get_container() == __y.__get_container(); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return !(__x == __y); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return __x.__get_container() < __y.__get_container(); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return __y < __x; }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return !(__y < __x); }
+template <class _Tp, class _Container>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const queue<_Tp, _Container>& __x, const queue<_Tp, _Container>& __y) { return !(__x < __y); }
+
+template <class _Tp, class _Container = vector<_Tp>, class _Compare = less<_Tp> >
+class _CCW_LIBCPP_TEMPLATE_VIS priority_queue {
+public:
+    typedef _Container                            container_type;
+    typedef _Compare                              value_compare;
+    typedef typename _Container::value_type       value_type;
+    typedef typename _Container::size_type        size_type;
+    typedef typename _Container::reference         reference;
+    typedef typename _Container::const_reference   const_reference;
+protected:
+    container_type c;
+    value_compare  comp;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue() : c(), comp() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit priority_queue(const _Compare& __cmp) : c(), comp(__cmp) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(const _Compare& __cmp, _CCW_RV_REF(container_type) __r)
+        : c(_ccw::move(_CCW_MOVED_OBJ(__r))), comp(__cmp) {
+        _CCW_STD::make_heap(c.begin(), c.end(), comp);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(_CCW_RV_REF(priority_queue) __r)
+        : c(_ccw::move(_CCW_MOVED_OBJ(__r).c)), comp(_CCW_MOVED_OBJ(__r).comp) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue& operator=(_CCW_RV_REF(priority_queue) __r) {
+        c = _ccw::move(_CCW_MOVED_OBJ(__r).c); comp = _CCW_MOVED_OBJ(__r).comp; return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void push(_CCW_RV_REF(value_type) __v) {
+        c.push_back(__v); _CCW_STD::push_heap(c.begin(), c.end(), comp);
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(const _Compare& __cmp, const container_type& __ctr) : c(__ctr), comp(__cmp) {
+        _CCW_STD::make_heap(c.begin(), c.end(), comp);
+    }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(_InputIt __f, _InputIt __l) : c(__f, __l), comp() {
+        _CCW_STD::make_heap(c.begin(), c.end(), comp);
+    }
+
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI explicit priority_queue(const _Alloc& __a) : c(__a), comp() {}
+    template <class _Alloc> _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(const _Compare& __cmp, const _Alloc& __a) : c(__a), comp(__cmp) {}
+    template <class _Alloc>
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(const _Compare& __cmp, const container_type& __ctr, const _Alloc& __a)
+        : c(__ctr, __a), comp(__cmp) {
+        _CCW_STD::make_heap(c.begin(), c.end(), comp);
+    }
+    template <class _Alloc>
+    _CCW_LIBCPP_HIDE_FROM_ABI priority_queue(const priority_queue& __q, const _Alloc& __a) : c(__q.c, __a), comp(__q.comp) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool            empty() const { return c.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type       size()  const { return c.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference top()   const { return c.front(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void push(const value_type& __v) { c.push_back(__v); _CCW_STD::push_heap(c.begin(), c.end(), comp); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void pop() { _CCW_STD::pop_heap(c.begin(), c.end(), comp); c.pop_back(); }
+
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace() { c.emplace_back(); _CCW_STD::push_heap(c.begin(), c.end(), comp); }
+#  define _CCW_GEN_PQ_EMPLACE(N)                                                                   \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                             \
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_CCW_FNCTMPL_DECLARG(N)) { c.emplace_back(_CCW_FNCTMPL_FNCARG(N)); _CCW_STD::push_heap(c.begin(), c.end(), comp); }
+    _CCW_GEN_PQ_EMPLACE(1) _CCW_GEN_PQ_EMPLACE(2) _CCW_GEN_PQ_EMPLACE(3) _CCW_GEN_PQ_EMPLACE(4)
+#  undef _CCW_GEN_PQ_EMPLACE
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI void emplace(_Args&&... __a) { c.emplace_back(static_cast<_Args&&>(__a)...); _CCW_STD::push_heap(c.begin(), c.end(), comp); }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(priority_queue& __q) { c.swap(__q.c); _Compare __t = comp; comp = __q.comp; __q.comp = __t; }
+};
+
+template <class _Tp, class _Container, class _Alloc>
+struct uses_allocator<queue<_Tp, _Container>, _Alloc> : uses_allocator<_Container, _Alloc> {};
+template <class _Tp, class _Container, class _Compare, class _Alloc>
+struct uses_allocator<priority_queue<_Tp, _Container, _Compare>, _Alloc> : uses_allocator<_Container, _Alloc> {};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_QUEUE

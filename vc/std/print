@@ -1,0 +1,148 @@
+// ccwrap <print>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202302L
+
+ #include _CCW_NATIVE_STL_HEADER_PATH(print)
+ namespace _ccw { using std::print; using std::println; }
+
+#else
+
+#include <cstdio>
+#include <string>
+#include <../../detail/cxx/fmt_runtime.hpp>
+
+namespace _CCW_STD23 {
+using namespace ::std;
+namespace __ccw_prn {
+inline void out(FILE* f, const std::string& s) { std::fwrite(s.data(), 1, s.size(), f); }
+inline void nl(FILE* f) { std::fputc('\n', f); }
+}   // namespace __ccw_prn
+
+inline void print(FILE* f, const char* fmt) { __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, 0, 0)); }
+template<class A0>
+inline void print(FILE* f, const char* fmt, const A0& a0) {
+    std::string a[1]; a[0] = std::__ccw_fmt::to_str(a0);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 1));
+}
+template<class A0, class A1>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1) {
+    std::string a[2]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 2));
+}
+template<class A0, class A1, class A2>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2) {
+    std::string a[3]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 3));
+}
+template<class A0, class A1, class A2, class A3>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3) {
+    std::string a[4]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 4));
+}
+template<class A0, class A1, class A2, class A3, class A4>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4) {
+    std::string a[5]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 5));
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5) {
+    std::string a[6]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 6));
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6) {
+    std::string a[7]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 7));
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7) {
+    std::string a[8]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 8));
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8) {
+    std::string a[9]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7); a[8] = std::__ccw_fmt::to_str(a8);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 9));
+}
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+inline void print(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8, const A9& a9) {
+    std::string a[10]; a[0] = std::__ccw_fmt::to_str(a0); a[1] = std::__ccw_fmt::to_str(a1); a[2] = std::__ccw_fmt::to_str(a2); a[3] = std::__ccw_fmt::to_str(a3); a[4] = std::__ccw_fmt::to_str(a4); a[5] = std::__ccw_fmt::to_str(a5); a[6] = std::__ccw_fmt::to_str(a6); a[7] = std::__ccw_fmt::to_str(a7); a[8] = std::__ccw_fmt::to_str(a8); a[9] = std::__ccw_fmt::to_str(a9);
+    __ccw_prn::out(f, std::__ccw_fmt::vformat(fmt, a, 10));
+}
+
+inline void print(const char* fmt) { print(stdout, fmt); }
+template<class A0>
+inline void print(const char* fmt, const A0& a0) { print(stdout, fmt, a0); }
+template<class A0, class A1>
+inline void print(const char* fmt, const A0& a0, const A1& a1) { print(stdout, fmt, a0, a1); }
+template<class A0, class A1, class A2>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2) { print(stdout, fmt, a0, a1, a2); }
+template<class A0, class A1, class A2, class A3>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3) { print(stdout, fmt, a0, a1, a2, a3); }
+template<class A0, class A1, class A2, class A3, class A4>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4) { print(stdout, fmt, a0, a1, a2, a3, a4); }
+template<class A0, class A1, class A2, class A3, class A4, class A5>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5) { print(stdout, fmt, a0, a1, a2, a3, a4, a5); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6) { print(stdout, fmt, a0, a1, a2, a3, a4, a5, a6); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7) { print(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8) { print(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+inline void print(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8, const A9& a9) { print(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9); }
+
+inline void println(FILE* f) { __ccw_prn::nl(f); }
+inline void println(FILE* f, const char* fmt) { print(f, fmt); __ccw_prn::nl(f); }
+template<class A0>
+inline void println(FILE* f, const char* fmt, const A0& a0) { print(f, fmt, a0); __ccw_prn::nl(f); }
+template<class A0, class A1>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1) { print(f, fmt, a0, a1); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2) { print(f, fmt, a0, a1, a2); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3) { print(f, fmt, a0, a1, a2, a3); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4) { print(f, fmt, a0, a1, a2, a3, a4); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4, class A5>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5) { print(f, fmt, a0, a1, a2, a3, a4, a5); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6) { print(f, fmt, a0, a1, a2, a3, a4, a5, a6); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7) { print(f, fmt, a0, a1, a2, a3, a4, a5, a6, a7); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8) { print(f, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8); __ccw_prn::nl(f); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+inline void println(FILE* f, const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8, const A9& a9) { print(f, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9); __ccw_prn::nl(f); }
+
+inline void println() { __ccw_prn::nl(stdout); }
+inline void println(const char* fmt) { println(stdout, fmt); }
+template<class A0>
+inline void println(const char* fmt, const A0& a0) { println(stdout, fmt, a0); }
+template<class A0, class A1>
+inline void println(const char* fmt, const A0& a0, const A1& a1) { println(stdout, fmt, a0, a1); }
+template<class A0, class A1, class A2>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2) { println(stdout, fmt, a0, a1, a2); }
+template<class A0, class A1, class A2, class A3>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3) { println(stdout, fmt, a0, a1, a2, a3); }
+template<class A0, class A1, class A2, class A3, class A4>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4) { println(stdout, fmt, a0, a1, a2, a3, a4); }
+template<class A0, class A1, class A2, class A3, class A4, class A5>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5) { println(stdout, fmt, a0, a1, a2, a3, a4, a5); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6) { println(stdout, fmt, a0, a1, a2, a3, a4, a5, a6); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7) { println(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8) { println(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8); }
+template<class A0, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+inline void println(const char* fmt, const A0& a0, const A1& a1, const A2& a2, const A3& a3, const A4& a4, const A5& a5, const A6& a6, const A7& a7, const A8& a8, const A9& a9) { println(stdout, fmt, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9); }
+
+}   // namespace _CCW_STD23
+
+namespace _ccw { using _CCW_STD23::print; using _CCW_STD23::println; }
+
+#endif

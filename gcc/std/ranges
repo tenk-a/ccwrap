@@ -1,0 +1,12 @@
+// ccwrap <ranges>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <ranges>
+ namespace _ccw { namespace ranges = std::ranges; }
+#else
+ #include <../../detail/llibcxx03/include/ranges>
+ namespace _ccw { namespace ranges = std::ranges; }
+#endif

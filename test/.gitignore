@@ -1,0 +1,10 @@
+_build/
+_out/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.bak
+*.BAK
+*.err
+err.txt

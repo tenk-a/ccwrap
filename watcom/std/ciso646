@@ -1,0 +1,8 @@
+// ccwrap watcom: <ciso646>. In C++ the alternative operator spellings (and, or, not,
+// xor, bitand, ...) are keywords, so this header contributes no declarations; it only
+// guarantees ccwrap_common.h and <iso646.h> are available. Forward to our <iso646.h>
+// wrapper (which reaches Open Watcom's native header).
+#pragma once
+
+#include <ccwrap_common.h>
+#include <iso646.h>

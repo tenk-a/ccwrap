@@ -1,0 +1,8 @@
+"suite"	"pass"	"status"	"note"
+"typeindex"	"cxx11:hash<type_index>"	"tested"	""
+"typeindex"	"cxx11:type_index"	"tested"	""
+"typeindex"	"cxx11:type_index as unordered_map key (hash)"	"tested"	""
+"typeindex"	"cxx11:type_index comparisons"	"tested"	""
+"typeindex"	"cxx11:type_index::hash_code"	"tested"	""
+"typeindex"	"cxx11:type_index::name"	"tested"	""
+"typeindex"	"cxx20:type_index::operator<=>"	"tested"	""

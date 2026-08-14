@@ -1,0 +1,11 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <deque> for Open Watcom. See __deque/deque.h.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_DEQUE
+#define _CCW_LIBCPP_DEQUE
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__deque/deque.h"
+#endif // _CCW_LIBCPP_DEQUE

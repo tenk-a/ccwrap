@@ -1,0 +1,138 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <text_encoding> (C++26) for Open Watcom -- _CCW_STD::text_encoding,
+//  a lightweight name/MIBenum view of a character encoding. Not in the libc++
+//  reference snapshot, so this is a from-scratch C++03 SUBSET: a curated set of the
+//  common IANA encodings (not the full registry). Open Watcom has no scoped enums,
+//  so text_encoding::id is a plain nested enum -- spell an enumerator as
+//  text_encoding::UTF8, not text_encoding::id::UTF8.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_TEXT_ENCODING
+#define _CCW_LIBCPP_TEXT_ENCODING
+#include "__config"
+#include <string_view>
+#include <cstring>
+#include <cctype>
+#include "__functional/hash.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+class text_encoding {
+public:
+    enum id {
+        other      = 1,
+        unknown    = 2,
+        ASCII      = 3,
+        ISOLatin1  = 4,     // ISO-8859-1
+        ISOLatin2  = 5,     // ISO-8859-2
+        ISO646     = 3,     // treated as US-ASCII here
+        ShiftJIS   = 17,
+        EUCPkdFmtJapanese = 18,   // EUC-JP
+        GB2312     = 2025,
+        Big5       = 2026,
+        UCS2       = 1000,
+        UCS4       = 1001,
+        UTF8       = 106,
+        UTF16      = 1015,
+        UTF16BE    = 1013,
+        UTF16LE    = 1014,
+        UTF32      = 1017,
+        UTF32BE    = 1018,
+        UTF32LE    = 1019,
+        windows1252 = 2252
+    };
+
+    static const size_t max_name_length = 63;
+private:
+    struct __entry { id __mib; const char* __name; };
+    _CCW_LIBCPP_HIDE_FROM_ABI static const __entry* __table(size_t& __n) {
+        static const __entry __t[] = {
+            { ASCII, "US-ASCII" }, { ISOLatin1, "ISO-8859-1" }, { ISOLatin2, "ISO-8859-2" },
+            { ShiftJIS, "Shift_JIS" }, { EUCPkdFmtJapanese, "EUC-JP" },
+            { GB2312, "GB2312" }, { Big5, "Big5" }, { UCS2, "ISO-10646-UCS-2" }, { UCS4, "ISO-10646-UCS-4" },
+            { UTF8, "UTF-8" }, { UTF16, "UTF-16" }, { UTF16BE, "UTF-16BE" }, { UTF16LE, "UTF-16LE" },
+            { UTF32, "UTF-32" }, { UTF32BE, "UTF-32BE" }, { UTF32LE, "UTF-32LE" }, { windows1252, "windows-1252" }
+        };
+        __n = sizeof(__t) / sizeof(__t[0]);
+        return __t;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __ci_eq(const char* __a, const char* __b, size_t __bn) {
+        size_t __i = 0;
+        for (; __i < __bn && __a[__i]; ++__i)
+            if (_CCW_STD::tolower((unsigned char)__a[__i]) != _CCW_STD::tolower((unsigned char)__b[__i])) return false;
+        return __a[__i] == '\0' && __i == __bn;
+    }
+
+    id          __mib_;
+    char        __name_[max_name_length + 1];
+    const char* __aliasptr_[1];   // points at __name_ (stable per instance)
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __set(id __m, const char* __nm) {
+        __mib_ = __m;
+        size_t __k = 0; for (; __nm[__k] && __k < max_name_length; ++__k) __name_[__k] = __nm[__k];
+        __name_[__k] = '\0';
+        __aliasptr_[0] = __name_;
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI text_encoding() { __set(unknown, ""); }
+    _CCW_LIBCPP_HIDE_FROM_ABI text_encoding(const text_encoding& __o) { __set(__o.__mib_, __o.__name_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI text_encoding& operator=(const text_encoding& __o) { __set(__o.__mib_, __o.__name_); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit text_encoding(id __m) {
+        size_t __n; const __entry* __t = __table(__n);
+        for (size_t __i = 0; __i < __n; ++__i) if (__t[__i].__mib == __m) { __set(__m, __t[__i].__name); return; }
+        __set(__m, "");
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit text_encoding(_CCW_STD::string_view __nm) {
+        size_t __n; const __entry* __t = __table(__n);
+        for (size_t __i = 0; __i < __n; ++__i)
+            if (__ci_eq(__t[__i].__name, __nm.data(), __nm.size())) { __set(__t[__i].__mib, __t[__i].__name); return; }
+        __set(other, "");
+        size_t __k = 0; for (; __k < __nm.size() && __k < max_name_length; ++__k) __name_[__k] = __nm[__k];
+        __name_[__k] = '\0';
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI id          mib() const  { return __mib_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const { return __name_; }
+
+    class aliases_view {
+        const char* const* __b_;
+        const char* const* __e_;
+    public:
+        _CCW_LIBCPP_HIDE_FROM_ABI aliases_view(const char* const* __b, const char* const* __e) : __b_(__b), __e_(__e) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI const char* const* begin() const { return __b_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI const char* const* end() const   { return __e_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI bool empty() const { return __b_ == __e_; }
+        _CCW_LIBCPP_HIDE_FROM_ABI size_t size() const { return (size_t)(__e_ - __b_); }
+    };
+    _CCW_LIBCPP_HIDE_FROM_ABI aliases_view aliases() const {
+        return aliases_view(__aliasptr_, __aliasptr_ + (__name_[0] ? 1 : 0));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static text_encoding environment() { return text_encoding(); }   // not determinable on Watcom
+    _CCW_LIBCPP_HIDE_FROM_ABI static text_encoding literal() { return text_encoding(ASCII); }
+    template <id _Id> _CCW_LIBCPP_HIDE_FROM_ABI static bool environment_is() { return environment().mib() == _Id; }
+
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const text_encoding& __x, const text_encoding& __y) {
+        if (__x.__mib_ == other || __y.__mib_ == other) return _CCW_STD::strcmp(__x.__name_, __y.__name_) == 0;
+        return __x.__mib_ == __y.__mib_;
+    }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const text_encoding& __x, const text_encoding& __y) { return !(__x == __y); }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const text_encoding& __x, id __m) { return __x.__mib_ == __m; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const text_encoding& __x, id __m) { return __x.__mib_ != __m; }
+};
+
+template <> struct hash<text_encoding> {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const text_encoding& __e) const {
+        if (__e.mib() != text_encoding::other)
+            return static_cast<_CCW_STD::size_t>(__e.mib());
+        _CCW_STD::size_t __h = 2166136261u;              // FNV-1a over the spelling
+        for (const char* __p = __e.name(); *__p; ++__p) {
+            __h ^= static_cast<unsigned char>(*__p);
+            __h *= 16777619u;
+        }
+        return __h;
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_TEXT_ENCODING

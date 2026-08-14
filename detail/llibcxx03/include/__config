@@ -1,0 +1,141 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+#ifndef _CCW_LIBCPP___CONFIG
+#define _CCW_LIBCPP___CONFIG
+
+#include <ccwrap_common.h>
+#include "../../cxx/eh_fail.hpp"
+
+#define _CCW_LIBCPP_VERSION 190100
+
+#define _CCW_LIBCPP_CONCAT_IMPL(_X, _Y) _X##_Y
+#define _CCW_LIBCPP_CONCAT(_X, _Y)      _CCW_LIBCPP_CONCAT_IMPL(_X, _Y)
+
+#ifndef _CCW_STD
+#  define _CCW_STD std
+#endif
+#define _CCW_LIBCPP_BEGIN_NAMESPACE_STD namespace _CCW_STD {
+#define _CCW_LIBCPP_END_NAMESPACE_STD   }
+#if defined(__WATCOMC__) || defined(_CCW_STD_RELOCATED)
+#  define _CCW_LIBCPP_NATIVE_STD 0
+#else
+#  define _CCW_LIBCPP_NATIVE_STD 1
+#endif
+
+#if !_CCW_LIBCPP_NATIVE_STD
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 0
+#elif defined(_MSC_VER)
+#  if _MSC_VER >= 1600
+#    define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 1
+#  else
+#    define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 0
+#  endif
+#elif defined(__cplusplus) && __cplusplus >= 201103L
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 1
+#else
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 0
+#endif
+
+#define _CCW_LIBCPP_HAS_NATIVE_TYPE_TRAITS _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+
+/* pointer_traits / allocator_traits landed one release later than <type_traits>
+   on MSVC (VS2012, not VS2010), so they need a boundary of their own. */
+#if defined(_MSC_VER) && _CCW_LIBCPP_NATIVE_STD
+#  if _MSC_VER >= 1700
+#    define _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS 1
+#  else
+#    define _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS 0
+#  endif
+#else
+#  define _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+#endif
+
+/* Same story for the is_constructible / is_assignable / is_destructible family:
+   vc10 only has the TR1-era has_trivial_* / has_nothrow_* spellings. */
+#if defined(_MSC_VER) && _CCW_LIBCPP_NATIVE_STD
+#  if _MSC_VER >= 1700
+#    define _CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS 1
+#  else
+#    define _CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS 0
+#  endif
+#else
+#  define _CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+#endif
+
+#if !_CCW_LIBCPP_NATIVE_STD
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB 0
+#elif defined(_ccw_cplusplus)
+#  if _ccw_cplusplus >= 201703L
+#    define _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB 1
+#  else
+#    define _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB 0
+#  endif
+#elif defined(__cplusplus) && __cplusplus >= 201703L
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB 1
+#else
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB 0
+#endif
+
+#if !_CCW_LIBCPP_NATIVE_STD || _CCW_LIBCPP_HAS_NATIVE_CXX17_LIB
+#  define _CCW_LIBCPP_HAS_BYTE 1
+#elif defined(_MSC_VER) && _CCW_TARGET_CXX >= 2017
+#  define _CCW_LIBCPP_HAS_BYTE 1
+#else
+#  define _CCW_LIBCPP_HAS_BYTE 0
+#endif
+
+#define _CCW_LIBCPP_HAS_NATIVE_ITERATOR_TRAITS _CCW_LIBCPP_NATIVE_STD
+#define _CCW_LIBCPP_HAS_NATIVE_CHAR_TRAITS     _CCW_LIBCPP_NATIVE_STD
+
+#define _CCW_LIBCPP_HIDE_FROM_ABI
+#define _CCW_LIBCPP_HIDE_FROM_ABI_VIRTUAL
+#define _CCW_LIBCPP_EXPORTED_FROM_ABI
+#define _CCW_LIBCPP_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#define _CCW_LIBCPP_INLINE_VISIBILITY
+#define _CCW_LIBCPP_HIDDEN
+#define _CCW_LIBCPP_TEMPLATE_VIS
+#define _CCW_LIBCPP_USING_IF_EXISTS
+#define _CCW_LIBCPP_NODISCARD
+#define _CCW_LIBCPP_DEPRECATED
+#define _CCW_LIBCPP_NO_DESTROY
+#define _CCW_LIBCPP_NODEBUG
+#define _CCW_LIBCPP_NORETURN               _ccw_noreturn
+
+#ifndef _CCW_LIBCPP_NOEXCEPT
+# if !_CCW_LIBCPP_NATIVE_STD
+#  define _CCW_LIBCPP_NOEXCEPT
+# elif defined(__cplusplus) && __cplusplus >= 201103L
+#  define _CCW_LIBCPP_NOEXCEPT noexcept
+# else
+#  define _CCW_LIBCPP_NOEXCEPT throw()
+# endif
+#endif
+#ifndef _CCW_LIBCPP_NOEXCEPT_
+# define _CCW_LIBCPP_NOEXCEPT_(x)
+#endif
+
+#ifndef _CCW_LIBCPP_CONSTEXPR
+# define _CCW_LIBCPP_CONSTEXPR
+#endif
+#ifndef _CCW_LIBCPP_CONSTEXPR_SINCE_CXX14
+# define _CCW_LIBCPP_CONSTEXPR_SINCE_CXX14
+#endif
+#ifndef _CCW_LIBCPP_CONSTEXPR_SINCE_CXX20
+# define _CCW_LIBCPP_CONSTEXPR_SINCE_CXX20
+#endif
+#ifndef _CCW_LIBCPP_INLINE_VAR
+# define _CCW_LIBCPP_INLINE_VAR
+#endif
+#ifndef _CCW_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER
+# define _CCW_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER 1
+#endif
+
+#ifndef _CCW_LIBCPP_STDDEF_H
+# define _CCW_LIBCPP_STDDEF_H
+#endif
+
+#endif // _CCW_LIBCPP___CONFIG

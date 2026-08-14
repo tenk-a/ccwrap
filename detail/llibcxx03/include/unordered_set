@@ -1,0 +1,389 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <unordered_set> for Open Watcom -- hashed unique keys
+//  (unordered_set) and multi keys (unordered_multiset) over the separate-chaining
+//  __hash_table. Classic C++03 subset; emplace via the fnctmpl emulation.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_UNORDERED_SET
+#define _CCW_LIBCPP_UNORDERED_SET
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include "__hash_table"
+#include "__tree/node_handle.h"
+#include "__type_traits/is_class.h"
+#include "__type_traits/is_same.h"
+#include "__functional/hash.h"
+#include "__functional/operations.h"
+#include "__memory/allocator.h"
+#include "__utility/pair.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Key, class _Hash = hash<_Key>, class _Equal = equal_to<_Key>, class _Alloc = allocator<_Key> >
+class _CCW_LIBCPP_TEMPLATE_VIS unordered_set {
+    struct __identity { const _Key& operator()(const _Key& __v) const { return __v; } };
+    typedef __hash_table<_Key, _Key, __identity, _Hash, _Equal, _Alloc> __base;
+    __base __table_;
+public:
+    typedef _Key                              key_type;
+    typedef _Key                              value_type;
+    typedef _Hash                             hasher;
+    typedef _Equal                            key_equal;
+    typedef _Alloc                            allocator_type;
+    typedef value_type&                           reference;
+    typedef const value_type&                     const_reference;
+    typedef value_type*                           pointer;
+    typedef const value_type*                     const_pointer;
+    typedef typename __base::size_type        size_type;
+    typedef _CCW_STD::ptrdiff_t                    difference_type;
+    typedef typename __base::const_iterator   iterator;
+    typedef typename __base::const_iterator   const_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unordered_set(size_type __n) { __table_.rehash(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unordered_set(const _Alloc& __a) : __table_(__a) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(size_type __n, const _Hash& __h, const _Equal& __e, const _Alloc& __a)
+        : __table_(__h, __e, __a) { __table_.rehash(__n); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(_InputIt __f, _InputIt __l) { insert(__f, __l); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(_InputIt __f, _InputIt __l, const _Alloc& __a) : __table_(__a) { insert(__f, __l); }
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(const unordered_set& __o) : __table_(__o.__table_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(const unordered_set& __o, const _Alloc& __a) : __table_(__o.__table_, __a) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set& operator=(const unordered_set& __o) { __table_ = __o.__table_; return *this; }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(unordered_set&& __r) : __table_(_ccw::move(__r.__table_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set& operator=(unordered_set&& __r) {
+        if (this != &__r) __table_ = _ccw::move(__r.__table_);
+        return *this;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set(_CCW_RV_REF(unordered_set) __r) : __table_(_ccw::move(_CCW_MOVED_OBJ(__r).__table_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_set& operator=(_CCW_RV_REF(unordered_set) __r) {
+        unordered_set& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) __table_ = _ccw::move(__o.__table_);
+        return *this;
+    }
+#endif // _CCW_HAS_REAL_RVALUE_REF
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const  { return __table_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const    { return __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator cbegin() const { return __table_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator cend() const   { return __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __table_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return __table_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __table_.max_size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      clear()        { __table_.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      swap(unordered_set& __o) { __table_.swap(__o.__table_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI hasher    hash_function() const { return __table_.hash_function(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI key_equal key_eq() const { return __table_.key_eq(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return __table_.__alloc(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool> insert(const value_type& __v) {
+        bool __b; iterator __it = __table_.__insert_unique(__v, __b);
+        return _CCW_STD::pair<iterator, bool>(__it, __b);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, const value_type& __v) { (void)__h; bool __b; return __table_.__insert_unique(__v, __b); }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool> insert(value_type&& __v) {
+        bool __b; iterator __it = __table_.__insert_unique(_ccw::move(__v), __b);
+        return _CCW_STD::pair<iterator, bool>(__it, __b);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, value_type&& __v) {
+        (void)__h; bool __b; return __table_.__insert_unique(_ccw::move(__v), __b);
+    }
+#else
+    template <class _Vt>
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool>
+    insert(_CCW_RV_REF_BEG _Vt _CCW_RV_REF_END __v, typename __vins_gate<_Vt, value_type>::type* = 0) {
+        bool __b; iterator __it = __table_.__insert_unique(__v, __b);
+        return _CCW_STD::pair<iterator, bool>(__it, __b);
+    }
+    template <class _Vt>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator
+    insert(const_iterator __h, _CCW_RV_REF_BEG _Vt _CCW_RV_REF_END __v, typename __vins_gate<_Vt, value_type>::type* = 0) {
+        (void)__h; bool __b; return __table_.__insert_unique(__v, __b);
+    }
+#endif // _CCW_HAS_REAL_RVALUE_REF
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert(_InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) { bool __b; __table_.__insert_unique(*__f, __b); } }
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool> emplace() { return insert(value_type()); }
+#  define _CCW_GEN_USET_EMPLACE(N)                                                                  \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                              \
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool> emplace(_CCW_FNCTMPL_DECLARG(N)) { return insert(value_type(_CCW_FNCTMPL_FNCARG(N))); }
+    _CCW_GEN_USET_EMPLACE(1) _CCW_GEN_USET_EMPLACE(2) _CCW_GEN_USET_EMPLACE(3) _CCW_GEN_USET_EMPLACE(4)
+#  undef _CCW_GEN_USET_EMPLACE
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h) { (void)__h; return insert(value_type()).first; }
+#  define _CCW_GEN_USET_EMPLACE_H(N)   \
+    template <_CCW_FNCTMPL_TMPLARG(N)> \
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h, _CCW_FNCTMPL_DECLARG(N)) { (void)__h; return insert(value_type(_CCW_FNCTMPL_FNCARG(N))).first; }
+    _CCW_GEN_USET_EMPLACE_H(1) _CCW_GEN_USET_EMPLACE_H(2) _CCW_GEN_USET_EMPLACE_H(3) _CCW_GEN_USET_EMPLACE_H(4)
+#  undef _CCW_GEN_USET_EMPLACE_H
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, bool> emplace(_Args&&... __a) { return insert(value_type(static_cast<_Args&&>(__a)...)); }
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h, _Args&&... __a) {
+        (void)__h; return insert(value_type(static_cast<_Args&&>(__a)...)).first;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  find(const _Key& __k) const  { return __table_.find(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count(const _Key& __k) const { return __table_.count(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      contains(const _Key& __k) const { return __table_.find(__k) != __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, iterator> equal_range(const _Key& __k) const {
+        iterator __it = __table_.find(__k);
+        if (__it == __table_.end()) return _CCW_STD::pair<iterator, iterator>(__it, __it);
+        iterator __nx = __it; ++__nx; return _CCW_STD::pair<iterator, iterator>(__it, __nx);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type erase(const _Key& __k)       { return __table_.erase(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  erase(const_iterator __pos)  { return __table_.erase(__pos); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  erase(const_iterator __f, const_iterator __l) {
+        iterator __r = __table_.end();
+        while (__f != __l) { const_iterator __c = __f; ++__f; __r = __table_.erase(__c); }
+        return __r;
+    }
+    typedef __set_node_handle<typename __base::__node_t, typename __base::__node_alloc_t, value_type> node_type;
+    typedef __insert_return_type<iterator, node_type> insert_return_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI node_type extract(const_iterator __pos) { return node_type(__table_.__extract_iter(__pos), __table_.__node_alloc()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI node_type extract(const key_type& __k) {
+        typename __base::__node_t* __n = __table_.__extract_key(__k);
+        return __n ? node_type(__n, __table_.__node_alloc()) : node_type();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI insert_return_type insert(_CCW_RV_REF(node_type) __rnh) {
+        node_type& __nh = _CCW_MOVED_OBJ(__rnh);
+        insert_return_type __r;
+        if (__nh.empty()) return __r;
+        bool __b; typename __base::__node_t* __ex;
+        iterator __it = __table_.__insert_unique_node(__nh.__get(), __b, __ex);
+        __r.position = __it; __r.inserted = __b;
+        if (__b) __nh.__release(); else __r.node = __nh;
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator, _CCW_RV_REF(node_type) __rnh) { return insert(_CCW_MOVED_OBJ(__rnh)).position; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(unordered_set& __src) { __merge_unique(__src.__table_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(_CCW_RV_REF(unordered_set) __src) { __merge_unique(_CCW_MOVED_OBJ(__src).__table_); }
+    template <class _Tbl>
+    _CCW_LIBCPP_HIDE_FROM_ABI void __merge_unique(_Tbl& __st) {
+        const_iterator __i = __st.begin();
+        while (__i != __st.end()) {
+            const_iterator __nx = __i; ++__nx;
+            if (__table_.find(*__i) == __table_.end()) {
+                typename __base::__node_t* __n = __st.__extract_iter(__i);
+                bool __b; typename __base::__node_t* __ex;
+                __table_.__insert_unique_node(__n, __b, __ex);
+            }
+            __i = __nx;
+        }
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_count() const { return __table_.bucket_count(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_bucket_count() const { return __table_.max_bucket_count(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket(const _Key& __k) const { return __table_.bucket(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_size(size_type __n) const { return __table_.bucket_size(__n); }
+    typedef typename __base::local_iterator       local_iterator;
+    typedef typename __base::const_local_iterator const_local_iterator;
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator       begin(size_type __n)        { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator       end(size_type __n)          { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator begin(size_type __n) const  { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator end(size_type __n) const    { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator cbegin(size_type __n) const { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator cend(size_type __n) const   { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     load_factor() const  { return __table_.load_factor(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     max_load_factor() const { return __table_.max_load_factor(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      max_load_factor(float __z) { __table_.max_load_factor(__z); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      rehash(size_type __n) { __table_.rehash(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      reserve(size_type __n) { __table_.reserve(__n); }
+};
+
+template <class _Key, class _Hash = hash<_Key>, class _Equal = equal_to<_Key>, class _Alloc = allocator<_Key> >
+class _CCW_LIBCPP_TEMPLATE_VIS unordered_multiset {
+    struct __identity { const _Key& operator()(const _Key& __v) const { return __v; } };
+    typedef __hash_table<_Key, _Key, __identity, _Hash, _Equal, _Alloc> __base;
+    __base __table_;
+public:
+    typedef _Key                              key_type;
+    typedef _Key                              value_type;
+    typedef _Hash                             hasher;
+    typedef _Equal                            key_equal;
+    typedef _Alloc                            allocator_type;
+    typedef value_type&                           reference;
+    typedef const value_type&                     const_reference;
+    typedef value_type*                           pointer;
+    typedef const value_type*                     const_pointer;
+    typedef _CCW_STD::ptrdiff_t                   difference_type;
+    typedef typename __base::size_type        size_type;
+    typedef typename __base::const_iterator   iterator;
+    typedef typename __base::const_iterator   const_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unordered_multiset(size_type __n) { __table_.rehash(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit unordered_multiset(const _Alloc& __a) : __table_(__a) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(size_type __n, const _Hash& __h, const _Equal& __e, const _Alloc& __a)
+        : __table_(__h, __e, __a) { __table_.rehash(__n); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(_InputIt __f, _InputIt __l) { insert(__f, __l); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(_InputIt __f, _InputIt __l, const _Alloc& __a) : __table_(__a) { insert(__f, __l); }
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(const unordered_multiset& __o) : __table_(__o.__table_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(const unordered_multiset& __o, const _Alloc& __a) : __table_(__o.__table_, __a) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset& operator=(const unordered_multiset& __o) { __table_ = __o.__table_; return *this; }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(unordered_multiset&& __r) : __table_(_ccw::move(__r.__table_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset& operator=(unordered_multiset&& __r) {
+        if (this != &__r) __table_ = _ccw::move(__r.__table_);
+        return *this;
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset(_CCW_RV_REF(unordered_multiset) __r) : __table_(_ccw::move(_CCW_MOVED_OBJ(__r).__table_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI unordered_multiset& operator=(_CCW_RV_REF(unordered_multiset) __r) {
+        unordered_multiset& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) __table_ = _ccw::move(__o.__table_);
+        return *this;
+    }
+#endif // _CCW_HAS_REAL_RVALUE_REF
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const  { return __table_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const    { return __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator cbegin() const { return __table_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator cend() const   { return __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __table_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return __table_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __table_.max_size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      clear()        { __table_.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      swap(unordered_multiset& __o) { __table_.swap(__o.__table_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI hasher    hash_function() const { return __table_.hash_function(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI key_equal key_eq() const { return __table_.key_eq(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI allocator_type get_allocator() const { return __table_.__alloc(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  insert(const value_type& __v) { return __table_.__insert_multi(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  insert(const_iterator __h, const value_type& __v) { (void)__h; return __table_.__insert_multi(__v); }
+
+#if _CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(value_type&& __v) { return __table_.__insert_multi(_ccw::move(__v)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, value_type&& __v) {
+        (void)__h; return __table_.__insert_multi(_ccw::move(__v));
+    }
+#else
+    template <class _Vt>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(_CCW_RV_REF_BEG _Vt _CCW_RV_REF_END __v, typename __vins_gate<_Vt, value_type>::type* = 0) { return __table_.__insert_multi(__v); }
+    template <class _Vt>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, _CCW_RV_REF_BEG _Vt _CCW_RV_REF_END __v, typename __vins_gate<_Vt, value_type>::type* = 0) {
+        (void)__h; return __table_.__insert_multi(__v);
+    }
+#endif // _CCW_HAS_REAL_RVALUE_REF
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void      insert(_InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) __table_.__insert_multi(*__f); }
+#if _CCW_NO_VARIADIC_TEMPLATES
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace() { return __table_.__insert_multi(value_type()); }
+#  define _CCW_GEN_UMSET_EMPLACE(N)                                                                 \
+    template <_CCW_FNCTMPL_TMPLARG(N)>                                                              \
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace(_CCW_FNCTMPL_DECLARG(N)) { return __table_.__insert_multi(value_type(_CCW_FNCTMPL_FNCARG(N))); }
+    _CCW_GEN_UMSET_EMPLACE(1) _CCW_GEN_UMSET_EMPLACE(2) _CCW_GEN_UMSET_EMPLACE(3) _CCW_GEN_UMSET_EMPLACE(4)
+#  undef _CCW_GEN_UMSET_EMPLACE
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h) { (void)__h; return __table_.__insert_multi(value_type()); }
+#  define _CCW_GEN_UMSET_EMPLACE_H(N)  \
+    template <_CCW_FNCTMPL_TMPLARG(N)> \
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h, _CCW_FNCTMPL_DECLARG(N)) { (void)__h; return __table_.__insert_multi(value_type(_CCW_FNCTMPL_FNCARG(N))); }
+    _CCW_GEN_UMSET_EMPLACE_H(1) _CCW_GEN_UMSET_EMPLACE_H(2) _CCW_GEN_UMSET_EMPLACE_H(3) _CCW_GEN_UMSET_EMPLACE_H(4)
+#  undef _CCW_GEN_UMSET_EMPLACE_H
+#else
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace(_Args&&... __a) { return __table_.__insert_multi(value_type(static_cast<_Args&&>(__a)...)); }
+    template <class... _Args>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  emplace_hint(const_iterator __h, _Args&&... __a) {
+        (void)__h; return __table_.__insert_multi(value_type(static_cast<_Args&&>(__a)...));
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  find(const _Key& __k) const  { return __table_.find(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count(const _Key& __k) const { return __table_.count(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      contains(const _Key& __k) const { return __table_.find(__k) != __table_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::pair<iterator, iterator> equal_range(const _Key& __k) const {
+        return __table_.__equal_range(__k);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type erase(const _Key& __k)       { return __table_.erase(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  erase(const_iterator __pos)  { return __table_.erase(__pos); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator  erase(const_iterator __f, const_iterator __l) {
+        iterator __r = __table_.end();
+        while (__f != __l) { const_iterator __c = __f; ++__f; __r = __table_.erase(__c); }
+        return __r;
+    }
+    typedef __set_node_handle<typename __base::__node_t, typename __base::__node_alloc_t, value_type> node_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI node_type extract(const_iterator __pos) { return node_type(__table_.__extract_iter(__pos), __table_.__node_alloc()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI node_type extract(const key_type& __k) {
+        typename __base::__node_t* __n = __table_.__extract_key(__k);
+        return __n ? node_type(__n, __table_.__node_alloc()) : node_type();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(_CCW_RV_REF(node_type) __rnh) {
+        node_type& __nh = _CCW_MOVED_OBJ(__rnh);
+        if (__nh.empty()) return end();
+        iterator __it = __table_.__insert_multi_node(__nh.__get());
+        __nh.__release();
+        return __it;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator, _CCW_RV_REF(node_type) __rnh) { return insert(_CCW_MOVED_OBJ(__rnh)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(_CCW_RV_REF(unordered_multiset) __rsrc) { merge(_CCW_MOVED_OBJ(__rsrc)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void merge(unordered_multiset& __src) {
+        const_iterator __i = __src.__table_.begin();
+        while (__i != __src.__table_.end()) {
+            const_iterator __nx = __i; ++__nx;
+            typename __base::__node_t* __n = __src.__table_.__extract_iter(__i);
+            __table_.__insert_multi_node(__n);
+            __i = __nx;
+        }
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_count() const { return __table_.bucket_count(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_bucket_count() const { return __table_.max_bucket_count(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket(const _Key& __k) const { return __table_.bucket(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type bucket_size(size_type __n) const { return __table_.bucket_size(__n); }
+    typedef typename __base::local_iterator       local_iterator;
+    typedef typename __base::const_local_iterator const_local_iterator;
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator       begin(size_type __n)        { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI local_iterator       end(size_type __n)          { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator begin(size_type __n) const  { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator end(size_type __n) const    { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator cbegin(size_type __n) const { return __table_.__bucket_begin(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_local_iterator cend(size_type __n) const   { return __table_.__bucket_end(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     load_factor() const  { return __table_.load_factor(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI float     max_load_factor() const { return __table_.max_load_factor(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      max_load_factor(float __z) { __table_.max_load_factor(__z); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      rehash(size_type __n) { __table_.rehash(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      reserve(size_type __n) { __table_.reserve(__n); }
+};
+
+template <class _K, class _H, class _E, class _A>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const unordered_set<_K, _H, _E, _A>& __x, const unordered_set<_K, _H, _E, _A>& __y) {
+    if (__x.size() != __y.size()) return false;
+    for (typename unordered_set<_K, _H, _E, _A>::const_iterator __i = __x.begin(); __i != __x.end(); ++__i)
+        if (__y.find(*__i) == __y.end()) return false;
+    return true;
+}
+template <class _K, class _H, class _E, class _A>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const unordered_set<_K, _H, _E, _A>& __x, const unordered_set<_K, _H, _E, _A>& __y) { return !(__x == __y); }
+
+template <class _K, class _H, class _E, class _A, class _Pred>
+_CCW_LIBCPP_HIDE_FROM_ABI typename unordered_set<_K, _H, _E, _A>::size_type erase_if(unordered_set<_K, _H, _E, _A>& __s, _Pred __p) {
+    typename unordered_set<_K, _H, _E, _A>::size_type __n = 0;
+    for (typename unordered_set<_K, _H, _E, _A>::const_iterator __i = __s.begin(); __i != __s.end(); ) {
+        if (__p(*__i)) { __i = __s.erase(__i); ++__n; }
+        else           { ++__i; }
+    }
+    return __n;
+}
+template <class _K, class _H, class _E, class _A, class _Pred>
+_CCW_LIBCPP_HIDE_FROM_ABI typename unordered_multiset<_K, _H, _E, _A>::size_type erase_if(unordered_multiset<_K, _H, _E, _A>& __s, _Pred __p) {
+    typename unordered_multiset<_K, _H, _E, _A>::size_type __n = 0;
+    for (typename unordered_multiset<_K, _H, _E, _A>::const_iterator __i = __s.begin(); __i != __s.end(); ) {
+        if (__p(*__i)) { __i = __s.erase(__i); ++__n; }
+        else           { ++__i; }
+    }
+    return __n;
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_UNORDERED_SET

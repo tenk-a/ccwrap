@@ -1,0 +1,12 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <vector> for Open Watcom (minimal C++03 vector).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_VECTOR
+#define _CCW_LIBCPP_VECTOR
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__vector/vector.h"
+#include "__vector/vector_bool.h"   // the packed vector<bool> specialisation
+#endif // _CCW_LIBCPP_VECTOR

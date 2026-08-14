@@ -1,0 +1,217 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <fstream> for Open Watcom -- basic_filebuf<char> over a C
+//  FILE*, and ifstream / ofstream / fstream layered on the <ostream>/<istream>
+//  tower. Classic C++03 body. char only. (The FILE* backing also serves the
+//  console streams in <iostream>.)
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_FSTREAM
+#define _CCW_LIBCPP_FSTREAM
+#include "__config"
+#include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
+#include "__fwd/fstream.h"
+#include <ios>
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <string>
+#include <cstdio>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits >
+class basic_filebuf : public basic_streambuf<_CharT, _Traits> {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+private:
+    _CCW_STD::FILE* __f_;
+    bool       __owned_;
+    basic_filebuf(const basic_filebuf&);
+    basic_filebuf& operator=(const basic_filebuf&);
+    _CCW_LIBCPP_HIDE_FROM_ABI static const char* __mode_str(ios_base::openmode __m) {
+        bool __bin = (__m & ios_base::binary) != 0;
+        int __base = __m & (ios_base::in | ios_base::out | ios_base::trunc | ios_base::app);
+        if (__base == (ios_base::out | ios_base::app) || __base == (ios_base::app))              return __bin ? "ab"  : "a";
+        if (__base == (ios_base::in | ios_base::out | ios_base::trunc))                          return __bin ? "w+b" : "w+";
+        if (__base == (ios_base::in | ios_base::out))                                            return __bin ? "r+b" : "r+";
+        if (__base == (ios_base::in))                                                            return __bin ? "rb"  : "r";
+        return __bin ? "wb" : "w";   // out (+trunc)
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf() : __f_(0), __owned_(false) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_filebuf(_CCW_STD::FILE* __f) : __f_(__f), __owned_(false) {}   // adopt (console)
+    _CCW_LIBCPP_HIDE_FROM_ABI ~basic_filebuf() { close(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_open() const { return __f_ != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf* open(const char* __name, ios_base::openmode __m) {
+        if (__f_) return 0;
+        __f_ = _CCW_STD::fopen(__name, __mode_str(__m));
+        if (!__f_) return 0;
+        __owned_ = true;
+        if (__m & ios_base::ate) _CCW_STD::fseek(__f_, 0, SEEK_END);
+        return this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf* close() {
+        if (__f_ && __owned_) _CCW_STD::fclose(__f_);
+        __f_ = 0; __owned_ = false;
+        return this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf(_CCW_RV_REF_BEG basic_filebuf _CCW_RV_REF_END __rr) : __f_(0), __owned_(false) {
+        basic_filebuf& __r = _CCW_MOVED_OBJ(__rr);
+        __f_ = __r.__f_; __owned_ = __r.__owned_;
+        __r.__f_ = 0;    __r.__owned_ = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf& operator=(_CCW_RV_REF_BEG basic_filebuf _CCW_RV_REF_END __rr) {
+        basic_filebuf& __r = _CCW_MOVED_OBJ(__rr);
+        if (this != &__r) {
+            close();
+            __f_ = __r.__f_; __owned_ = __r.__owned_;
+            __r.__f_ = 0;    __r.__owned_ = false;
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_filebuf& __r) {
+        _CCW_STD::FILE* __tf = __f_;    __f_    = __r.__f_;    __r.__f_    = __tf;
+        bool       __to = __owned_;__owned_= __r.__owned_;__r.__owned_= __to;
+    }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type __c = _Traits::eof()) {
+        if (!__f_) return _Traits::eof();
+        if (__c == _Traits::eof()) return _Traits::not_eof(__c);
+        return _CCW_STD::fputc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsputn(const char_type* __s, _CCW_STD::streamsize __n) {
+        if (!__f_) return 0;
+        return (_CCW_STD::streamsize)_CCW_STD::fwrite(__s, 1, (_CCW_STD::size_t)__n, __f_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type underflow() {
+        if (!__f_) return _Traits::eof();
+        int __c = _CCW_STD::fgetc(__f_);
+        if (__c == EOF) return _Traits::eof();
+        _CCW_STD::ungetc(__c, __f_);
+        return _Traits::to_int_type((char)__c);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type uflow() {
+        if (!__f_) return _Traits::eof();
+        int __c = _CCW_STD::fgetc(__f_);
+        return __c == EOF ? _Traits::eof() : _Traits::to_int_type((char)__c);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type pbackfail(int_type __c = _Traits::eof()) {
+        if (!__f_ || __c == _Traits::eof()) return _Traits::eof();
+        return _CCW_STD::ungetc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsgetn(char_type* __s, _CCW_STD::streamsize __n) {
+        if (!__f_) return 0;
+        return (_CCW_STD::streamsize)_CCW_STD::fread(__s, 1, (_CCW_STD::size_t)__n, __f_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int sync() { return __f_ ? (_CCW_STD::fflush(__f_) == 0 ? 0 : -1) : -1; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekoff(off_type __off, ios_base::seekdir __way,
+                                                   ios_base::openmode = ios_base::in | ios_base::out) {
+        if (!__f_) return pos_type(-1);
+        int __whence = __way == ios_base::beg ? SEEK_SET
+                     : __way == ios_base::end ? SEEK_END
+                                              : SEEK_CUR;
+        if (_CCW_STD::fseek(__f_, (long)__off, __whence) != 0) return pos_type(-1);
+        long __p = _CCW_STD::ftell(__f_);
+        return __p < 0 ? pos_type(-1) : pos_type(__p);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekpos(pos_type __pos,
+                                                   ios_base::openmode = ios_base::in | ios_base::out) {
+        return seekoff((off_type)__pos, ios_base::beg);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual basic_streambuf<_CharT, _Traits>* setbuf(char_type* __s, _CCW_STD::streamsize __n) {
+        if (!__f_) return this;
+        if (!__s && __n == 0) _CCW_STD::setvbuf(__f_, 0, _IONBF, 0);
+        else                  _CCW_STD::setvbuf(__f_, (char*)__s, _IOFBF, (_CCW_STD::size_t)__n);
+        return this;
+    }
+};
+
+template <class _CharT, class _Traits >
+class basic_ofstream : public basic_ostream<_CharT, _Traits> {
+    basic_filebuf<_CharT, _Traits> __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ofstream() : basic_ostream<_CharT, _Traits>(&__sb_) { this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ofstream(const char* __name, ios_base::openmode __m = ios_base::out)
+        : basic_ostream<_CharT, _Traits>(&__sb_) { if (!__sb_.open(__name, __m | ios_base::out)) this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ofstream(_CCW_RV_REF_BEG basic_ofstream _CCW_RV_REF_END __rr)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ofstream& operator=(_CCW_RV_REF_BEG basic_ofstream _CCW_RV_REF_END __rr) {
+        basic_ofstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ofstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_open() const { return __sb_.is_open(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void open(const char* __name, ios_base::openmode __m = ios_base::out) { if (__sb_.open(__name, __m | ios_base::out)) this->clear(); else this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void close() { __sb_.close(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_filebuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+template <class _CharT, class _Traits >
+class basic_ifstream : public basic_istream<_CharT, _Traits> {
+    basic_filebuf<_CharT, _Traits> __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ifstream() : basic_istream<_CharT, _Traits>(&__sb_) { this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ifstream(const char* __name, ios_base::openmode __m = ios_base::in)
+        : basic_istream<_CharT, _Traits>(&__sb_) { if (!__sb_.open(__name, __m | ios_base::in)) this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ifstream(_CCW_RV_REF_BEG basic_ifstream _CCW_RV_REF_END __rr)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ifstream& operator=(_CCW_RV_REF_BEG basic_ifstream _CCW_RV_REF_END __rr) {
+        basic_ifstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ifstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_open() const { return __sb_.is_open(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void open(const char* __name, ios_base::openmode __m = ios_base::in) { if (__sb_.open(__name, __m | ios_base::in)) this->clear(); else this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void close() { __sb_.close(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_filebuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+template <class _CharT, class _Traits >
+class basic_fstream : public basic_iostream<_CharT, _Traits> {
+    basic_filebuf<_CharT, _Traits> __sb_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_fstream() : basic_iostream<_CharT, _Traits>(&__sb_) { this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_fstream(const char* __name, ios_base::openmode __m = ios_base::in | ios_base::out)
+        : basic_iostream<_CharT, _Traits>(&__sb_) { if (!__sb_.open(__name, __m)) this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_fstream(_CCW_RV_REF_BEG basic_fstream _CCW_RV_REF_END __rr)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_fstream& operator=(_CCW_RV_REF_BEG basic_fstream _CCW_RV_REF_END __rr) {
+        basic_fstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_fstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_open() const { return __sb_.is_open(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void open(const char* __name, ios_base::openmode __m = ios_base::in | ios_base::out) { if (__sb_.open(__name, __m)) this->clear(); else this->setstate(ios_base::failbit); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void close() { __sb_.close(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_filebuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+typedef basic_filebuf<char>  filebuf;
+typedef basic_ofstream<char> ofstream;
+typedef basic_ifstream<char> ifstream;
+typedef basic_fstream<char>  fstream;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_FSTREAM

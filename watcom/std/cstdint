@@ -1,0 +1,11 @@
+// ccwrap watcom: <cstdint>. Forward to Open Watcom's native <cstdint>, then add the
+// C23 / C++20 *_WIDTH macros (and __STDC_VERSION_STDINT_H__) it predates.
+//
+// The supplements are macro-only and shared with <stdint.h>, so they live in
+// ../detail/stdint_width.h rather than here -- see that file for why <stdint.h> must
+// not reach for <cstdint> to get them.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstdint)
+#include "../../detail/c/stdint_width.h"

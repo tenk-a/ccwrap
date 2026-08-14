@@ -1,0 +1,2 @@
+// ccwrap <stack>
+#include "../std/stack"

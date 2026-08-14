@@ -9,6 +9,6 @@ struct is_array<T[]> { enum { v = 1 }; };
 extern char buf[];
 
 int main() {
-	unsigned n = is_array<char[]>::v;
-	return n == 0;
+    unsigned n = is_array<char[]>::v;
+    return n == 0;
 }

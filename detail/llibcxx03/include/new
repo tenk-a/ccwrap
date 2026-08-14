@@ -1,0 +1,65 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <new> for Open Watcom. A minimal stand-in that avoids the
+//  native <new> -- which pulls native <exception> and defines native
+//  _CCW_STD::bad_alloc / _CCW_STD::exception, colliding with llibcxx03's own exception
+//  hierarchy. The global allocation functions are provided by the C++ runtime
+//  library (declared here); the placement forms are trivial inlines.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_NEW
+#define _CCW_LIBCPP_NEW
+#include "__config"
+#include <cstddef>
+#include <cstdlib>     // _CCW_STD::malloc / _CCW_STD::free (the nothrow forms)
+#include <exception>   // _CCW_STD::bad_alloc (llibcxx03)
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+struct nothrow_t {};
+static const nothrow_t nothrow = nothrow_t();
+
+class bad_array_new_length : public bad_alloc {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI bad_array_new_length() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* what() const _CCW_LIBCPP_NOEXCEPT { return "bad_array_new_length"; }
+};
+
+typedef void (*new_handler)();
+_CCW_LIBCPP_HIDE_FROM_ABI inline new_handler& __ccw_new_handler_slot() { static new_handler __h = 0; return __h; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline new_handler set_new_handler(new_handler __f) _CCW_LIBCPP_NOEXCEPT {
+    new_handler __old = __ccw_new_handler_slot(); __ccw_new_handler_slot() = __f; return __old;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline new_handler get_new_handler() _CCW_LIBCPP_NOEXCEPT { return __ccw_new_handler_slot(); }
+
+static const _CCW_STD::size_t hardware_destructive_interference_size  = 64;
+static const _CCW_STD::size_t hardware_constructive_interference_size = 64;
+
+template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* launder(_Tp* __p) { return __p; }
+
+struct destroying_delete_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit destroying_delete_t() {} };
+static const destroying_delete_t destroying_delete = destroying_delete_t();
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+
+extern void* operator new(_CCW_STD::size_t);
+extern void* operator new[](_CCW_STD::size_t);
+extern void  operator delete(void*);
+extern void  operator delete[](void*);
+
+inline void* operator new(_CCW_STD::size_t, void* __p)   { return __p; }
+inline void* operator new[](_CCW_STD::size_t, void* __p) { return __p; }
+
+#if _CCW_HAS_EXCEPTIONS
+inline void* operator new(_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&) {
+    try { return ::operator new(__n); } catch (...) { return 0; }
+}
+inline void* operator new[](_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&) {
+    try { return ::operator new[](__n); } catch (...) { return 0; }
+}
+#else
+inline void* operator new(_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&)   { return ::operator new(__n); }
+inline void* operator new[](_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&) { return ::operator new[](__n); }
+#endif
+_CCW_EH_ANCHOR(barr, bad_array_new_length, bad_array_new_length)
+
+#endif // _CCW_LIBCPP_NEW

@@ -1,0 +1,110 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <array> for Open Watcom -- _CCW_STD::array, a fixed-size aggregate
+//  wrapper over a C array. Classic C++03 body (an aggregate with a public data
+//  member, so brace-init { { ... } } works). size is a non-type _CCW_STD::size_t
+//  template parameter.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_ARRAY
+#define _CCW_LIBCPP_ARRAY
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__iterator/reverse_iterator.h"
+#include "__type_traits/integral_constant.h"
+#include <cstddef>
+#include <stdexcept>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp, _CCW_STD::size_t _Size>
+struct _CCW_LIBCPP_TEMPLATE_VIS array {
+    enum { __size = _Size };
+    typedef _Tp                                   value_type;
+    typedef _CCW_STD::size_t                           size_type;
+    typedef _CCW_STD::ptrdiff_t                        difference_type;
+    typedef _Tp&                                  reference;
+    typedef const _Tp&                            const_reference;
+    typedef _Tp*                                  pointer;
+    typedef const _Tp*                            const_pointer;
+    typedef _Tp*                                  iterator;
+    typedef const _Tp*                            const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>        reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator>  const_reverse_iterator;
+
+    _Tp __elems_[_Size ? _Size : 1];
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       operator[](size_type __i)       { return __elems_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference operator[](size_type __i) const { return __elems_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       at(size_type __i)       { if (__i >= _Size) _CCW_THROW(_CCW_STD::out_of_range("array::at")); return __elems_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference at(size_type __i) const { if (__i >= _Size) _CCW_THROW(_CCW_STD::out_of_range("array::at")); return __elems_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       front()       { return __elems_[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference front() const { return __elems_[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference       back()        { return __elems_[_Size - 1]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reference back() const  { return __elems_[_Size - 1]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pointer         data()        { return __elems_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_pointer   data() const  { return __elems_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()       { return __elems_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const { return __elems_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()         { return __elems_ + _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const   { return __elems_ + _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __elems_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return __elems_ + _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rbegin()       { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rend()         { return reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend()   const { return const_reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend()   const { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return _Size == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return _Size; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      fill(const _Tp& __v) { for (size_type __i = 0; __i < _Size; ++__i) __elems_[__i] = __v; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      swap(array& __o) { for (size_type __i = 0; __i < _Size; ++__i) { _Tp __t = __elems_[__i]; __elems_[__i] = __o.__elems_[__i]; __o.__elems_[__i] = __t; } }
+};
+
+template <class _Tp, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y) {
+    for (_CCW_STD::size_t __i = 0; __i < _Size; ++__i) if (!(__x[__i] == __y[__i])) return false;
+    return true;
+}
+template <class _Tp, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y) { return !(__x == __y); }
+template <class _Tp, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y) {
+    for (_CCW_STD::size_t __i = 0; __i < _Size; ++__i) { if (__x[__i] < __y[__i]) return true; if (__y[__i] < __x[__i]) return false; }
+    return false;
+}
+template <class _Tp, _CCW_STD::size_t _Size> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)  { return __y < __x; }
+template <class _Tp, _CCW_STD::size_t _Size> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y) { return !(__y < __x); }
+template <class _Tp, _CCW_STD::size_t _Size> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y) { return !(__x < __y); }
+
+#if !defined(__WATCOMC__)
+template <class _Tp, _CCW_STD::size_t _Size>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) { __x.swap(__y); }
+#endif
+
+template <class _Tup>                  struct tuple_size;
+template <_CCW_STD::size_t _Ip, class _Tup> struct tuple_element;
+
+template <class _Tp, _CCW_STD::size_t _Size>
+struct tuple_size<array<_Tp, _Size> > : public integral_constant<_CCW_STD::size_t, _Size> {};
+template <_CCW_STD::size_t _Ip, class _Tp, _CCW_STD::size_t _Size>
+struct tuple_element<_Ip, array<_Tp, _Size> > { typedef _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp, _CCW_STD::size_t _Size>
+struct tuple_element<_Ip, const array<_Tp, _Size> > { typedef const _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp, _CCW_STD::size_t _Size>
+struct tuple_element<_Ip, volatile array<_Tp, _Size> > { typedef volatile _Tp type; };
+template <_CCW_STD::size_t _Ip, class _Tp, _CCW_STD::size_t _Size>
+struct tuple_element<_Ip, const volatile array<_Tp, _Size> > { typedef const volatile _Tp type; };
+
+template <class _Tp, _CCW_STD::size_t _Size>
+struct tuple_size<const array<_Tp, _Size> > : public integral_constant<_CCW_STD::size_t, _Size> {};
+template <class _Tp, _CCW_STD::size_t _Size>
+struct tuple_size<volatile array<_Tp, _Size> > : public integral_constant<_CCW_STD::size_t, _Size> {};
+template <class _Tp, _CCW_STD::size_t _Size>
+struct tuple_size<const volatile array<_Tp, _Size> > : public integral_constant<_CCW_STD::size_t, _Size> {};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_ARRAY

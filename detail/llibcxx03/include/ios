@@ -1,0 +1,351 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <ios> for Open Watcom -- ios_base (format flags / field width /
+//  precision / stream state and the open/seek enums) and basic_ios<char> (the
+//  associated streambuf, tie, state bits, fill char). Classic C++03 body. The flag
+//  and state constants are plain ints (Open Watcom has no enum class). char only.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_IOS
+#define _CCW_LIBCPP_IOS
+#include "__config"
+#include "__fwd/ios.h"
+#include "__fwd/streambuf.h"
+#include "__string/char_traits.h"
+#include "__utility/move.h"     // _CCW_RV_REF / _CCW_MOVE for stream move (C++11)
+#include <locale>
+#include <system_error>
+#include <cstddef>
+#include <cstdlib>
+#include <stdexcept>
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct io_errc {
+    enum enum_type { stream = 1 };
+    _CCW_LIBCPP_HIDE_FROM_ABI io_errc() : __v_(stream) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI io_errc(enum_type __v) : __v_(__v) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
+private:
+    enum_type __v_;
+};
+template <> struct is_error_code_enum<io_errc>            { static const bool value = true; };
+template <> struct is_error_code_enum<io_errc::enum_type> { static const bool value = true; };
+
+class __iostream_error_category : public error_category {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI const char* name() const { return "iostream"; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string message(int __ev) const {
+        if (__ev == int(io_errc::stream)) return _CCW_STD::string("unspecified iostream_category error");
+        return _CCW_STD::string("unknown error");
+    }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline const error_category& iostream_category() {
+    static __iostream_error_category __c;
+    return __c;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_code      make_error_code(io_errc __e)      { return error_code(int(io_errc::enum_type(__e)), iostream_category()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline error_condition make_error_condition(io_errc __e) { return error_condition(int(io_errc::enum_type(__e)), iostream_category()); }
+
+typedef _CCW_STD::ptrdiff_t streamsize;
+
+typedef long streamoff;
+
+template <class _StateT>
+class fpos {
+public:
+    typedef _StateT state_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI fpos(streamoff __off = 0) : __off_(__off), __st_() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator streamoff() const { return __off_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI state_type state() const { return __st_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void state(state_type __s) { __st_ = __s; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fpos& operator+=(streamoff __o) { __off_ += __o; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fpos& operator-=(streamoff __o) { __off_ -= __o; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fpos  operator+(streamoff __o) const { fpos __t(*this); __t += __o; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fpos  operator-(streamoff __o) const { fpos __t(*this); __t -= __o; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI streamoff operator-(const fpos& __r) const { return __off_ - __r.__off_; }
+private:
+    streamoff  __off_;
+    state_type __st_;
+};
+template <class _St> _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const fpos<_St>& __x, const fpos<_St>& __y) { return streamoff(__x) == streamoff(__y); }
+template <class _St> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const fpos<_St>& __x, const fpos<_St>& __y) { return streamoff(__x) != streamoff(__y); }
+
+class ios_base {
+public:
+    typedef int fmtflags;
+    typedef int iostate;
+    typedef int openmode;
+    typedef int seekdir;
+
+    static const fmtflags boolalpha  = 0x0001;
+    static const fmtflags dec        = 0x0002;
+    static const fmtflags oct        = 0x0004;
+    static const fmtflags hex        = 0x0008;
+    static const fmtflags basefield  = dec | oct | hex;
+    static const fmtflags left       = 0x0010;
+    static const fmtflags right      = 0x0020;
+    static const fmtflags internal   = 0x0040;
+    static const fmtflags adjustfield = left | right | internal;
+    static const fmtflags scientific = 0x0080;
+    static const fmtflags fixed      = 0x0100;
+    static const fmtflags floatfield = scientific | fixed;
+    static const fmtflags showbase   = 0x0200;
+    static const fmtflags showpoint  = 0x0400;
+    static const fmtflags showpos    = 0x0800;
+    static const fmtflags skipws     = 0x1000;
+    static const fmtflags unitbuf    = 0x2000;
+    static const fmtflags uppercase  = 0x4000;
+
+    static const iostate goodbit = 0x0;
+    static const iostate eofbit  = 0x1;
+    static const iostate failbit = 0x2;
+    static const iostate badbit  = 0x4;
+
+    static const openmode in        = 0x01;
+    static const openmode out       = 0x02;
+    static const openmode ate       = 0x04;
+    static const openmode app       = 0x08;
+    static const openmode trunc     = 0x10;
+    static const openmode binary    = 0x20;
+    static const openmode noreplace = 0x40;   // C++23
+
+    static const seekdir beg = 0;
+    static const seekdir cur = 1;
+    static const seekdir end = 2;
+
+    class failure : public _CCW_STD::system_error {
+    public:
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit failure(const _CCW_STD::string& __what,
+                                               const error_code& __ec = make_error_code(io_errc::stream))
+            : _CCW_STD::system_error(__ec, __what) {}
+        _CCW_LIBCPP_HIDE_FROM_ABI explicit failure(const char* __what,
+                                               const error_code& __ec = make_error_code(io_errc::stream))
+            : _CCW_STD::system_error(__ec, __what) {}
+    };
+
+    enum event { erase_event, imbue_event, copyfmt_event };
+    typedef void (*event_callback)(event, ios_base&, int);
+    _CCW_LIBCPP_HIDE_FROM_ABI void register_callback(event_callback __fn, int __idx) {
+        __cb_ = (__cb_entry*)_CCW_STD::realloc(__cb_, (__cbsz_ + 1) * sizeof(__cb_entry));
+        __cb_[__cbsz_].__fn = __fn; __cb_[__cbsz_].__idx = __idx; ++__cbsz_;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static int xalloc() { static int __idx = 0; return __idx++; }
+    _CCW_LIBCPP_HIDE_FROM_ABI long&  iword(int __idx) { __grow_i(__idx); return __iarr_[__idx]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void*& pword(int __idx) { __grow_p(__idx); return __parr_[__idx]; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool sync_with_stdio(bool = true) { return true; }
+
+    class Init {
+    public:
+        _CCW_LIBCPP_HIDE_FROM_ABI Init() { ++__init_count(); }
+        _CCW_LIBCPP_HIDE_FROM_ABI Init(const Init&) { ++__init_count(); }
+        _CCW_LIBCPP_HIDE_FROM_ABI Init& operator=(const Init&) { return *this; }
+        _CCW_LIBCPP_HIDE_FROM_ABI ~Init() { --__init_count(); }
+    private:
+        _CCW_LIBCPP_HIDE_FROM_ABI static int& __init_count() { static int __c = 0; return __c; }
+    };
+
+    _CCW_LIBCPP_HIDE_FROM_ABI fmtflags flags() const { return __fl_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fmtflags flags(fmtflags __f) { fmtflags __o = __fl_; __fl_ = __f; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fmtflags setf(fmtflags __f) { fmtflags __o = __fl_; __fl_ |= __f; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI fmtflags setf(fmtflags __f, fmtflags __mask) { fmtflags __o = __fl_; __fl_ = (__fl_ & ~__mask) | (__f & __mask); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void     unsetf(fmtflags __f) { __fl_ &= ~__f; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::streamsize precision() const { return __prec_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::streamsize precision(_CCW_STD::streamsize __p) { _CCW_STD::streamsize __o = __prec_; __prec_ = __p; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::streamsize width() const { return __width_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::streamsize width(_CCW_STD::streamsize __w) { _CCW_STD::streamsize __o = __width_; __width_ = __w; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale imbue(const locale& __loc) {
+        locale __old = __loc_;
+        __loc_ = __loc;
+        __call_callbacks(imbue_event);
+        return __old;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale getloc() const { return __loc_; }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI ios_base()
+        : __fl_(skipws | dec), __prec_(6), __width_(0),
+          __iarr_(0), __isz_(0), __parr_(0), __psz_(0), __cb_(0), __cbsz_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~ios_base() { __call_callbacks(erase_event); _CCW_STD::free(__iarr_); _CCW_STD::free(__parr_); _CCW_STD::free(__cb_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __call_callbacks(event __ev) {
+        for (int __i = __cbsz_ - 1; __i >= 0; --__i) __cb_[__i].__fn(__ev, *this, __cb_[__i].__idx);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __copyfmt_base(const ios_base& __r) {
+        __call_callbacks(erase_event);
+        __fl_ = __r.__fl_; __prec_ = __r.__prec_; __width_ = __r.__width_; __loc_ = __r.__loc_;
+        __adopt_i(__r); __adopt_p(__r); __adopt_cb(__r);
+        __call_callbacks(copyfmt_event);
+    }
+
+    fmtflags        __fl_;
+    _CCW_STD::streamsize __prec_;
+    _CCW_STD::streamsize __width_;
+    locale          __loc_;
+private:
+    struct __cb_entry { event_callback __fn; int __idx; };
+    long*        __iarr_;  int __isz_;
+    void**       __parr_;  int __psz_;
+    __cb_entry*  __cb_;    int __cbsz_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __grow_i(int __idx) {
+        if (__idx < __isz_) return;
+        int __n = __idx + 1;
+        __iarr_ = (long*)_CCW_STD::realloc(__iarr_, __n * sizeof(long));
+        for (int __i = __isz_; __i < __n; ++__i) __iarr_[__i] = 0;
+        __isz_ = __n;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __grow_p(int __idx) {
+        if (__idx < __psz_) return;
+        int __n = __idx + 1;
+        __parr_ = (void**)_CCW_STD::realloc(__parr_, __n * sizeof(void*));
+        for (int __i = __psz_; __i < __n; ++__i) __parr_[__i] = 0;
+        __psz_ = __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __adopt_i(const ios_base& __r) {
+        if (__r.__isz_ == 0) { _CCW_STD::free(__iarr_); __iarr_ = 0; __isz_ = 0; return; }
+        __iarr_ = (long*)_CCW_STD::realloc(__iarr_, __r.__isz_ * sizeof(long));
+        for (int __i = 0; __i < __r.__isz_; ++__i) __iarr_[__i] = __r.__iarr_[__i];
+        __isz_ = __r.__isz_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __adopt_p(const ios_base& __r) {
+        if (__r.__psz_ == 0) { _CCW_STD::free(__parr_); __parr_ = 0; __psz_ = 0; return; }
+        __parr_ = (void**)_CCW_STD::realloc(__parr_, __r.__psz_ * sizeof(void*));
+        for (int __i = 0; __i < __r.__psz_; ++__i) __parr_[__i] = __r.__parr_[__i];
+        __psz_ = __r.__psz_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __adopt_cb(const ios_base& __r) {
+        if (__r.__cbsz_ == 0) { _CCW_STD::free(__cb_); __cb_ = 0; __cbsz_ = 0; return; }
+        __cb_ = (__cb_entry*)_CCW_STD::realloc(__cb_, __r.__cbsz_ * sizeof(__cb_entry));
+        for (int __i = 0; __i < __r.__cbsz_; ++__i) __cb_[__i] = __r.__cb_[__i];
+        __cbsz_ = __r.__cbsz_;
+    }
+
+    ios_base(const ios_base&);
+    ios_base& operator=(const ios_base&);
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& dec(ios_base& __s) { __s.setf(ios_base::dec, ios_base::basefield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& oct(ios_base& __s) { __s.setf(ios_base::oct, ios_base::basefield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& hex(ios_base& __s) { __s.setf(ios_base::hex, ios_base::basefield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& fixed(ios_base& __s) { __s.setf(ios_base::fixed, ios_base::floatfield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& scientific(ios_base& __s) { __s.setf(ios_base::scientific, ios_base::floatfield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& left(ios_base& __s) { __s.setf(ios_base::left, ios_base::adjustfield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& right(ios_base& __s) { __s.setf(ios_base::right, ios_base::adjustfield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& showbase(ios_base& __s) { __s.setf(ios_base::showbase); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& noshowbase(ios_base& __s) { __s.unsetf(ios_base::showbase); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& showpos(ios_base& __s) { __s.setf(ios_base::showpos); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& noshowpos(ios_base& __s) { __s.unsetf(ios_base::showpos); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& boolalpha(ios_base& __s) { __s.setf(ios_base::boolalpha); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& noboolalpha(ios_base& __s) { __s.unsetf(ios_base::boolalpha); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& uppercase(ios_base& __s) { __s.setf(ios_base::uppercase); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& nouppercase(ios_base& __s) { __s.unsetf(ios_base::uppercase); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& skipws(ios_base& __s) { __s.setf(ios_base::skipws); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& noskipws(ios_base& __s) { __s.unsetf(ios_base::skipws); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& internal(ios_base& __s) { __s.setf(ios_base::internal, ios_base::adjustfield); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& showpoint(ios_base& __s) { __s.setf(ios_base::showpoint); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& noshowpoint(ios_base& __s) { __s.unsetf(ios_base::showpoint); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& unitbuf(ios_base& __s) { __s.setf(ios_base::unitbuf); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& nounitbuf(ios_base& __s) { __s.unsetf(ios_base::unitbuf); return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& hexfloat(ios_base& __s) { __s.setf(ios_base::fixed | ios_base::scientific, ios_base::floatfield); return __s; }        // C++11
+_CCW_LIBCPP_HIDE_FROM_ABI inline ios_base& defaultfloat(ios_base& __s) { __s.unsetf(ios_base::floatfield); return __s; }                                          // C++11
+
+template <class _CharT, class _Traits >
+class basic_ios : public ios_base {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+    typedef basic_streambuf<_CharT, _Traits> __streambuf_type;
+private:
+    __streambuf_type* __sb_;
+    basic_ios*        __tie_;
+    iostate           __state_;
+    iostate           __except_;
+    char_type         __fill_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ios(__streambuf_type* __sb) { init(__sb); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __streambuf_type* rdbuf() const { return __sb_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __streambuf_type* rdbuf(__streambuf_type* __sb) { __streambuf_type* __o = __sb_; __sb_ = __sb; clear(); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ios* tie() const { return __tie_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ios* tie(basic_ios* __t) { basic_ios* __o = __tie_; __tie_ = __t; return __o; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iostate rdstate() const { return __state_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void    clear(iostate __s = goodbit) {
+        __state_ = __sb_ ? __s : (iostate)(__s | badbit);
+        if (__state_ & __except_) _CCW_THROW(failure("ios_base::clear"));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void    setstate(iostate __s) { clear(__state_ | __s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iostate exceptions() const { return __except_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void    exceptions(iostate __e) { __except_ = __e; clear(__state_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool    good() const { return __state_ == goodbit; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool    eof()  const { return (__state_ & eofbit)  != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool    fail() const { return (__state_ & (failbit | badbit)) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool    bad()  const { return (__state_ & badbit)  != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool    operator!() const { return fail(); }
+    typedef void (basic_ios::*__bool_type)() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI void    __true_bool() const {}
+    _CCW_LIBCPP_HIDE_FROM_ABI operator __bool_type() const { return fail() ? 0 : &basic_ios::__true_bool; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type fill() const { return __fill_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type fill(char_type __c) { char_type __o = __fill_; __fill_ = __c; return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI locale imbue(const locale& __loc) {
+        locale __old = ios_base::imbue(__loc);
+        if (__sb_) __sb_->pubimbue(__loc);
+        return __old;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ios& copyfmt(const basic_ios& __r) {
+        if (this != &__r) {
+            __tie_  = __r.__tie_;
+            __fill_ = __r.__fill_;
+            ios_base::__copyfmt_base(__r);   // erase_event -> state+storage -> copyfmt_event
+            exceptions(__r.__except_);       // "altered last"
+        }
+        return *this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI char_type widen(char __c) const { return __c; }
+    _CCW_LIBCPP_HIDE_FROM_ABI char narrow(char_type __c, char /*__dflt*/) const { return __c; }
+
+    virtual ~basic_ios() {}
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ios() : __sb_(0), __tie_(0), __state_(badbit), __except_(goodbit), __fill_(' ') {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void init(__streambuf_type* __sb) { __sb_ = __sb; __tie_ = 0; __state_ = __sb ? goodbit : badbit; __except_ = goodbit; __fill_ = ' '; __fl_ = skipws | dec; __prec_ = 6; __width_ = 0; __loc_ = locale(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void set_rdbuf(__streambuf_type* __sb) { __sb_ = __sb; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ccw_move_ios(basic_ios& __r) {
+        __tie_    = __r.__tie_;
+        __state_  = __r.__state_;
+        __except_ = __r.__except_;
+        __fill_   = __r.__fill_;
+        __fl_     = __r.__fl_;
+        __prec_   = __r.__prec_;
+        __width_  = __r.__width_;
+        __loc_    = __r.__loc_;
+        __r.__tie_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ccw_swap_ios(basic_ios& __r) {
+        basic_ios* __t2 = __tie_;   __tie_   = __r.__tie_;   __r.__tie_   = __t2;
+        iostate  __s   = __state_;  __state_ = __r.__state_; __r.__state_ = __s;
+        iostate  __e   = __except_; __except_= __r.__except_;__r.__except_= __e;
+        char_type __f  = __fill_;   __fill_  = __r.__fill_;  __r.__fill_  = __f;
+        fmtflags __fl  = __fl_;     __fl_    = __r.__fl_;    __r.__fl_    = __fl;
+        streamsize __p = __prec_;   __prec_  = __r.__prec_;  __r.__prec_  = __p;
+        streamsize __w = __width_;  __width_ = __r.__width_; __r.__width_ = __w;
+        locale __l     = __loc_;    __loc_   = __r.__loc_;   __r.__loc_   = __l;
+    }
+};
+
+typedef basic_ios<char> ios;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(eios, ios_base::failure, failure)
+
+#endif // _CCW_LIBCPP_IOS

@@ -1,0 +1,8 @@
+// ccwrap <initializer_list>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1800
+ #include _CCW_NATIVE_STL_HEADER_PATH(initializer_list)
+#endif

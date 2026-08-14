@@ -1,0 +1,17 @@
+// ccwrap watcom: <cstddef>. Forward to Open Watcom's native <cstddef> (size_t,
+// ptrdiff_t, NULL, offsetof), then add std::max_align_t (C++11) and std::byte
+// (C++17). std::byte's real form is a scoped enum, which Open Watcom lacks, so it
+// is emulated by a one-byte struct with the same operator set -- behaviourally
+// equivalent for byte arithmetic / to_integer. std::nullptr_t is still not provided
+// (no nullptr keyword).
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstddef)
+
+namespace std {
+#include "../../detail/c/max_align_t.h"
+}
+namespace _CCW_STD17 {
+#include "../../detail/cxx/byte_cxx03.hpp"
+}

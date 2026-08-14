@@ -1,0 +1,69 @@
+// ccwrap watcom: <cstdlib>. Forward to Open Watcom's native <cstdlib> (the C
+// general-utilities library declared in namespace std), guaranteeing ccwrap_common.h
+// is pulled in first, then add the entries it leaves out of namespace std.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstdlib)
+
+#ifndef _CSTDLIB_AUX_INCLUDED
+#define _CSTDLIB_AUX_INCLUDED
+namespace std {
+inline long   abs(long __x)           { return labs(__x); }
+inline ldiv_t div(long __n, long __d) { return ldiv(__n, __d); }
+}
+#endif  // _CSTDLIB_AUX_INCLUDED
+
+#include <cmath>
+
+#include <stdlib.h>     // ::_Exit, whatever the native <cstdlib> chose to expose
+
+namespace std {
+
+#ifndef _CCW_CSTDLIB_EXIT_DEFINED
+#define _CCW_CSTDLIB_EXIT_DEFINED
+using ::_Exit;          // C99: terminate without atexit handlers and without flushing
+
+#ifndef _CCW_QUICK_EXIT_MAX
+#define _CCW_QUICK_EXIT_MAX 32
+#endif
+
+inline void (**__ccw_quick_exit_slots())() {
+    static void (*__slots[_CCW_QUICK_EXIT_MAX])() = { 0 };
+    return __slots;
+}
+inline int& __ccw_quick_exit_count() { static int __n = 0; return __n; }
+
+inline int at_quick_exit(void (*__f)()) {
+    int& __n = __ccw_quick_exit_count();
+    if (__f == 0 || __n >= _CCW_QUICK_EXIT_MAX)
+        return -1;                        // non-zero == registration failed
+    __ccw_quick_exit_slots()[__n++] = __f;
+    return 0;
+}
+
+inline void quick_exit(int __status) {
+    void (**__slots)() = __ccw_quick_exit_slots();
+    int& __n = __ccw_quick_exit_count();
+    while (__n > 0) {
+        void (*__f)() = __slots[--__n];   // pop first, so a re-entrant call terminates
+        if (__f) __f();
+    }
+    ::_Exit(__status);
+}
+#endif  // _CCW_CSTDLIB_EXIT_DEFINED
+
+#ifndef _CCW_CSTDLIB_LLABS_DEFINED
+#define _CCW_CSTDLIB_LLABS_DEFINED
+inline _ccw_llong abs(_ccw_llong __x) { return __x < 0 ? -__x : __x; }
+#endif  // _CCW_CSTDLIB_LLABS_DEFINED
+
+}   // namespace std
+
+#ifndef _CCW_CSTDLIB_GLOBAL_USING
+#define _CCW_CSTDLIB_GLOBAL_USING
+using std::at_quick_exit;
+using std::quick_exit;
+using std::abs;         // re-issued: native <stdlib.h> imported std::abs / std::div
+using std::div;         // before the overloads above existed
+#endif

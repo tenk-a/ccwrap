@@ -1,0 +1,479 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <charconv> for Open Watcom -- to_chars / from_chars.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_CHARCONV
+#define _CCW_LIBCPP_CHARCONV
+#include "__config"
+#include "__type_traits/is_signed.h"
+#include "__type_traits/make_unsigned.h"
+#include <limits>
+#include <system_error>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+#include <cmath>       // ldexp -- the hex float parse below builds its value with it
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct chars_format {
+    int __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI chars_format() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI chars_format(int __x) : __v_(__x) {}
+    static const int scientific = 1;
+    static const int fixed      = 2;
+    static const int general    = 3;   // fixed | scientific
+    static const int hex        = 4;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI chars_format& operator&=(const chars_format& __o) { __v_ &= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI chars_format& operator|=(const chars_format& __o) { __v_ |= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI chars_format& operator^=(const chars_format& __o) { __v_ ^= __o.__v_; return *this; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const chars_format& __a, const chars_format& __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const chars_format& __a, const chars_format& __b) { return __a.__v_ != __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline chars_format operator&(const chars_format& __a, const chars_format& __b) { return chars_format(__a.__v_ & __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline chars_format operator|(const chars_format& __a, const chars_format& __b) { return chars_format(__a.__v_ | __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline chars_format operator^(const chars_format& __a, const chars_format& __b) { return chars_format(__a.__v_ ^ __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline chars_format operator~(const chars_format& __a) { return chars_format(~__a.__v_); }
+
+struct to_chars_result   { char*       ptr; errc ec;
+    _CCW_LIBCPP_HIDE_FROM_ABI operator bool() const { return ec == errc(); }
+};
+struct from_chars_result { const char* ptr; errc ec;
+    _CCW_LIBCPP_HIDE_FROM_ABI operator bool() const { return ec == errc(); }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const to_chars_result& __a, const to_chars_result& __b) { return __a.ptr == __b.ptr && __a.ec == __b.ec; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const to_chars_result& __a, const to_chars_result& __b) { return !(__a == __b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const from_chars_result& __a, const from_chars_result& __b) { return __a.ptr == __b.ptr && __a.ec == __b.ec; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const from_chars_result& __a, const from_chars_result& __b) { return !(__a == __b); }
+
+namespace __ccw_cc {
+_CCW_LIBCPP_HIDE_FROM_ABI inline char __digit(unsigned __d) { return __d < 10 ? char('0' + __d) : char('a' + (__d - 10)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline int  __dval(char __c) {
+    if (__c >= '0' && __c <= '9') return __c - '0';
+    if (__c >= 'a' && __c <= 'z') return __c - 'a' + 10;
+    if (__c >= 'A' && __c <= 'Z') return __c - 'A' + 10;
+    return -1;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __fp_negative(double __v) {
+    union { double __d; unsigned char __b[sizeof(double)]; } __u;
+    __u.__d = __v;
+    return (__u.__b[sizeof(double) - 1] & 0x80) != 0;   // little-endian (x86)
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __fp_finite(double __v) {
+    union { double __d; unsigned char __b[sizeof(double)]; } __u;
+    __u.__d = __v;
+    return ((__u.__b[7] & 0x7F) != 0x7F) || ((__u.__b[6] & 0xF0) != 0xF0);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __fp_isnan(double __v) {
+    union { double __d; unsigned char __b[sizeof(double)]; } __u;
+    __u.__d = __v;
+    if (((__u.__b[7] & 0x7F) != 0x7F) || ((__u.__b[6] & 0xF0) != 0xF0)) return false;
+    if ((__u.__b[6] & 0x0F) != 0) return true;
+    for (int __i = 0; __i < 6; ++__i) if (__u.__b[__i]) return true;
+    return false;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __fp_digits(double __v, int __maxprec, bool __as_float,
+                                                 char* __digits, int* __exp10) {
+    char __tmp[512];
+    int  __p = 1;
+    for (; __p <= __maxprec; ++__p) {
+        _CCW_STD::sprintf(__tmp, "%.*e", __p - 1, __v);
+        double __rt = _CCW_STD::strtod(__tmp, 0);
+        if (__as_float ? (float(__rt) == float(__v)) : (__rt == __v)) break;
+    }
+    if (__p > __maxprec) { __p = __maxprec; _CCW_STD::sprintf(__tmp, "%.*e", __p - 1, __v); }
+
+    const char* __s = __tmp;
+    if (*__s == '-' || *__s == '+') ++__s;
+    int __n = 0;
+    for (; *__s && *__s != 'e' && *__s != 'E'; ++__s)
+        if (*__s != '.') __digits[__n++] = *__s;
+    int __e = 0, __es = 1;
+    if (*__s == 'e' || *__s == 'E') {
+        ++__s;
+        if (*__s == '-') { __es = -1; ++__s; } else if (*__s == '+') ++__s;
+        for (; *__s >= '0' && *__s <= '9'; ++__s) __e = __e * 10 + (*__s - '0');
+    }
+    while (__n > 1 && __digits[__n - 1] == '0') --__n;
+    __digits[__n] = 0;
+    *__exp10 = __e * __es;
+    return __n;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __render_fixed(char* __o, const char* __d, int __n, int __e) {
+    int __k = 0;
+    if (__e >= 0) {
+        int __ip = __e + 1;
+        for (int __i = 0; __i < __ip; ++__i) __o[__k++] = (__i < __n) ? __d[__i] : '0';
+        if (__n > __ip) { __o[__k++] = '.'; for (int __i = __ip; __i < __n; ++__i) __o[__k++] = __d[__i]; }
+    } else {
+        __o[__k++] = '0'; __o[__k++] = '.';
+        for (int __i = 0; __i < -__e - 1; ++__i) __o[__k++] = '0';
+        for (int __i = 0; __i < __n; ++__i) __o[__k++] = __d[__i];
+    }
+    return __k;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __render_sci(char* __o, const char* __d, int __n, int __e) {
+    int __k = 0;
+    __o[__k++] = __d[0];
+    if (__n > 1) { __o[__k++] = '.'; for (int __i = 1; __i < __n; ++__i) __o[__k++] = __d[__i]; }
+    __o[__k++] = 'e';
+    __o[__k++] = (__e < 0) ? '-' : '+';
+    int __ae = __e < 0 ? -__e : __e;
+    if (__ae >= 100) __o[__k++] = char('0' + __ae / 100);
+    __o[__k++] = char('0' + (__ae / 10) % 10);
+    __o[__k++] = char('0' + __ae % 10);
+    return __k;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result __emit(char* __first, char* __last, const char* __buf, int __n) {
+    to_chars_result __r;
+    if (__n > (__last - __first)) { __r.ptr = __last; __r.ec = errc::value_too_large; return __r; }
+    _CCW_STD::memcpy(__first, __buf, _CCW_STD::size_t(__n));
+    __r.ptr = __first + __n; __r.ec = errc();
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result __shortest(char* __first, char* __last, double __v,
+                                                            int __maxprec, bool __as_float,
+                                                            char __form = 'g') {
+    char __out_[512]; int __k = 0;
+    if (__fp_negative(__v)) __out_[__k++] = '-';        // -0.0 keeps its sign
+    if (__fp_isnan(__v)) {
+        __k = 0; __out_[__k++] = 'n'; __out_[__k++] = 'a'; __out_[__k++] = 'n';
+        return __emit(__first, __last, __out_, __k);
+    }
+    if (!__fp_finite(__v)) {
+        __out_[__k++] = 'i'; __out_[__k++] = 'n'; __out_[__k++] = 'f';
+        return __emit(__first, __last, __out_, __k);
+    }
+    char __d[32]; int __e = 0;
+    int __n = __fp_digits(__v, __maxprec, __as_float, __d, &__e);
+
+    char __fx[512], __sc[512];
+    int  __lf = __render_fixed(__fx, __d, __n, __e);
+    int  __ls = __render_sci(__sc, __d, __n, __e);
+    const char* __pick; int __len;
+    if (__form == 'f')      { __pick = __fx; __len = __lf; }
+    else if (__form == 'e') { __pick = __sc; __len = __ls; }
+    else if (__lf <= __ls)  { __pick = __fx; __len = __lf; }   // tie -> fixed
+    else                    { __pick = __sc; __len = __ls; }
+    for (int __i = 0; __i < __len; ++__i) __out_[__k++] = __pick[__i];
+    return __emit(__first, __last, __out_, __k);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result __hex_fmt(char* __first, char* __last, double __v,
+                                                           int __prec, bool __hasprec) {
+    union { double __d; _ccw_ullong __u; } __b;
+    __b.__d = __v;
+    _ccw_ullong __bits = __b.__u;
+    int  __exp  = int((__bits >> 52) & 0x7FF);
+    _ccw_ullong __man = __bits & (((_ccw_ullong)1 << 52) - 1);
+
+    char __out_[512]; int __k = 0;
+    if (__fp_negative(__v)) __out_[__k++] = '-';
+    if (__exp == 0x7FF) {                      // inf / nan
+        __k = __fp_isnan(__v) ? 0 : __k;
+        const char* __w = __fp_isnan(__v) ? "nan" : "inf";
+        for (int __i = 0; __w[__i]; ++__i) __out_[__k++] = __w[__i];
+        return __emit(__first, __last, __out_, __k);
+    }
+    int __e2;
+    char __lead;
+    if (__exp == 0) {                          // zero or subnormal
+        if (__man == 0) { __lead = '0'; __e2 = 0; }
+        else { __lead = '0'; __e2 = -1022; }
+    } else { __lead = '1'; __e2 = __exp - 1023; }
+
+    char __hd[16]; int __nh = 0;
+    for (int __i = 12; __i >= 0; --__i)
+        __hd[__nh++] = __digit(unsigned((__man >> (__i * 4)) & 0xF));
+    if (__hasprec) {
+        if (__prec < __nh) __nh = __prec;
+        while (__nh < __prec) __hd[__nh++] = '0';
+    } else {
+        while (__nh > 0 && __hd[__nh - 1] == '0') --__nh;   // shortest
+    }
+    __out_[__k++] = __lead;
+    if (__nh > 0) { __out_[__k++] = '.'; for (int __i = 0; __i < __nh; ++__i) __out_[__k++] = __hd[__i]; }
+    __out_[__k++] = 'p';
+    __out_[__k++] = (__e2 < 0) ? '-' : '+';
+    int __ae = __e2 < 0 ? -__e2 : __e2;
+    char __eb[8]; int __ne = 0;
+    do { __eb[__ne++] = char('0' + __ae % 10); __ae /= 10; } while (__ae);
+    while (__ne) __out_[__k++] = __eb[--__ne];
+    return __emit(__first, __last, __out_, __k);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline char __conv_of(chars_format __fmt) {
+    if (__fmt == chars_format(chars_format::scientific)) return 'e';
+    if (__fmt == chars_format(chars_format::fixed))      return 'f';
+    if (__fmt == chars_format(chars_format::hex))        return 'a';
+    return 'g';
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __trim_exp_digits(char* __s, int __n) {
+    int __i = 0;
+    for (; __i < __n; ++__i) if (__s[__i] == 'e' || __s[__i] == 'E') break;
+    if (__i == __n) return __n;
+    int __d = __i + 1;
+    if (__d < __n && (__s[__d] == '+' || __s[__d] == '-')) ++__d;
+    int __z = __d;
+    while (__z < __n && __s[__z] >= '0' && __s[__z] <= '9') ++__z;
+    int __ndig = __z - __d, __drop = 0;
+    while (__ndig - __drop > 2 && __s[__d + __drop] == '0') ++__drop;
+    if (!__drop) return __n;
+    for (int __j = __d + __drop; __j < __n; ++__j) __s[__j - __drop] = __s[__j];
+    return __n - __drop;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result __fp_fmt(char* __first, char* __last, double __v, char __conv, int __prec, bool __hasprec) {
+    if (__conv == 'a') return __hex_fmt(__first, __last, __v, __prec, __hasprec);
+    if (!__hasprec) return __shortest(__first, __last, __v, 17, false, __conv);
+    char __f[16]; char __tmp[512];
+    _CCW_STD::sprintf(__f, "%%.%d%c", __prec, __conv);
+    int __n = _CCW_STD::sprintf(__tmp, __f, __v);
+    if (__n > 0) __n = __trim_exp_digits(__tmp, __n);
+    to_chars_result __r;
+    if (__n <= 0 || __n > (__last - __first)) { __r.ptr = __last; __r.ec = errc::value_too_large; return __r; }
+    _CCW_STD::memcpy(__first, __tmp, _CCW_STD::size_t(__n));
+    __r.ptr = __first + __n; __r.ec = errc();
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result __parse_fp_fmt(const char* __first, const char* __last,
+                                                                  double& __out_, int __fmt) {
+    from_chars_result __bad;
+    __bad.ptr = __first; __bad.ec = errc::invalid_argument;
+    if (__first == __last) return __bad;
+
+    const bool __hex = (__fmt & chars_format::hex) != 0;
+    const bool __allow_exp = (__fmt == 0) || __hex ||
+                             ((__fmt & chars_format::scientific) != 0);
+    const bool __need_exp  = !__hex && (__fmt == chars_format::scientific);
+
+    const char* __p = __first;
+    if (*__p == '-') ++__p;                       // '+' is deliberately not accepted
+
+    if (__p != __last && (*__p == 'i' || *__p == 'I' || *__p == 'n' || *__p == 'N')) {
+        char __t[8]; _CCW_STD::size_t __k = 0;
+        for (const char* __q = __first; __q != __last && __k + 1 < sizeof(__t); ++__q) __t[__k++] = *__q;
+        __t[__k] = 0;
+        char* __end = 0;
+        double __v = _CCW_STD::strtod(__t, &__end);
+        if (__end == __t) return __bad;
+        from_chars_result __r;
+        __r.ptr = __first + (__end - __t); __r.ec = errc();
+        __out_ = __v;
+        return __r;
+    }
+
+    int __ndig = 0;
+    while (__p != __last && (__hex ? (__dval(*__p) >= 0 && __dval(*__p) < 16)
+                                   : (*__p >= '0' && *__p <= '9'))) { ++__p; ++__ndig; }
+    if (__p != __last && *__p == '.') {
+        ++__p;
+        while (__p != __last && (__hex ? (__dval(*__p) >= 0 && __dval(*__p) < 16)
+                                       : (*__p >= '0' && *__p <= '9'))) { ++__p; ++__ndig; }
+    }
+    if (__ndig == 0) return __bad;
+    const char* __sig_end = __p;
+
+    const char __echar = __hex ? 'p' : 'e';
+    bool __has_exp = false;
+    if (__allow_exp && __p != __last &&
+        (*__p == __echar || *__p == char(__echar - 32))) {
+        const char* __q = __p + 1;
+        if (__q != __last && (*__q == '+' || *__q == '-')) ++__q;
+        if (__q != __last && *__q >= '0' && *__q <= '9') {
+            while (__q != __last && *__q >= '0' && *__q <= '9') ++__q;
+            __p = __q;
+            __has_exp = true;
+        }
+    }
+    if (__need_exp && !__has_exp) return __bad;
+    if (!__has_exp) __p = __sig_end;
+
+    if (__hex) {
+        double __m = 0.0;
+        int  __e2 = 0;
+        bool __neg = (*__first == '-');
+        const char* __q = __neg ? __first + 1 : __first;
+        int  __kept = 0;                       // significant hex digits actually taken
+        bool __dot = false;
+        for (; __q != __sig_end; ++__q) {
+            if (*__q == '.') { __dot = true; continue; }
+            int __d = __dval(*__q);
+            if (__kept < 14) { __m = __m * 16.0 + double(__d); ++__kept; if (__dot) __e2 -= 4; }
+            else if (!__dot) __e2 += 4;
+        }
+        if (__has_exp) {
+            const char* __x = __sig_end + 1;   // past 'p'
+            int __es2 = 1;
+            if (*__x == '+') ++__x; else if (*__x == '-') { __es2 = -1; ++__x; }
+            int __ev = 0;
+            for (; __x != __p && *__x >= '0' && *__x <= '9'; ++__x) {
+                if (__ev < 100000) __ev = __ev * 10 + (*__x - '0');
+            }
+            __e2 += __es2 * __ev;
+        }
+        double __v2 = _CCW_STD::ldexp(__m, __e2);
+        from_chars_result __r2;
+        __r2.ptr = __p;
+        __r2.ec = errc();
+        __out_ = __neg ? -__v2 : __v2;
+        return __r2;
+    }
+
+    char __t[512]; _CCW_STD::size_t __k = 0;
+    for (const char* __q = __first; __q != __p && __k + 1 < sizeof(__t); ++__q) __t[__k++] = *__q;
+    __t[__k] = 0;
+
+    errno = 0;
+    char* __end = 0;
+    double __v = _CCW_STD::strtod(__t, &__end);
+    from_chars_result __r;
+    if (__end == __t) return __bad;
+    __r.ptr = __p;
+    if (errno == ERANGE) __r.ec = errc::result_out_of_range;
+    else { __out_ = __v; __r.ec = errc(); }
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result __parse_fp(const char* __first, const char* __last, double& __out_) {
+    return __parse_fp_fmt(__first, __last, __out_, 0);
+}
+}   // namespace __ccw_cc
+
+template <class _Int>
+_CCW_LIBCPP_HIDE_FROM_ABI to_chars_result to_chars(char* __first, char* __last, _Int __val_, int __base) {
+    typedef typename make_unsigned<_Int>::type _U;
+    bool __neg = false;
+    _U __mag;
+    if (is_signed<_Int>::value && __val_ < 0) { __neg = true; __mag = _U(_U(0) - _U(__val_)); }
+    else __mag = _U(__val_);
+    char __tmp[sizeof(_U) * 8 + 1]; int __n = 0;
+    do { __tmp[__n++] = __ccw_cc::__digit(unsigned(__mag % _U(__base))); __mag /= _U(__base); } while (__mag != 0);
+    int __total = __n + (__neg ? 1 : 0);
+    to_chars_result __r;
+    if (__total > (__last - __first)) { __r.ptr = __last; __r.ec = errc::value_too_large; return __r; }
+    char* __d = __first;
+    if (__neg) *__d++ = '-';
+    while (__n) *__d++ = __tmp[--__n];
+    __r.ptr = __d; __r.ec = errc();
+    return __r;
+}
+template <class _Int>
+_CCW_LIBCPP_HIDE_FROM_ABI to_chars_result to_chars(char* __first, char* __last, _Int __val_) { return to_chars(__first, __last, __val_, 10); }
+
+template <class _Int>
+_CCW_LIBCPP_HIDE_FROM_ABI from_chars_result from_chars(const char* __first, const char* __last, _Int& __val_, int __base) {
+    typedef typename make_unsigned<_Int>::type _U;
+    const char* __p = __first;
+    bool __neg = false;
+    if (is_signed<_Int>::value && __p != __last && *__p == '-') { __neg = true; ++__p; }
+    _U __acc = 0;
+    _U __umax = (numeric_limits<_U>::max)();
+    bool __any = false, __over = false;
+    const char* __q = __p;
+    for (; __q != __last; ++__q) {
+        int __dg = __ccw_cc::__dval(*__q);
+        if (__dg < 0 || __dg >= __base) break;
+        __any = true;
+        if (__acc > (__umax - _U(__dg)) / _U(__base)) __over = true;
+        else __acc = __acc * _U(__base) + _U(__dg);
+    }
+    from_chars_result __r;
+    if (!__any) { __r.ptr = __first; __r.ec = errc::invalid_argument; return __r; }
+    if (!__over) {
+        _U __maxpos = _U((numeric_limits<_Int>::max)());
+        if (is_signed<_Int>::value && __neg) { if (__acc > __maxpos + _U(1)) __over = true; }
+        else                                 { if (__acc > __maxpos)         __over = true; }
+    }
+    __r.ptr = __q;
+    if (__over) __r.ec = errc::result_out_of_range;
+    else { __val_ = __neg ? static_cast<_Int>(_U(0) - __acc) : static_cast<_Int>(__acc); __r.ec = errc(); }
+    return __r;
+}
+template <class _Int>
+_CCW_LIBCPP_HIDE_FROM_ABI from_chars_result from_chars(const char* __first, const char* __last, _Int& __val_) { return from_chars(__first, __last, __val_, 10); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, double __val_) { return __ccw_cc::__shortest(__first, __last, __val_, 17, false); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, float __val_)  { return __ccw_cc::__shortest(__first, __last, double(__val_), 9, true); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, double __val_, chars_format __fmt) {
+    if (__fmt == chars_format(chars_format::general)) return __ccw_cc::__shortest(__first, __last, __val_, 17, false);
+    return __ccw_cc::__fp_fmt(__first, __last, __val_, __ccw_cc::__conv_of(__fmt), 0, false);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, double __val_, chars_format __fmt, int __precision) {
+    return __ccw_cc::__fp_fmt(__first, __last, __val_, __ccw_cc::__conv_of(__fmt), __precision, true);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, double __val_, int __fmt) {
+    return to_chars(__first, __last, __val_, chars_format(__fmt)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, float __val_, int __fmt) {
+    return to_chars(__first, __last, double(__val_), chars_format(__fmt)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, double __val_, int __fmt, int __precision) {
+    return to_chars(__first, __last, __val_, chars_format(__fmt), __precision); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, float __val_, int __fmt, int __precision) {
+    return to_chars(__first, __last, double(__val_), chars_format(__fmt), __precision); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, double& __val_) { return __ccw_cc::__parse_fp(__first, __last, __val_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, float& __val_) {
+    double __d = 0; from_chars_result __r = __ccw_cc::__parse_fp(__first, __last, __d);
+    if (__r.ec == errc()) __val_ = float(__d);
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, double& __val_, chars_format __fmt) {
+    return __ccw_cc::__parse_fp_fmt(__first, __last, __val_, __fmt.__v_);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, float& __val_, chars_format __fmt) {
+    double __d = 0; from_chars_result __r = from_chars(__first, __last, __d, __fmt);
+    if (__r.ec == errc()) __val_ = float(__d);
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, double& __val_, int __fmt) {
+    return __ccw_cc::__parse_fp_fmt(__first, __last, __val_, __fmt); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, float& __val_, int __fmt) {
+    double __d = 0; from_chars_result __r = __ccw_cc::__parse_fp_fmt(__first, __last, __d, __fmt);
+    if (__r.ec == errc()) __val_ = float(__d);
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, long double __val_) {
+    return __ccw_cc::__shortest(__first, __last, double(__val_), 17, false); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, long double __val_, chars_format __fmt) {
+    return to_chars(__first, __last, double(__val_), __fmt); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, long double __val_, chars_format __fmt, int __precision) {
+    return to_chars(__first, __last, double(__val_), __fmt, __precision); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, long double __val_, int __fmt) {
+    return to_chars(__first, __last, double(__val_), chars_format(__fmt)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result to_chars(char* __first, char* __last, long double __val_, int __fmt, int __precision) {
+    return to_chars(__first, __last, double(__val_), chars_format(__fmt), __precision); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, long double& __val_) {
+    double __d = 0; from_chars_result __r = __ccw_cc::__parse_fp(__first, __last, __d);
+    if (__r.ec == errc()) __val_ = (long double)__d;
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, long double& __val_, int __fmt) {
+    double __d = 0; from_chars_result __r = __ccw_cc::__parse_fp_fmt(__first, __last, __d, __fmt);
+    if (__r.ec == errc()) __val_ = (long double)__d;
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result from_chars(const char* __first, const char* __last, long double& __val_, chars_format __fmt) {
+    double __d = 0; from_chars_result __r = from_chars(__first, __last, __d, __fmt);
+    if (__r.ec == errc()) __val_ = (long double)__d;
+    return __r;
+}
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_CHARCONV

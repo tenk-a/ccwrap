@@ -1,0 +1,12 @@
+// ccwrap vc/ccwstd: <cctype> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CCTYPE_
+#define _CCW_CCWSTD_CCTYPE_
+#include "../std/cctype"
+namespace _CCW_STD {
+using ::std::isalnum; using ::std::isalpha; using ::std::iscntrl; using ::std::isdigit;
+using ::std::isgraph; using ::std::islower; using ::std::isprint; using ::std::ispunct;
+using ::std::isspace; using ::std::isupper; using ::std::isxdigit;
+using ::std::tolower; using ::std::toupper;
+using ::std::isblank;
+}
+#endif

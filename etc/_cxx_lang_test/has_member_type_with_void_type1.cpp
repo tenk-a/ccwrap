@@ -23,10 +23,10 @@ template<class T>
 struct has_value_type<T, typename void_type1<typename T::value_type>::type> : true_type { };
 
 struct St {
-//	typedef int value_type;
+//  typedef int value_type;
 };
 
 int main() {
-	//return has_value_type<St>::value == false;
-	return has_value_type<St>::value != false;
+    //return has_value_type<St>::value == false;
+    return has_value_type<St>::value != false;
 }

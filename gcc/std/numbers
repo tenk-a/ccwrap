@@ -1,0 +1,12 @@
+// ccwrap <numbers>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <numbers>
+ namespace _ccw { namespace numbers = std::numbers; }
+#else
+ #include <../../detail/llibcxx03/include/numbers>
+ namespace _ccw { namespace numbers = std::numbers; }
+#endif

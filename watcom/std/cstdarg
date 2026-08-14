@@ -1,0 +1,7 @@
+// ccwrap watcom: <cstdarg>. Thin forwarder to Open Watcom's native <cstdarg>
+// (va_list and the va_start/va_arg/va_end/va_copy machinery), guaranteeing
+// ccwrap_common.h is pulled in first. No supplements are needed.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(cstdarg)

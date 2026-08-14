@@ -1,0 +1,10 @@
+// ccwrap <ratio>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <ratio>
+#else
+ #include <../../detail/llibcxx03/include/ratio>
+#endif

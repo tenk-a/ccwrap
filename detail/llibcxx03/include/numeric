@@ -1,0 +1,23 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <numeric> for Open Watcom. libc++ layout; classic C++03.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_NUMERIC
+#define _CCW_LIBCPP_NUMERIC
+#include "__config"
+#include "__numeric/accumulate.h"
+#include "__numeric/inner_product.h"
+#include "__numeric/partial_sum.h"
+#include "__numeric/adjacent_difference.h"
+#include "__numeric/iota.h"
+#include "__numeric/gcd_lcm.h"
+#include "__numeric/reduce.h"
+#include "__numeric/midpoint.h"
+#include "__numeric/exclusive_scan.h"
+#include "__numeric/inclusive_scan.h"
+
+#include "__numeric/execution_overloads.h"
+#include "__numeric/saturation_arithmetic.h"
+#include "__numeric/checked_arithmetic.h"
+#endif // _CCW_LIBCPP_NUMERIC

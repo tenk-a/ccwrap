@@ -1,0 +1,13 @@
+// ccwrap <span>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <span>
+ namespace _ccw { using std::dynamic_extent; using std::span; using std::as_bytes; using std::as_writable_bytes; }
+#else
+ #include <../../detail/llibcxx03/include/span>
+#endif
+
+#include <../../detail/cxx/iterator.hpp>

@@ -1,0 +1,255 @@
+// ccwrap <spanstream>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202302L
+
+ #include _CCW_NATIVE_STL_HEADER_PATH(spanstream)
+ namespace _ccw {
+     using std::basic_spanbuf; using std::basic_ispanstream; using std::basic_ospanstream; using std::basic_spanstream;
+     using std::spanbuf; using std::ispanstream; using std::ospanstream; using std::spanstream;
+     using std::wspanbuf; using std::wispanstream; using std::wospanstream; using std::wspanstream;
+ }
+
+#else
+
+#include <span>
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <ios>
+#include <string>   /* char_traits */
+#include <cstddef>
+
+namespace _CCW_STD23 {
+using namespace ::std;
+
+#if _MSC_VER >= 1600
+#  define _CCW_SPANSTREAM_DELETED  = delete
+#else
+#  define _CCW_SPANSTREAM_DELETED
+#endif
+
+template<class CharT, class Traits = std::char_traits<CharT> >
+class basic_spanbuf : public std::basic_streambuf<CharT, Traits> {
+    std::span<CharT>        buf_;
+    std::ios_base::openmode mode_;
+    basic_spanbuf(const basic_spanbuf&) _CCW_SPANSTREAM_DELETED;
+    basic_spanbuf& operator=(const basic_spanbuf&) _CCW_SPANSTREAM_DELETED;
+public:
+    typedef CharT                       char_type;
+    typedef Traits                      traits_type;
+    typedef typename Traits::int_type   int_type;
+    typedef typename Traits::pos_type   pos_type;
+    typedef typename Traits::off_type   off_type;
+
+    basic_spanbuf() : mode_(std::ios_base::in | std::ios_base::out) {}
+    explicit basic_spanbuf(std::span<CharT> s,
+                           std::ios_base::openmode which = std::ios_base::in | std::ios_base::out)
+        : buf_(s), mode_(which) { init_(); }
+
+    std::span<CharT> span() const {
+        if (mode_ & std::ios_base::out)
+            return std::span<CharT>(this->pbase(),
+                                    (std::size_t)(this->pptr() - this->pbase()));
+        return buf_;
+    }
+    void span(std::span<CharT> s) { buf_ = s; init_(); }
+
+#if _MSC_VER >= 1600
+    basic_spanbuf(basic_spanbuf&& o) : buf_(o.buf_), mode_(o.mode_) {
+        const off_type goff = (o.mode_ & std::ios_base::in)  ? (off_type)(o.gptr() - o.eback()) : (off_type)0;
+        const off_type poff = (o.mode_ & std::ios_base::out) ? (off_type)(o.pptr() - o.pbase()) : (off_type)0;
+        init_(); seek_to_(goff, poff);
+        o.buf_ = std::span<CharT>(); o.init_();
+    }
+    basic_spanbuf& operator=(basic_spanbuf&& o) {
+        if (this != &o) {
+            const off_type goff = (o.mode_ & std::ios_base::in)  ? (off_type)(o.gptr() - o.eback()) : (off_type)0;
+            const off_type poff = (o.mode_ & std::ios_base::out) ? (off_type)(o.pptr() - o.pbase()) : (off_type)0;
+            buf_ = o.buf_; mode_ = o.mode_; init_(); seek_to_(goff, poff);
+            o.buf_ = std::span<CharT>(); o.init_();
+        }
+        return *this;
+    }
+#endif
+
+    void swap(basic_spanbuf& o) {
+        const std::span<CharT>        s = buf_;
+        const std::ios_base::openmode m = mode_;
+        const off_type goff  = (mode_   & std::ios_base::in)  ? (off_type)(this->gptr() - this->eback()) : (off_type)0;
+        const off_type poff  = (mode_   & std::ios_base::out) ? (off_type)(this->pptr() - this->pbase()) : (off_type)0;
+        const off_type ogoff = (o.mode_ & std::ios_base::in)  ? (off_type)(o.gptr() - o.eback()) : (off_type)0;
+        const off_type opoff = (o.mode_ & std::ios_base::out) ? (off_type)(o.pptr() - o.pbase()) : (off_type)0;
+        buf_ = o.buf_;  mode_ = o.mode_;  init_();  seek_to_(ogoff, opoff);
+        o.buf_ = s;     o.mode_ = m;      o.init_(); o.seek_to_(goff, poff);
+    }
+
+protected:
+    virtual pos_type seekoff(off_type off, std::ios_base::seekdir way,
+                             std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
+        const bool gi = (which & std::ios_base::in)  && (mode_ & std::ios_base::in);
+        const bool pi = (which & std::ios_base::out) && (mode_ & std::ios_base::out);
+        if (!gi && !pi) return pos_type(off_type(-1));
+        if (gi && pi && way == std::ios_base::cur) return pos_type(off_type(-1));
+
+        const off_type size = (off_type)buf_.size();
+        off_type base;
+        if      (way == std::ios_base::beg) base = 0;
+        else if (way == std::ios_base::end) base = size;
+        else base = gi ? (off_type)(this->gptr() - this->eback())
+                       : (off_type)(this->pptr() - this->pbase());
+
+        const off_type np = base + off;
+        if (np < 0 || np > size) return pos_type(off_type(-1));
+
+        CharT* b = buf_.data();
+        if (gi) this->setg(b, b + np, b + size);
+        if (pi) { this->setp(b, b + size); this->pbump((int)np); }
+        return pos_type(np);
+    }
+    virtual pos_type seekpos(pos_type pos,
+                             std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
+        return seekoff((off_type)pos, std::ios_base::beg, which);
+    }
+    virtual std::basic_streambuf<CharT, Traits>* setbuf(CharT* s, std::streamsize n) {
+        this->span(std::span<CharT>(s, (std::size_t)n));
+        return this;
+    }
+
+private:
+    void init_() {
+        CharT* b = buf_.data();
+        CharT* e = b + buf_.size();
+        if (mode_ & std::ios_base::out) {
+            this->setp(b, e);
+            if (mode_ & std::ios_base::ate) this->pbump((int)buf_.size());
+        }
+        if (mode_ & std::ios_base::in)
+            this->setg(b, b, e);
+    }
+    void seek_to_(off_type goff, off_type poff) {
+        CharT* b = buf_.data();
+        CharT* e = b + buf_.size();
+        if (mode_ & std::ios_base::out) { this->setp(b, e); this->pbump((int)poff); }
+        if (mode_ & std::ios_base::in)    this->setg(b, b + goff, e);
+    }
+};
+
+template<class CharT, class Traits>
+struct __ccw_spanbuf_holder {
+    basic_spanbuf<CharT, Traits> __sb;
+    __ccw_spanbuf_holder(std::span<CharT> s, std::ios_base::openmode m) : __sb(s, m) {}
+    __ccw_spanbuf_holder() {}
+};
+
+template<class CharT, class Traits = std::char_traits<CharT> >
+class basic_ispanstream
+    : private __ccw_spanbuf_holder<CharT, Traits>
+    , public std::basic_istream<CharT, Traits> {
+    basic_ispanstream(const basic_ispanstream&) _CCW_SPANSTREAM_DELETED;
+    basic_ispanstream& operator=(const basic_ispanstream&) _CCW_SPANSTREAM_DELETED;
+public:
+    explicit basic_ispanstream(std::span<CharT> s,
+                               std::ios_base::openmode which = std::ios_base::in)
+        : __ccw_spanbuf_holder<CharT, Traits>(s, which | std::ios_base::in)
+        , std::basic_istream<CharT, Traits>(&this->__sb) {}
+    basic_spanbuf<CharT, Traits>* rdbuf() const {
+        return const_cast<basic_spanbuf<CharT, Traits>*>(&this->__sb);
+    }
+    std::span<CharT> span() const { return this->__sb.span(); }
+    void span(std::span<CharT> s) { this->__sb.span(s); }
+    void swap(basic_ispanstream& o) { this->__sb.swap(o.__sb); }
+#if _MSC_VER >= 1600
+    basic_ispanstream& operator=(basic_ispanstream&& o) {
+        if (this != &o) {
+            std::basic_istream<CharT, Traits>::swap(o);
+            this->__sb.swap(o.__sb);
+            this->set_rdbuf(&this->__sb);
+            o.set_rdbuf(&o.__sb);
+        }
+        return *this;
+    }
+#endif
+};
+
+template<class CharT, class Traits = std::char_traits<CharT> >
+class basic_ospanstream
+    : private __ccw_spanbuf_holder<CharT, Traits>
+    , public std::basic_ostream<CharT, Traits> {
+    basic_ospanstream(const basic_ospanstream&) _CCW_SPANSTREAM_DELETED;
+    basic_ospanstream& operator=(const basic_ospanstream&) _CCW_SPANSTREAM_DELETED;
+public:
+    explicit basic_ospanstream(std::span<CharT> s,
+                               std::ios_base::openmode which = std::ios_base::out)
+        : __ccw_spanbuf_holder<CharT, Traits>(s, which | std::ios_base::out)
+        , std::basic_ostream<CharT, Traits>(&this->__sb) {}
+    basic_spanbuf<CharT, Traits>* rdbuf() const {
+        return const_cast<basic_spanbuf<CharT, Traits>*>(&this->__sb);
+    }
+    std::span<CharT> span() const { return this->__sb.span(); }
+    void span(std::span<CharT> s) { this->__sb.span(s); }
+    void swap(basic_ospanstream& o) { this->__sb.swap(o.__sb); }
+#if _MSC_VER >= 1600
+    basic_ospanstream& operator=(basic_ospanstream&& o) {
+        if (this != &o) {
+            std::basic_ostream<CharT, Traits>::swap(o);
+            this->__sb.swap(o.__sb);
+            this->set_rdbuf(&this->__sb);
+            o.set_rdbuf(&o.__sb);
+        }
+        return *this;
+    }
+#endif
+};
+
+template<class CharT, class Traits = std::char_traits<CharT> >
+class basic_spanstream
+    : private __ccw_spanbuf_holder<CharT, Traits>
+    , public std::basic_iostream<CharT, Traits> {
+    basic_spanstream(const basic_spanstream&) _CCW_SPANSTREAM_DELETED;
+    basic_spanstream& operator=(const basic_spanstream&) _CCW_SPANSTREAM_DELETED;
+public:
+    explicit basic_spanstream(std::span<CharT> s,
+                              std::ios_base::openmode which = std::ios_base::in | std::ios_base::out)
+        : __ccw_spanbuf_holder<CharT, Traits>(s, which)
+        , std::basic_iostream<CharT, Traits>(&this->__sb) {}
+    basic_spanbuf<CharT, Traits>* rdbuf() const {
+        return const_cast<basic_spanbuf<CharT, Traits>*>(&this->__sb);
+    }
+    std::span<CharT> span() const { return this->__sb.span(); }
+    void span(std::span<CharT> s) { this->__sb.span(s); }
+    void swap(basic_spanstream& o) { this->__sb.swap(o.__sb); }
+#if _MSC_VER >= 1600
+    basic_spanstream& operator=(basic_spanstream&& o) {
+        if (this != &o) {
+            std::basic_iostream<CharT, Traits>::swap(o);
+            this->__sb.swap(o.__sb);
+            this->set_rdbuf(&this->__sb);
+            o.set_rdbuf(&o.__sb);
+        }
+        return *this;
+    }
+#endif
+};
+
+typedef basic_spanbuf<char>       spanbuf;
+typedef basic_ispanstream<char>   ispanstream;
+typedef basic_ospanstream<char>   ospanstream;
+typedef basic_spanstream<char>    spanstream;
+typedef basic_spanbuf<wchar_t>    wspanbuf;
+typedef basic_ispanstream<wchar_t> wispanstream;
+typedef basic_ospanstream<wchar_t> wospanstream;
+typedef basic_spanstream<wchar_t> wspanstream;
+
+}   // namespace _CCW_STD23
+
+namespace _ccw {
+    using _CCW_STD23::basic_spanbuf; using _CCW_STD23::basic_ispanstream; using _CCW_STD23::basic_ospanstream; using _CCW_STD23::basic_spanstream;
+    using _CCW_STD23::spanbuf; using _CCW_STD23::ispanstream; using _CCW_STD23::ospanstream; using _CCW_STD23::spanstream;
+    using _CCW_STD23::wspanbuf; using _CCW_STD23::wispanstream; using _CCW_STD23::wospanstream; using _CCW_STD23::wspanstream;
+}
+#undef _CCW_SPANSTREAM_DELETED
+
+#endif

@@ -1,0 +1,8 @@
+// ccwrap <iterator>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <iterator>
+
+#include <../../detail/cxx/iterator.hpp>

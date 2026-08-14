@@ -1,0 +1,173 @@
+//  ccwrap llibcxx03: <stop_token> (C++20) for Open Watcom -- stop_token, stop_source,
+//  stop_callback. Classic C++03 body.
+//
+//  Deviations:
+//    * stop_callback is a class template on the callback type, as the standard says,
+//      but there is no deduction guide (no CTAD here): spell the type.
+//    * The C++26 additions that came in with std::execution (inplace_stop_token,
+//      inplace_stop_source, never_stop_token, the stoppable_token concepts) are NOT
+//      provided -- they need concepts.
+//    * The shared state is reference-counted under a mutex rather than with atomics,
+//      which is what the rest of this port does for shared ownership.
+#ifndef _CCW_LIBCPP_STOP_TOKEN
+#define _CCW_LIBCPP_STOP_TOKEN
+#include "__config"
+#include <mutex>
+
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct __stop_cb_node {
+    __stop_cb_node* __prev_;
+    __stop_cb_node* __next_;
+    _CCW_LIBCPP_HIDE_FROM_ABI __stop_cb_node() : __prev_(0), __next_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~__stop_cb_node() {}
+    virtual void __invoke() = 0;
+};
+
+class __stop_state {
+    mutex           __m_;
+    long            __srcs_;     // live stop_sources
+    long            __toks_;     // live stop_tokens + sources (total references)
+    bool            __req_;
+    __stop_cb_node* __head_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI __stop_state() : __srcs_(0), __toks_(1), __req_(false), __head_(0) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ref()   { lock_guard<mutex> __g(__m_); ++__toks_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __unref() {
+        bool __dead;
+        { lock_guard<mutex> __g(__m_); __dead = (--__toks_ == 0); }
+        if (__dead) delete this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __ref_src()   { lock_guard<mutex> __g(__m_); ++__srcs_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __unref_src() { lock_guard<mutex> __g(__m_); --__srcs_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __requested() { lock_guard<mutex> __g(__m_); return __req_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __possible()  { lock_guard<mutex> __g(__m_); return __req_ || __srcs_ != 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __request() {
+        __stop_cb_node* __list;
+        {
+            lock_guard<mutex> __g(__m_);
+            if (__req_) return false;
+            __req_  = true;
+            __list  = __head_;
+            __head_ = 0;
+        }
+        while (__list) {
+            __stop_cb_node* __next = __list->__next_;
+            __list->__prev_ = __list->__next_ = 0;
+            __list->__invoke();
+            __list = __next;
+        }
+        return true;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __add(__stop_cb_node* __n) {
+        lock_guard<mutex> __g(__m_);
+        if (__req_) return false;
+        __n->__prev_ = 0;
+        __n->__next_ = __head_;
+        if (__head_) __head_->__prev_ = __n;
+        __head_ = __n;
+        return true;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __remove(__stop_cb_node* __n) {
+        lock_guard<mutex> __g(__m_);
+        if (__n->__prev_) __n->__prev_->__next_ = __n->__next_;
+        else if (__head_ == __n) __head_ = __n->__next_;
+        if (__n->__next_) __n->__next_->__prev_ = __n->__prev_;
+        __n->__prev_ = __n->__next_ = 0;
+    }
+};
+
+struct nostopstate_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit nostopstate_t() {} };
+static const nostopstate_t nostopstate = nostopstate_t();
+
+class stop_source;
+
+class stop_token {
+    __stop_state* __s_;
+    friend class stop_source;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit stop_token(__stop_state* __s) : __s_(__s) { if (__s_) __s_->__ref(); }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_token() : __s_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_token(const stop_token& __o) : __s_(__o.__s_) { if (__s_) __s_->__ref(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_token& operator=(const stop_token& __o) {
+        if (this != &__o) {
+            if (__o.__s_) __o.__s_->__ref();
+            if (__s_) __s_->__unref();
+            __s_ = __o.__s_;
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~stop_token() { if (__s_) __s_->__unref(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool stop_requested() const { return __s_ && __s_->__requested(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool stop_possible()  const { return __s_ && __s_->__possible(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(stop_token& __o) { __stop_state* __t = __s_; __s_ = __o.__s_; __o.__s_ = __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __stop_state* __state() const { return __s_; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const stop_token& __a, const stop_token& __b)
+    { return __a.__state() == __b.__state(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const stop_token& __a, const stop_token& __b)
+    { return !(__a == __b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(stop_token& __a, stop_token& __b) { __a.swap(__b); }
+
+class stop_source {
+    __stop_state* __s_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_source() : __s_(new __stop_state()) { __s_->__ref_src(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit stop_source(nostopstate_t) : __s_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_source(const stop_source& __o) : __s_(__o.__s_) {
+        if (__s_) { __s_->__ref(); __s_->__ref_src(); }
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_source& operator=(const stop_source& __o) {
+        if (this != &__o) {
+            if (__o.__s_) { __o.__s_->__ref(); __o.__s_->__ref_src(); }
+            if (__s_) { __s_->__unref_src(); __s_->__unref(); }
+            __s_ = __o.__s_;
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~stop_source() { if (__s_) { __s_->__unref_src(); __s_->__unref(); } }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_token get_token() const { return stop_token(__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool request_stop()          { return __s_ ? __s_->__request() : false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool stop_requested() const  { return __s_ && __s_->__requested(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool stop_possible()  const  { return __s_ != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(stop_source& __o) { __stop_state* __t = __s_; __s_ = __o.__s_; __o.__s_ = __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __stop_state* __state() const { return __s_; }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const stop_source& __a, const stop_source& __b)
+    { return __a.__state() == __b.__state(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const stop_source& __a, const stop_source& __b)
+    { return !(__a == __b); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void swap(stop_source& __a, stop_source& __b) { __a.swap(__b); }
+
+template <class _Callback>
+class stop_callback : private __stop_cb_node {
+    _Callback     __cb_;
+    __stop_state* __s_;
+    stop_callback(const stop_callback&);
+    stop_callback& operator=(const stop_callback&);
+    _CCW_LIBCPP_HIDE_FROM_ABI void __invoke() { __cb_(); }
+public:
+    typedef _Callback callback_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI stop_callback(const stop_token& __t, const _Callback& __cb)
+        : __cb_(__cb), __s_(__t.__state()) {
+        if (!__s_) return;
+        __s_->__ref();
+        if (!__s_->__add(this)) __cb_();     // already requested: run it here and now
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ~stop_callback() {
+        if (!__s_) return;
+        __s_->__remove(this);
+        __s_->__unref();
+    }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STOP_TOKEN

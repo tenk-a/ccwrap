@@ -1,0 +1,8 @@
+// ccwrap watcom/ccwstd: <csetjmp> wrapper + bridge (see ccwstd/cstddef).
+#ifndef _CCW_CCWSTD_CSETJMP_
+#define _CCW_CCWSTD_CSETJMP_
+#include "../std/csetjmp"
+namespace _CCW_STD {
+using ::std::jmp_buf; using ::std::longjmp;
+}
+#endif

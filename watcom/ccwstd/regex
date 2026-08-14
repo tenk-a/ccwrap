@@ -1,0 +1,2 @@
+// ccwrap <regex>
+#include "../std/regex"

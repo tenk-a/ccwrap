@@ -1,0 +1,702 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "cacheVariables": {
+        "TEST_TARGET_C": "2023"
+      }
+    },
+    {
+      "name": "vc145",
+      "displayName": "VC 14.5 (VS2026), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64"
+    },
+    {
+      "name": "vc143",
+      "displayName": "VC 14.3 (VS2022), x64",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "gcc",
+      "displayName": "gcc (msys2 / WSL)",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "binaryDir": "${sourceDir}/_build/${hostSystemName}-${presetName}"
+    },
+    {
+      "name": "gcc-c23",
+      "inherits": "gcc",
+      "description": "gcc -std=c23: the widest C-library coverage available, used as the reference when filling spec gaps.",
+      "cacheVariables": {
+        "CMAKE_C_STANDARD": "23"
+      }
+    },
+    {
+      "name": "clang-c23",
+      "inherits": "gcc-c23",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    {
+      "name": "clang",
+      "inherits": "gcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    {
+      "name": "pcc",
+      "displayName": "pcc (WSL / Linux) -- native C library",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "pcc",
+        "CMAKE_C_FLAGS": "-U__GNUC__",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": ""
+      },
+      "binaryDir": "${sourceDir}/_build/${hostSystemName}-${presetName}"
+    },
+    {
+      "name": "tcc",
+      "displayName": "TinyCC (WSL / Linux) -- native C library",
+      "inherits": "pcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "tcc",
+        "CMAKE_C_FLAGS": ""
+      }
+    },
+    {
+      "name": "dmc",
+      "displayName": "Digital Mars C 8.x (Ninja, native C library)",
+      "description": "dmc.exe is invoked directly; The selected suites are the tests that link against the DMC 8.x runtime.",
+      "inherits": "base",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/../toolchains/dmc.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": "",
+        "TST_ONLY": "assert;ctype;fenv;float;iso646;limits;locale;setjmp;signal;stdarg;stdbool;stdlib;stdnoreturn;time"
+      }
+    },
+    {
+      "name": "orangec",
+      "displayName": "Orange C/C++ 7.x (Ninja, native C library)",
+      "description": "occ.exe is invoked directly through CMake's native OrangeC support; no ccwrap is used. Compile/link-unsupported suites are excluded, and known OrangeC 7.10.59 fatal library calls are conditionally skipped so CTest completes.",
+      "inherits": "base",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/../toolchains/orangec.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TEST_TARGET_C": "",
+        "TST_ONLY": "assert;complex;ctype;errno;fenv;float;inttypes;iso646;locale;setjmp;signal;stdalign;stdarg;stdatomic;stdbool;stddef;stdio;stdlib;stdnoreturn;string;time;uchar;wchar;wctype"
+      }
+    },
+    {
+      "name": "watcom",
+      "displayName": "Open Watcom 2.0 (win32, C)",
+      "inherits": "base",
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat",
+        "INCLUDE": "$env{WATCOM}/h;$env{WATCOM}/h/nt"
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_C_COMPILER": "wcl386",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "CMAKE_WATCOM_RUNTIME_LIBRARY": "MultiThreaded",
+        "TEST_TARGET_C": "2026"
+      }
+    },
+    {
+      "name": "watcom-dos32",
+      "displayName": "Open Watcom 2.0 (32-bit DOS / DOS4GW, C)",
+      "description": "DOS \u5411\u3051\u3002toolchain \u30d5\u30a1\u30a4\u30eb\u3067 -bt=dos \u3092\u4ed8\u3051\u308b\u3002\u5b9f\u884c\u306f test/scripts/dos_ctest.ps1 \u304b\u3089 DOSBox-X \u3067\u3002",
+      "inherits": "base",
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat",
+        "INCLUDE": "$env{WATCOM}/h"
+      },
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../toolchains/watcom-dos32-toolchain.cmake",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "TEST_TARGET_C": "2026"
+      }
+    },
+    {
+      "name": "watcom-std",
+      "displayName": "Open Watcom 2.0 (win32, C) -- native baseline, no ccwrap",
+      "description": "ccwrap を一切通さず、素の Open Watcom の C ライブラリだけで回す。落ちた分が ccwrap の補充分。",
+      "inherits": "watcom",
+      "cacheVariables": {
+        "TEST_TARGET_C": ""
+      }
+    },
+    {
+      "name": "nmake-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "NMake Makefiles",
+      "description": "vc80..vc145 を NMake で回すための土台。cl / nmake などを ../bin/*_with_setcc.bat 経由で呼ぶので、**事前に setcc を叩く必要はない** (preset の environment で渡した CCWRAP_VC_VERSION / CCWRAP_VC_ARCH をラッパーが bin/setcc.bat に渡し、その環境で本物を起動する)。CMake には VS2015 より前の ジェネレータが無いので、古い vc は NMake でしか回せない。",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MAKE_PROGRAM": "${sourceDir}/../bin/nmake_with_setcc.bat",
+        "CMAKE_C_COMPILER": "${sourceDir}/../bin/cl_with_setcc.bat",
+        "CMAKE_RC_COMPILER": "${sourceDir}/../bin/rc_with_setcc.bat",
+        "CMAKE_LINKER": "${sourceDir}/../bin/link_with_setcc.bat",
+        "CMAKE_AR": "${sourceDir}/../bin/lib_with_setcc.bat",
+        "CMAKE_MT": "${sourceDir}/../bin/mt_with_setcc.bat",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+      }
+    },
+    {
+      "name": "vc80-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc80",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc80-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc80",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc90-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc90",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc90-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc90",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc100-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc100",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc100-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc100",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc110-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc110",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc110-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc110",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc120-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc120",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc120-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc120",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc140-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc140",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc140-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc140",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc141-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc141",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc141-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc141",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc142-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc142",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc142-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc142",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc143-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc143",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc143-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc143",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    },
+    {
+      "name": "vc145-x86",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc145",
+        "CCWRAP_VC_ARCH": "x86"
+      }
+    },
+    {
+      "name": "vc145-x64",
+      "inherits": "nmake-base",
+      "environment": {
+        "CCWRAP_VC_VERSION": "vc145",
+        "CCWRAP_VC_ARCH": "x64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "watcom-dos32",
+      "configurePreset": "watcom-dos32"
+    },
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug"
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc"
+    },
+    {
+      "name": "gcc-c23",
+      "configurePreset": "gcc-c23"
+    },
+    {
+      "name": "clang-c23",
+      "configurePreset": "clang-c23"
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang"
+    },
+    {
+      "name": "pcc",
+      "configurePreset": "pcc"
+    },
+    {
+      "name": "tcc",
+      "configurePreset": "tcc"
+    },
+    {
+      "name": "dmc",
+      "configurePreset": "dmc"
+    },
+    {
+      "name": "orangec",
+      "configurePreset": "orangec"
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom"
+    },
+    {
+      "name": "watcom-std",
+      "configurePreset": "watcom-std"
+    },
+    {
+      "name": "vc80-x86",
+      "configurePreset": "vc80-x86"
+    },
+    {
+      "name": "vc80-x64",
+      "configurePreset": "vc80-x64"
+    },
+    {
+      "name": "vc90-x86",
+      "configurePreset": "vc90-x86"
+    },
+    {
+      "name": "vc90-x64",
+      "configurePreset": "vc90-x64"
+    },
+    {
+      "name": "vc100-x86",
+      "configurePreset": "vc100-x86"
+    },
+    {
+      "name": "vc100-x64",
+      "configurePreset": "vc100-x64"
+    },
+    {
+      "name": "vc110-x86",
+      "configurePreset": "vc110-x86"
+    },
+    {
+      "name": "vc110-x64",
+      "configurePreset": "vc110-x64"
+    },
+    {
+      "name": "vc120-x86",
+      "configurePreset": "vc120-x86"
+    },
+    {
+      "name": "vc120-x64",
+      "configurePreset": "vc120-x64"
+    },
+    {
+      "name": "vc140-x86",
+      "configurePreset": "vc140-x86"
+    },
+    {
+      "name": "vc140-x64",
+      "configurePreset": "vc140-x64"
+    },
+    {
+      "name": "vc141-x86",
+      "configurePreset": "vc141-x86"
+    },
+    {
+      "name": "vc141-x64",
+      "configurePreset": "vc141-x64"
+    },
+    {
+      "name": "vc142-x86",
+      "configurePreset": "vc142-x86"
+    },
+    {
+      "name": "vc142-x64",
+      "configurePreset": "vc142-x64"
+    },
+    {
+      "name": "vc143-x86",
+      "configurePreset": "vc143-x86"
+    },
+    {
+      "name": "vc143-x64",
+      "configurePreset": "vc143-x64"
+    },
+    {
+      "name": "vc145-x86",
+      "configurePreset": "vc145-x86"
+    },
+    {
+      "name": "vc145-x64",
+      "configurePreset": "vc145-x64"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vc145",
+      "configurePreset": "vc145",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143",
+      "configurePreset": "vc143",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc",
+      "configurePreset": "gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-c23",
+      "configurePreset": "gcc-c23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-c23",
+      "configurePreset": "clang-c23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang",
+      "configurePreset": "clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "pcc",
+      "configurePreset": "pcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "tcc",
+      "configurePreset": "tcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "dmc",
+      "configurePreset": "dmc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "orangec",
+      "configurePreset": "orangec",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom",
+      "configurePreset": "watcom",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-std",
+      "configurePreset": "watcom-std",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc80-x86",
+      "configurePreset": "vc80-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc80-x64",
+      "configurePreset": "vc80-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc90-x86",
+      "configurePreset": "vc90-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc90-x64",
+      "configurePreset": "vc90-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc100-x86",
+      "configurePreset": "vc100-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc100-x64",
+      "configurePreset": "vc100-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc110-x86",
+      "configurePreset": "vc110-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc110-x64",
+      "configurePreset": "vc110-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc120-x86",
+      "configurePreset": "vc120-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc120-x64",
+      "configurePreset": "vc120-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc140-x86",
+      "configurePreset": "vc140-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc140-x64",
+      "configurePreset": "vc140-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc141-x86",
+      "configurePreset": "vc141-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc141-x64",
+      "configurePreset": "vc141-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc142-x86",
+      "configurePreset": "vc142-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc142-x64",
+      "configurePreset": "vc142-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143-x86",
+      "configurePreset": "vc143-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc143-x64",
+      "configurePreset": "vc143-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc145-x86",
+      "configurePreset": "vc145-x86",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vc145-x64",
+      "configurePreset": "vc145-x64",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

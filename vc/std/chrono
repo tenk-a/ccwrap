@@ -1,0 +1,52 @@
+// ccwrap <chrono>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1700
+ #include _CCW_NATIVE_STL_HEADER_PATH(chrono)
+#else
+ #include <../../detail/llibcxx03/include/chrono>
+#endif
+
+#if defined(__cplusplus) && _MSC_VER >= 1700 && (!defined(__cpp_lib_chrono) || __cpp_lib_chrono < 201907L)
+namespace _CCW_STD20 { namespace chrono {
+
+typedef char __ccw_clk_y;
+struct       __ccw_clk_n { char __x_[2]; };
+template <class _Tp> __ccw_clk_y __ccw_clk_members(int,
+    typename _Tp::rep* = 0, typename _Tp::period* = 0,
+    typename _Tp::duration* = 0, typename _Tp::time_point* = 0);
+template <class _Tp> __ccw_clk_n __ccw_clk_members(long);
+template <class _Tp> __ccw_clk_y __ccw_clk_hasclock(int, typename _Tp::clock* = 0);
+template <class _Tp> __ccw_clk_n __ccw_clk_hasclock(long);
+
+template <class _Tp> struct is_clock {
+    enum { __has_members = sizeof(__ccw_clk_members<_Tp>(0)) == sizeof(__ccw_clk_y) };
+    enum { __has_clock   = sizeof(__ccw_clk_hasclock<_Tp>(0)) == sizeof(__ccw_clk_y) };
+    static const bool value = __has_members && !__has_clock;
+    typedef bool value_type;
+    typedef is_clock type;
+    operator bool() const { return value; }
+    bool operator()() const { return value; }
+};
+
+#if _CCW_HAS_VAR_TEMPLATE
+template <class _Tp> const bool is_clock_v = is_clock<_Tp>::value;
+#endif
+
+} }   // _CCW_STD20::chrono
+#endif
+
+#if defined(__cplusplus) && _MSC_VER >= 1700 && (!defined(__cpp_lib_chrono) || __cpp_lib_chrono < 201907L)
+#include <../../detail/llibcxx03/include/__chrono/calendar.h>
+#include <../../detail/llibcxx03/include/__chrono/hh_mm_ss.h>
+#include <../../detail/llibcxx03/include/__chrono/calendar_io.h>
+#include <../../detail/llibcxx03/include/__chrono/file_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/utc_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/tai_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/clock_cast.h>
+#include <../../detail/llibcxx03/include/__chrono/time_io.h>
+#include <../../detail/llibcxx03/include/__chrono/hash.h>
+#include <../../detail/llibcxx03/include/__chrono/literals.h>
+#endif

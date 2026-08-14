@@ -1,0 +1,12 @@
+// ccwrap watcom: <initializer_list>. Open Watcom ships one, so this only forwards to it
+// and adds nothing of its own.
+//
+// This is the ONE C++ header taken from Watcom's own library rather than from llibcxx03
+// (watcom_work.md: C++ headers come from llibcxx03). It has to be: std::initializer_list is
+// built by the COMPILER, not by the library, so only the front end's own header could
+// name the type it actually constructs. llibcxx03 has no <initializer_list> for the same
+// reason.
+#pragma once
+
+#include <ccwrap_common.h>
+#include _CCW_NATIVE_C_HEADER_PATH(initializer_list)

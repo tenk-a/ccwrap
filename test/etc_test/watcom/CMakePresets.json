@@ -1,0 +1,67 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 29,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "watcom",
+      "displayName": "Open Watcom 2.0 (win32) etc_test",
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "generator": "Watcom WMake",
+      "environment": {
+        "WATCOM": "C:/WATCOM",
+        "PATH": "$env{WATCOM}/binnt64;$env{WATCOM}/binnt;$penv{PATH}",
+        "EDPATH": "$env{WATCOM}/eddat",
+        "INCLUDE": "$env{WATCOM}/h;$env{WATCOM}/h/nt"
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Windows",
+        "CMAKE_C_COMPILER": "wcl386",
+        "CMAKE_CXX_COMPILER": "wcl386",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS_DEBUG": "-d1",
+        "CMAKE_CXX_FLAGS_DEBUG": "-d1",
+        "CMAKE_WATCOM_RUNTIME_LIBRARY": "MultiThreaded",
+        "TEST_TARGET_C": "2026",
+        "TEST_TARGET_CXX": "2026"
+      }
+    },
+    {
+      "name": "watcom-xst",
+      "inherits": "watcom",
+      "displayName": "Open Watcom 2.0 (win32), -xst exception model -- the recommended build (unsuffixed lib)",
+      "cacheVariables": {
+        "TEST_WATCOM_XS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "watcom",
+      "configurePreset": "watcom"
+    },
+    {
+      "name": "watcom-xst",
+      "configurePreset": "watcom-xst"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "watcom",
+      "configurePreset": "watcom",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "watcom-xst",
+      "configurePreset": "watcom-xst",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,1132 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <filesystem> for Open Watcom -- a practical subset of
+//  _CCW_STD::filesystem. `path` (string-based lexical operations) is header-only; the
+//  operating-system queries/actions and directory_iterator live in
+//  llibcxx03/src/filesystem.cpp (implemented on the C library: stat / mkdir /
+//  remove / rename / getcwd / _findfirst, so they work on Win32 and DOS).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_FILESYSTEM
+#define _CCW_LIBCPP_FILESYSTEM
+#include "__config"
+
+#if defined(__WATCOMC__) && !defined(_CCW_OS_WIN) && !defined(_CCW_OS_DOS)
+# error "ccwrap llibcxx03: <filesystem> has an OS layer for Win32 and DOS only."
+#endif
+#include <string>
+#include <vector>
+#include "__utility/move.h"
+#include <cerrno>
+#include <system_error>       // filesystem_error's base
+#include "__iterator/iterator_traits.h"   // bidirectional_iterator_tag (path::iterator)
+#include <cstddef>
+#include <cstdint>       // uintmax_t (space_info)
+#include <chrono>        // file_time_type is chrono::time_point<file_clock>
+#include <ctime>         // time_t crosses the TU boundary for last_write_time
+#include <iosfwd>        // path's stream inserter / extractor
+#include "__functional/hash.h"   // hash<path>
+#ifndef _CCW_FS_WCHAR
+#  if defined(_CCW_OS_DOS) || defined(__DOS__) || defined(MSDOS)
+#    define _CCW_FS_WCHAR 0
+#  elif defined(_CCW_OS_WIN) || defined(_WIN32) || defined(__NT__)
+#    define _CCW_FS_WCHAR 1
+#  else
+#    define _CCW_FS_WCHAR 0
+#  endif
+#endif
+#if _CCW_FS_WCHAR && defined(_CCW_OS_DOS)
+#  error "ccwrap llibcxx03: _CCW_FS_WCHAR needs the wide OS layer; DOS has no _w* CRT."
+#endif
+#if _CCW_FS_WCHAR
+#  define __CCW_FS_L(__x) L##__x
+#else
+#  define __CCW_FS_L(__x) __x
+#endif
+
+#include "__exception/eh_anchor.h"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+namespace filesystem {
+
+class __path_iterator;   // path::iterator, defined after path
+
+#if _CCW_FS_WCHAR
+typedef wchar_t             __ccw_fs_char_t;
+typedef ::_CCW_STD::wstring __ccw_fs_string_t;
+#else
+typedef char               __ccw_fs_char_t;
+typedef ::_CCW_STD::string __ccw_fs_string_t;
+#endif
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_widen(const ::_CCW_STD::string& __s) {
+    ::_CCW_STD::wstring __r;
+    for (::_CCW_STD::string::size_type __i = 0; __i < __s.size(); ++__i)
+        __r += static_cast<wchar_t>(static_cast<unsigned char>(__s[__i]));
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string __ccw_fs_narrow(const ::_CCW_STD::wstring& __s) {
+    ::_CCW_STD::string __r;
+    for (::_CCW_STD::wstring::size_type __i = 0; __i < __s.size(); ++__i) {
+        unsigned long __c = (unsigned long)__s[__i];
+        __r += (__c <= 0xFFUL) ? static_cast<char>(static_cast<unsigned char>(__c)) : '?';
+    }
+    return __r;
+}
+
+#if _CCW_FS_WCHAR
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_narrow(const ::_CCW_STD::string&  __s) { return __ccw_fs_widen(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_wide  (const ::_CCW_STD::wstring& __s) { return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_narrow  (const __ccw_fs_string_t&   __s) { return __ccw_fs_narrow(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_to_wide    (const __ccw_fs_string_t&   __s) { return __s; }
+#else
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_narrow(const ::_CCW_STD::string&  __s) { return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_wide  (const ::_CCW_STD::wstring& __s) { return __ccw_fs_narrow(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_narrow  (const __ccw_fs_string_t&   __s) { return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_to_wide    (const __ccw_fs_string_t&   __s) { return __ccw_fs_widen(__s); }
+#endif
+
+class path {
+public:
+    typedef __ccw_fs_char_t   value_type;
+    typedef __ccw_fs_string_t string_type;
+    static const value_type preferred_separator = __CCW_FS_L('\\');
+    struct format { enum _E { native_format, generic_format, auto_format }; };
+
+private:
+    string_type __s_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __is_sep(value_type __c) {
+        return __c == __CCW_FS_L('/') || __c == __CCW_FS_L('\\');
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::size_t __last_sep() const {
+        for (::_CCW_STD::size_t __i = __s_.size(); __i > 0; --__i) if (__is_sep(__s_[__i - 1])) return __i - 1;
+        return string_type::npos;
+    }
+public:
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::string& __s)  : __s_(__ccw_fs_from_narrow(__s)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::wstring& __s) : __s_(__ccw_fs_from_wide(__s)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const char* __s)    : __s_(__ccw_fs_from_narrow(::_CCW_STD::string(__s))) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const wchar_t* __s) : __s_(__ccw_fs_from_wide(::_CCW_STD::wstring(__s))) {}
+#if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::u8string& __s)
+        : __s_(__ccw_fs_from_narrow(::_CCW_STD::string(__s.begin(), __s.end()))) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(const char8_t* __s) {
+        ::_CCW_STD::string __t;
+        for (const char8_t* __p = __s; *__p; ++__p) __t += (char)*__p;
+        __s_ = __ccw_fs_from_narrow(__t);
+    }
+#endif
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI path(_CCW_RV_REF(path) __r) : __s_(::_ccw::move(_CCW_MOVED_OBJ(__r).__s_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator=(_CCW_RV_REF(path) __r) {
+        path& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) __s_ = ::_ccw::move(__o.__s_);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path(_CCW_RV_REF(string_type) __s, format::_E = format::auto_format) : __s_(::_ccw::move(__s)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator=(_CCW_RV_REF(string_type) __s) { __s_ = ::_ccw::move(_CCW_MOVED_OBJ(__s)); return *this; }
+#endif
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const string_type& native() const { return __s_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const value_type*  c_str() const { return __s_.c_str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool               empty() const { return __s_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void               clear() { __s_.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string  string() const  { return __ccw_fs_to_narrow(__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::wstring wstring() const { return __ccw_fs_to_wide(__s_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type __generic_native() const {
+        string_type __r = __s_;
+        for (::_CCW_STD::size_t __i = 0; __i < __r.size(); ++__i)
+            if (__r[__i] == __CCW_FS_L('\\')) __r[__i] = __CCW_FS_L('/');
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string  generic_string() const  { return __ccw_fs_to_narrow(__generic_native()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::wstring generic_wstring() const { return __ccw_fs_to_wide(__generic_native()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator/=(const path& __p) {
+        if (!__p.__s_.empty() && __p.__is_sep(__p.__s_[0])) { __s_ = __p.__s_; return *this; }   // absolute-ish
+        if (!__s_.empty() && !__is_sep(__s_[__s_.size() - 1]) && !__p.__s_.empty()) __s_.push_back(preferred_separator);
+        __s_ += __p.__s_;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator+=(const path& __p) { __s_ += __p.__s_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator+=(const ::_CCW_STD::string& __s)  { __s_ += __ccw_fs_from_narrow(__s); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator+=(const ::_CCW_STD::wstring& __s) { __s_ += __ccw_fs_from_wide(__s); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator+=(const char* __s)    { return operator+=(::_CCW_STD::string(__s)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& operator+=(const wchar_t* __s) { return operator+=(::_CCW_STD::wstring(__s)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& append(const path& __p) { return operator/=(__p); }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& concat(const path& __p) { return operator+=(__p); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void  swap(path& __o) { __s_.swap(__o.__s_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path filename() const {
+        ::_CCW_STD::size_t __p = __last_sep();
+        return path(__p == string_type::npos ? __s_ : __s_.substr(__p + 1));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path parent_path() const {
+        ::_CCW_STD::size_t __p = __last_sep();
+        return path(__p == string_type::npos ? string_type() : __s_.substr(0, __p));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path extension() const {
+        string_type __fn = filename().__s_;
+        for (::_CCW_STD::size_t __i = __fn.size(); __i > 0; --__i) {
+            if (__fn[__i - 1] == __CCW_FS_L('.')) return (__i - 1 == 0) ? path() : path(__fn.substr(__i - 1));
+        }
+        return path();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path stem() const {
+        string_type __fn = filename().__s_;
+        string_type __ext = extension().__s_;
+        return path(__ext.empty() ? __fn : __fn.substr(0, __fn.size() - __ext.size()));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path root_name() const {
+        return (__s_.size() >= 2 && __s_[1] == __CCW_FS_L(':')) ? path(__s_.substr(0, 2)) : path();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path root_directory() const {
+        ::_CCW_STD::size_t __rn = (__s_.size() >= 2 && __s_[1] == __CCW_FS_L(':')) ? 2 : 0;
+        if (__rn < __s_.size() && __is_sep(__s_[__rn])) return path(string_type(1, __s_[__rn]));
+        return path();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path root_path() const { return path(root_name().__s_ + root_directory().__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI path relative_path() const {
+        ::_CCW_STD::size_t __rp = root_path().__s_.size();
+        return path(__rp < __s_.size() ? __s_.substr(__rp) : string_type());
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_extension() const { return !extension().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_filename() const  { return !filename().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_parent_path() const { return __last_sep() != string_type::npos; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_stem() const { return !stem().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_root_name() const { return !root_name().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_root_directory() const { return !root_directory().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_root_path() const { return !root_path().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool has_relative_path() const { return !relative_path().empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_absolute() const {
+        return (__s_.size() >= 2 && __s_[1] == __CCW_FS_L(':')) || (!__s_.empty() && __is_sep(__s_[0]));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_relative() const { return !is_absolute(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path& make_preferred() {
+        for (::_CCW_STD::size_t __i = 0; __i < __s_.size(); ++__i)
+            if (__s_[__i] == __CCW_FS_L('/')) __s_[__i] = preferred_separator;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& remove_filename() {
+        ::_CCW_STD::size_t __p = __last_sep();
+        if (__p == string_type::npos) __s_.clear(); else __s_.erase(__p + 1);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& replace_filename(const path& __r) { remove_filename(); return operator/=(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI path& replace_extension(const path& __e = path()) {
+        string_type __ext = extension().__s_;
+        if (!__ext.empty()) __s_.erase(__s_.size() - __ext.size());
+        if (!__e.__s_.empty()) {
+            if (__e.__s_[0] != __CCW_FS_L('.')) __s_.push_back(__CCW_FS_L('.'));
+            __s_ += __e.__s_;
+        }
+        return *this;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path lexically_normal() const {
+        if (__s_.empty()) return path();
+        string_type __root = root_path().__s_;
+        string_type __rel  = relative_path().__s_;
+        ::_CCW_STD::vector<string_type> __out_;
+        string_type __cur;
+        const string_type __dot(1, __CCW_FS_L('.'));
+        const string_type __dotdot(2, __CCW_FS_L('.'));
+        bool __trailing_sep = false;
+        for (::_CCW_STD::size_t __i = 0; __i <= __rel.size(); ++__i) {
+            if (__i == __rel.size() || __is_sep(__rel[__i])) {
+                if (__cur == __dot) { /* drop */ }
+                else if (__cur == __dotdot) {
+                    if (!__out_.empty() && __out_.back() != __dotdot) __out_.pop_back();
+                    else if (__root.empty()) __out_.push_back(__dotdot);   // keep for a relative path
+                }
+                else if (!__cur.empty()) __out_.push_back(__cur);
+                __trailing_sep = (__i < __rel.size());
+                __cur.clear();
+            } else __cur.push_back(__rel[__i]);
+        }
+        string_type __r = __root;
+        for (::_CCW_STD::size_t __i = 0; __i < __out_.size(); ++__i) {
+            if (__i) __r.push_back(preferred_separator);
+            __r += __out_[__i];
+        }
+        if (__r.empty()) return path(__dot);                        // normal form of an empty result
+        if (__trailing_sep && !__out_.empty()) { __r.push_back(preferred_separator); __r.push_back(__CCW_FS_L('.')); }
+        return path(__r);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const path& __o) const {
+        return __generic_native().compare(__o.__generic_native());
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const path& __o) const { return compare(__o) == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const path& __o) const { return compare(__o) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const path& __o) const  { return compare(__o) <  0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const path& __o) const  { return compare(__o) >  0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const path& __o) const { return compare(__o) <= 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const path& __o) const { return compare(__o) >= 0; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI path lexically_relative(const path& __base) const {
+        if (root_name() != __base.root_name()) return path();
+        if (is_absolute() != __base.is_absolute()) return path();
+        if (!has_root_directory() && __base.has_root_directory()) return path();
+
+        ::_CCW_STD::vector<string_type> __a = __split_elems();
+        ::_CCW_STD::vector<string_type> __b = __base.__split_elems();
+        const string_type __dot(1, __CCW_FS_L('.'));
+        const string_type __dotdot(2, __CCW_FS_L('.'));
+        ::_CCW_STD::size_t __i = 0;
+        while (__i < __a.size() && __i < __b.size() && __a[__i] == __b[__i]) ++__i;
+
+        if (__i == __a.size() && __i == __b.size()) return path(__dot);
+
+        ::_CCW_STD::size_t __up = 0;
+        for (::_CCW_STD::size_t __k = __i; __k < __b.size(); ++__k) {
+            if (__b[__k] == __dotdot) { if (__up == 0) return path(); --__up; }
+            else if (__b[__k] != __dot) ++__up;
+        }
+        if (__up == 0 && __i == __a.size()) return path(__dot);
+
+        path __r;
+        for (::_CCW_STD::size_t __k = 0; __k < __up; ++__k) __r /= path(__dotdot);
+        for (::_CCW_STD::size_t __k = __i; __k < __a.size(); ++__k) __r /= path(__a[__k]);
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI path lexically_proximate(const path& __base) const {
+        path __r = lexically_relative(__base);
+        return __r.empty() ? *this : __r;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI operator string_type() const { return __s_; }
+#if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::u8string u8string() const {
+        const ::_CCW_STD::string __n = string();
+        return ::_CCW_STD::u8string(__n.begin(), __n.end());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::u8string generic_u8string() const {
+        const ::_CCW_STD::string __g = generic_string();
+        return ::_CCW_STD::u8string(__g.begin(), __g.end());
+    }
+#else
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string u8string() const { return string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string generic_u8string() const { return generic_string(); }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char16_t> u16string() const { return __widen16(__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char32_t> u32string() const { return __widen32(__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char16_t> generic_u16string() const { return __widen16(__generic_native()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char32_t> generic_u32string() const { return __widen32(__generic_native()); }
+
+    typedef __path_iterator iterator;
+    typedef __path_iterator const_iterator;
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const;
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::vector<string_type> __components() const {
+        ::_CCW_STD::vector<string_type> __v;
+        path __rn = root_name();
+        if (!__rn.empty()) __v.push_back(__rn.__s_);
+        path __rd = root_directory();
+        if (!__rd.empty()) __v.push_back(__rd.__s_);
+        ::_CCW_STD::vector<string_type> __e = __split_elems();
+        for (::_CCW_STD::size_t __i = 0; __i < __e.size(); ++__i) __v.push_back(__e[__i]);
+        return __v;
+    }
+
+private:
+    _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::basic_string<char16_t> __widen16(const string_type& __t) {
+        ::_CCW_STD::basic_string<char16_t> __r;
+        for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i)
+            __r.push_back((char16_t)(unsigned long)__t[__i]);
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::basic_string<char32_t> __widen32(const string_type& __t) {
+        ::_CCW_STD::basic_string<char32_t> __r;
+        for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i)
+            __r.push_back((char32_t)(unsigned long)__t[__i]);
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::vector<string_type> __split_elems() const {
+        ::_CCW_STD::vector<string_type> __v;
+        string_type __t = relative_path().__generic_native();
+        string_type __cur;
+        for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i) {
+            if (__t[__i] == __CCW_FS_L('/')) { if (!__cur.empty()) { __v.push_back(__cur); __cur.clear(); } }
+            else __cur.push_back(__t[__i]);
+        }
+        if (!__cur.empty()) __v.push_back(__cur);
+        return __v;
+    }
+public:
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path operator/(const path& __a, const path& __b) { path __r(__a); __r /= __b; return __r; }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::size_t hash_value(const path& __p) {
+    const path::string_type __t = __p.__generic_native();
+    ::_CCW_STD::size_t __h = 2166136261u;
+    for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i) {
+        unsigned long __c = (unsigned long)__t[__i];
+        __h ^= (::_CCW_STD::size_t)(__c & 0xFFUL);
+        __h *= 16777619u;
+        if (__c > 0xFFUL) { __h ^= (::_CCW_STD::size_t)((__c >> 8) & 0xFFUL); __h *= 16777619u; }
+    }
+    return __h;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const ::_CCW_STD::string& __s) { return path(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const char* __s) { return path(__s); }
+#if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const ::_CCW_STD::u8string& __s) { return path(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const char8_t* __s) { return path(__s); }
+#endif
+template <class _InputIt>
+_CCW_LIBCPP_HIDE_FROM_ABI path u8path(_InputIt __f, _InputIt __l) {
+    ::_CCW_STD::string __t;
+    for (; __f != __l; ++__f) __t.push_back((char)*__f);
+    return path(__t);
+}
+
+struct file_type {
+    int __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI file_type() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI file_type(int __v) : __v_(__v) {}
+    enum _E {
+        none      = 0,
+        not_found = -1,
+        regular   = 1,
+        directory = 2,
+        symlink   = 3,
+        block     = 4,
+        character = 5,
+        fifo      = 6,
+        socket    = 7,
+        unknown   = 8
+    };
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(file_type __a, file_type __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(file_type __a, file_type __b) { return __a.__v_ != __b.__v_; }
+
+static const file_type status_unknown = file_type(file_type::none);
+static const file_type file_not_found = file_type(file_type::not_found);
+static const file_type regular_file   = file_type(file_type::regular);
+static const file_type directory_file = file_type(file_type::directory);
+static const file_type other_file     = file_type(file_type::unknown);
+
+struct perms {
+    unsigned __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI perms() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI perms(unsigned __v) : __v_(__v) {}
+    enum _E {
+        none             = 0,
+        owner_read       = 0400,
+        owner_write      = 0200,
+        owner_exec       = 0100,
+        owner_all        = 0700,
+        group_read       = 040,
+        group_write      = 020,
+        group_exec       = 010,
+        group_all        = 070,
+        others_read      = 04,
+        others_write     = 02,
+        others_exec      = 01,
+        others_all       = 07,
+        all              = 0777,
+        set_uid          = 04000,
+        set_gid          = 02000,
+        sticky_bit       = 01000,
+        mask             = 07777,
+        unknown          = 0xFFFF
+    };
+    _CCW_LIBCPP_HIDE_FROM_ABI perms& operator&=(perms __o) { __v_ &= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI perms& operator|=(perms __o) { __v_ |= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI perms& operator^=(perms __o) { __v_ ^= __o.__v_; return *this; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool  operator==(perms __a, perms __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool  operator!=(perms __a, perms __b) { return __a.__v_ != __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perms operator&(perms __a, perms __b) { return perms(__a.__v_ & __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perms operator|(perms __a, perms __b) { return perms(__a.__v_ | __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perms operator^(perms __a, perms __b) { return perms(__a.__v_ ^ __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perms operator~(perms __a) { return perms(~__a.__v_ & (unsigned)perms::mask); }
+
+struct perm_options {
+    unsigned __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI perm_options() : __v_(1) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI perm_options(unsigned __v) : __v_(__v) {}
+    enum _E { replace = 1, add = 2, remove = 4, nofollow = 8 };
+    _CCW_LIBCPP_HIDE_FROM_ABI perm_options& operator&=(perm_options __o) { __v_ &= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI perm_options& operator|=(perm_options __o) { __v_ |= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI perm_options& operator^=(perm_options __o) { __v_ ^= __o.__v_; return *this; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(perm_options __a, perm_options __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(perm_options __a, perm_options __b) { return __a.__v_ != __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perm_options operator&(perm_options __a, perm_options __b) { return perm_options(__a.__v_ & __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perm_options operator|(perm_options __a, perm_options __b) { return perm_options(__a.__v_ | __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perm_options operator^(perm_options __a, perm_options __b) { return perm_options(__a.__v_ ^ __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline perm_options operator~(perm_options __a) { return perm_options(~__a.__v_ & 15u); }
+
+struct copy_options {
+    unsigned __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI copy_options() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI copy_options(unsigned __v) : __v_(__v) {}
+    enum _E {
+        none = 0,
+        skip_existing = 1, overwrite_existing = 2, update_existing = 4,
+        recursive = 8,
+        copy_symlinks = 16, skip_symlinks = 32,
+        directories_only = 64, create_symlinks = 128, create_hard_links = 256
+    };
+    _CCW_LIBCPP_HIDE_FROM_ABI copy_options& operator&=(copy_options __o) { __v_ &= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI copy_options& operator|=(copy_options __o) { __v_ |= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI copy_options& operator^=(copy_options __o) { __v_ ^= __o.__v_; return *this; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(copy_options __a, copy_options __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(copy_options __a, copy_options __b) { return __a.__v_ != __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline copy_options operator&(copy_options __a, copy_options __b) { return copy_options(__a.__v_ & __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline copy_options operator|(copy_options __a, copy_options __b) { return copy_options(__a.__v_ | __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline copy_options operator^(copy_options __a, copy_options __b) { return copy_options(__a.__v_ ^ __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline copy_options operator~(copy_options __a) { return copy_options(~__a.__v_ & 511u); }
+
+struct directory_options {
+    unsigned __v_;
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options() : __v_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options(unsigned __v) : __v_(__v) {}
+    enum _E { none = 0, follow_directory_symlink = 1, skip_permission_denied = 2 };
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options& operator&=(directory_options __o) { __v_ &= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options& operator|=(directory_options __o) { __v_ |= __o.__v_; return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options& operator^=(directory_options __o) { __v_ ^= __o.__v_; return *this; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(directory_options __a, directory_options __b) { return __a.__v_ == __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(directory_options __a, directory_options __b) { return __a.__v_ != __b.__v_; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_options operator&(directory_options __a, directory_options __b) { return directory_options(__a.__v_ & __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_options operator|(directory_options __a, directory_options __b) { return directory_options(__a.__v_ | __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_options operator^(directory_options __a, directory_options __b) { return directory_options(__a.__v_ ^ __b.__v_); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_options operator~(directory_options __a) { return directory_options(~__a.__v_ & 3u); }
+
+class __path_iterator {
+    ::_CCW_STD::vector<path::string_type> __v_;
+    ::_CCW_STD::size_t                    __i_;
+    path                                  __cur_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __refresh() { __cur_ = (__i_ < __v_.size()) ? path(__v_[__i_]) : path(); }
+public:
+    typedef bidirectional_iterator_tag iterator_category;
+    typedef path                       value_type;
+    typedef ::_CCW_STD::ptrdiff_t           difference_type;
+    typedef const path*                pointer;
+    typedef const path&                reference;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator() : __i_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator(const ::_CCW_STD::vector<path::string_type>& __v, ::_CCW_STD::size_t __i)
+        : __v_(__v), __i_(__i) { __refresh(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI const path& operator*()  const { return __cur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const path* operator->() const { return &__cur_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator& operator++() { ++__i_; __refresh(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator  operator++(int) { __path_iterator __t = *this; ++*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator& operator--() { if (__i_) --__i_; __refresh(); return *this; }
+    _CCW_LIBCPP_HIDE_FROM_ABI __path_iterator  operator--(int) { __path_iterator __t = *this; --*this; return __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const __path_iterator& __o) const { return __i_ == __o.__i_ && __v_ == __o.__v_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const __path_iterator& __o) const { return !(*this == __o); }
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path::iterator path::begin() const { return iterator(__components(), 0); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path::iterator path::end() const {
+    ::_CCW_STD::vector<path::string_type> __v = __components();
+    return iterator(__v, __v.size());
+}
+
+class filesystem_error : public _CCW_STD::system_error {
+    path __p1_;
+    path __p2_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI filesystem_error(const ::_CCW_STD::string& __what, _CCW_STD::error_code __ec)
+        : _CCW_STD::system_error(__ec, __what) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI filesystem_error(const ::_CCW_STD::string& __what, const path& __p1, _CCW_STD::error_code __ec)
+        : _CCW_STD::system_error(__ec, __what), __p1_(__p1) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI filesystem_error(const ::_CCW_STD::string& __what, const path& __p1, const path& __p2,
+                                          _CCW_STD::error_code __ec)
+        : _CCW_STD::system_error(__ec, __what), __p1_(__p1), __p2_(__p2) {}
+    virtual ~filesystem_error() _CCW_LIBCPP_NOEXCEPT {}
+    _CCW_LIBCPP_HIDE_FROM_ABI const path& path1() const _CCW_LIBCPP_NOEXCEPT { return __p1_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const path& path2() const _CCW_LIBCPP_NOEXCEPT { return __p2_; }
+};
+
+struct space_info {
+    _CCW_STD::uintmax_t capacity;
+    _CCW_STD::uintmax_t free;
+    _CCW_STD::uintmax_t available;
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(const space_info& __a, const space_info& __b) {
+    return __a.capacity == __b.capacity && __a.free == __b.free && __a.available == __b.available;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(const space_info& __a, const space_info& __b) { return !(__a == __b); }
+
+class file_status {
+    file_type __t_;
+    perms     __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status() : __t_(status_unknown), __p_((unsigned)perms::unknown) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit file_status(file_type __t) : __t_(__t), __p_((unsigned)perms::unknown) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status(file_type __t, perms __p) : __t_(__t), __p_(__p) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status(_CCW_RV_REF(file_status) __r) : __t_(_CCW_MOVED_OBJ(__r).__t_), __p_(_CCW_MOVED_OBJ(__r).__p_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status& operator=(_CCW_RV_REF(file_status) __r) {
+        __t_ = _CCW_MOVED_OBJ(__r).__t_; __p_ = _CCW_MOVED_OBJ(__r).__p_; return *this; }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI file_type type() const { return __t_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void type(file_type __t) { __t_ = __t; }
+    _CCW_LIBCPP_HIDE_FROM_ABI perms permissions() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void permissions(perms __p) { __p_ = __p; }
+};
+
+bool          exists(const path& __p);
+bool          is_directory(const path& __p);
+bool          is_regular_file(const path& __p);
+unsigned long file_size(const path& __p);
+bool          create_directory(const path& __p);
+bool          create_directories(const path& __p);
+bool          remove(const path& __p);
+bool          rename(const path& __from, const path& __to);   // returns success
+path          current_path();
+bool          __ccw_chdir(const path& __p);
+file_status   status(const path& __p);
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool status_known(file_status __s) { return __s.type() != status_unknown; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(file_status __s)     { return __s.type() == file_type(file_type::block); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(file_status __s) { return __s.type() == file_type(file_type::character); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(file_status __s)           { return __s.type() == file_type(file_type::fifo); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(file_status __s)         { return __s.type() == file_type(file_type::socket); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(file_status __s)        { return __s.type() == file_type(file_type::symlink); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_directory(file_status __s)      { return __s.type() == file_type(file_type::directory); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_regular_file(file_status __s)   { return __s.type() == file_type(file_type::regular); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool exists(file_status __s) { return status_known(__s) && __s.type() != file_type(file_type::not_found); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(file_status __s) {
+    return exists(__s) && !is_regular_file(__s) && !is_directory(__s) && !is_symlink(__s);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(const path& __p)     { return is_block_file(status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(const path& __p) { return is_character_file(status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(const path& __p)           { return is_fifo(status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(const path& __p)         { return is_socket(status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(const path& __p)          { return is_other(status(__p)); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_status status(const path& __p, _CCW_STD::error_code& __ec) {
+    __ec.clear();
+    return status(__p);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_status symlink_status(const path& __p) { return status(__p); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_status symlink_status(const path& __p, _CCW_STD::error_code& __ec) {
+    return status(__p, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p) { return is_symlink(symlink_status(__p)); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path absolute(const path& __p) {
+    if (__p.is_absolute() || __p.empty()) return __p;
+    return current_path() / __p;
+}
+
+#if _CCW_LIBCPP_NATIVE_STD && (!defined(_ccw_cplusplus) || _ccw_cplusplus < 202002L)
+typedef _CCW_STD::chrono::system_clock::time_point file_time_type;
+#else
+typedef _CCW_STD::chrono::file_clock::time_point file_time_type;
+#endif
+unsigned long  remove_all(const path& __p);            // recursively delete; returns count
+bool           copy_file(const path& __from, const path& __to);
+bool           is_empty(const path& __p);              // empty dir or zero-length file
+path           temp_directory_path();
+
+_CCW_STD::time_t __ccw_mtime(const path& __p);         // 0 if it cannot be read
+bool             __ccw_set_mtime(const path& __p, _CCW_STD::time_t __t);
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p) {
+    return file_time_type(_CCW_STD::chrono::seconds((long long)__ccw_mtime(__p)));
+}
+
+space_info     space(const path& __p);                     // free/total bytes
+void           resize_file(const path& __p, _ccw_ullong __n);
+bool           equivalent(const path& __a, const path& __b);
+_ccw_ullong    hard_link_count(const path& __p);
+bool           create_hard_link(const path& __to, const path& __link);
+void           create_hard_link(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t) {
+    if (!__ccw_set_mtime(__p, (_CCW_STD::time_t)__t.time_since_epoch().count()))
+        _CCW_THROW(filesystem_error("filesystem::last_write_time", __p,
+                                    _CCW_STD::make_error_code(
+                                        _CCW_STD::errc::no_such_file_or_directory)));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p, _CCW_STD::error_code& __ec) {
+    _CCW_STD::time_t __t = __ccw_mtime(__p);
+    if (__t == (_CCW_STD::time_t)0) {
+        __ec = _CCW_STD::make_error_code(_CCW_STD::errc::no_such_file_or_directory);
+        return file_time_type();
+    }
+    __ec.clear();
+    return file_time_type(_CCW_STD::chrono::seconds((long long)__t));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t,
+                                                      _CCW_STD::error_code& __ec) {
+    if (__ccw_set_mtime(__p, (_CCW_STD::time_t)__t.time_since_epoch().count())) __ec.clear();
+    else __ec = _CCW_STD::make_error_code(_CCW_STD::errc::no_such_file_or_directory);
+}
+void           create_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
+void           create_directory_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
+void           copy_symlink(const path& __from, const path& __to, _CCW_STD::error_code& __ec);
+path           read_symlink(const path& __p);
+path           read_symlink(const path& __p, _CCW_STD::error_code& __ec);
+path           canonical(const path& __p);                 // absolute + '.'/'..' folded
+void           permissions(const path& __p, perms __prms, perm_options __opts);
+perms          __ccw_get_perms(const path& __p);           // used by status()
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __prms) {
+    permissions(__p, __prms, perm_options(perm_options::replace));
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path weakly_canonical(const path& __p) {
+    if (exists(__p)) return canonical(__p);
+    path __head = __p.parent_path();
+    if (__head.empty() || !exists(__head)) return absolute(__p).lexically_normal();
+    return canonical(__head) / __p.filename();
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __base) {
+    return weakly_canonical(__p).lexically_relative(weakly_canonical(__base));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p) { return relative(__p, current_path()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __base) {
+    return weakly_canonical(__p).lexically_proximate(weakly_canonical(__base));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p) { return proximate(__p, current_path()); }
+
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_ec_ok(_CCW_STD::error_code& __ec) { __ec.clear(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_ec_set(bool __ok, _CCW_STD::error_code& __ec) {
+    if (__ok) __ec.clear();
+    else      __ec.assign(errno ? errno : 5, _CCW_STD::generic_category());
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool exists(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return exists(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_directory(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_directory(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_regular_file(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_regular_file(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_block_file(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_character_file(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_fifo(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_socket(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_other(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return is_symlink(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline unsigned long file_size(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    unsigned long __r = file_size(__p);
+    __ccw_fs_ec_set(exists(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = create_directory(__p);
+    __ccw_fs_ec_set(__r || is_directory(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, const path&) {
+    return create_directory(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, const path&, _CCW_STD::error_code& __ec) {
+    return create_directory(__p, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directories(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = create_directories(__p);
+    __ccw_fs_ec_set(__r || is_directory(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool remove(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = remove(__p);
+    __ccw_fs_ec_set(__r || !exists(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline unsigned long remove_all(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    unsigned long __n = remove_all(__p);
+    __ccw_fs_ec_set(!exists(__p), __ec);
+    return __n;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void rename(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    __ccw_fs_ec_set(rename(__f, __t), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = copy_file(__f, __t);
+    __ccw_fs_ec_set(__r, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_empty(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = is_empty(__p);
+    __ccw_fs_ec_set(exists(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path current_path(_CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return current_path();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void current_path(const path& __p) {
+    errno = 0;
+    if (!__ccw_chdir(__p))
+        _CCW_THROW(filesystem_error("filesystem::current_path", __p,
+                                    _CCW_STD::error_code(errno ? errno : 5,
+                                                         _CCW_STD::generic_category())));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void current_path(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    __ccw_fs_ec_set(__ccw_chdir(__p), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path temp_directory_path(_CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return temp_directory_path();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path absolute(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return absolute(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path canonical(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    path __r = canonical(__p);
+    __ccw_fs_ec_set(exists(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path weakly_canonical(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return weakly_canonical(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return relative(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __b, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return relative(__p, __b);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return proximate(__p);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __b, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return proximate(__p, __b);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool equivalent(const path& __a, const path& __b, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = equivalent(__a, __b);
+    __ccw_fs_ec_set(exists(__a) && exists(__b), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline _ccw_ullong hard_link_count(const path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    _ccw_ullong __r = hard_link_count(__p);
+    __ccw_fs_ec_set(exists(__p), __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void resize_file(const path& __p, _ccw_ullong __n, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    resize_file(__p, __n);
+    __ccw_fs_ec_set(exists(__p), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __pm, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    permissions(__p, __pm);
+    __ccw_fs_ec_set(exists(__p), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __pm, perm_options __o,
+                                                  _CCW_STD::error_code& __ec) {
+    errno = 0;
+    permissions(__p, __pm, __o);
+    __ccw_fs_ec_set(exists(__p), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline space_info space(const path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_ec_ok(__ec); return space(__p);
+}
+class directory_entry {
+    filesystem::path __p_;
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_entry() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit directory_entry(const filesystem::path& __p) : __p_(__p) {}
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_entry(_CCW_RV_REF(directory_entry) __r) : __p_(::_ccw::move(_CCW_MOVED_OBJ(__r).__p_)) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_entry& operator=(_CCW_RV_REF(directory_entry) __r) {
+        directory_entry& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) __p_ = ::_ccw::move(__o.__p_);
+        return *this;
+    }
+#endif
+    _CCW_LIBCPP_HIDE_FROM_ABI const filesystem::path& path() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __assign(const filesystem::path& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_directory() const { return filesystem::is_directory(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_regular_file() const { return filesystem::is_regular_file(__p_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI operator const filesystem::path&() const { return __p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(const filesystem::path& __p) { __p_ = __p; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void replace_filename(const filesystem::path& __p) {
+        __p_ = __p_.parent_path() / __p;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void refresh() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI bool exists() const           { return filesystem::exists(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_block_file() const     { return filesystem::is_block_file(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_character_file() const { return filesystem::is_character_file(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_fifo() const           { return filesystem::is_fifo(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_other() const          { return filesystem::is_other(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_socket() const         { return filesystem::is_socket(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_symlink() const        { return filesystem::is_symlink(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status status() const          { return filesystem::status(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status symlink_status() const  { return filesystem::symlink_status(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI unsigned long file_size() const     { return filesystem::file_size(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_time_type last_write_time() const { return filesystem::last_write_time(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _ccw_ullong hard_link_count() const { return filesystem::hard_link_count(__p_); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const directory_entry& __o) const { return __p_ == __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const directory_entry& __o) const { return __p_ != __o.__p_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator< (const directory_entry& __o) const { return __p_ <  __o.__p_; }
+};
+
+class directory_iterator {
+    struct __impl;
+    __impl* __i_;
+    void __advance();   // src
+    void __release();   // src -- the only place the shared state is let go of
+public:
+    typedef directory_entry        value_type;
+    typedef const directory_entry* pointer;
+    typedef const directory_entry& reference;
+    typedef _CCW_STD::ptrdiff_t         difference_type;
+    typedef input_iterator_tag     iterator_category;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_iterator() : __i_(0) {}
+    explicit directory_iterator(const path& __p);   // src
+    directory_iterator(const directory_iterator& __o);   // src
+    directory_iterator& operator=(const directory_iterator& __o);   // src
+#if !_CCW_HAS_REAL_RVALUE_REF
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_iterator(_CCW_RV_REF(directory_iterator) __r) : __i_(0) {
+        directory_iterator& __o = _CCW_MOVED_OBJ(__r);
+        __i_ = __o.__i_; __o.__i_ = 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_iterator& operator=(_CCW_RV_REF(directory_iterator) __r) {
+        directory_iterator& __o = _CCW_MOVED_OBJ(__r);
+        __impl* __t = __i_; __i_ = __o.__i_; __o.__i_ = __t;
+        return *this;
+    }
+#endif
+    ~directory_iterator();   // src
+    const directory_entry& operator*() const;   // src
+    const directory_entry* operator->() const;  // src
+    directory_iterator& operator++();           // src
+    bool operator==(const directory_iterator& __o) const { return __i_ == __o.__i_; }
+    bool operator!=(const directory_iterator& __o) const { return __i_ != __o.__i_; }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_iterator begin(directory_iterator __it) { return __it; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline directory_iterator end(directory_iterator) { return directory_iterator(); }
+
+class recursive_directory_iterator {
+    _CCW_STD::vector<directory_iterator> __stk_;
+    bool                            __pending_;
+    directory_options               __opt_;
+public:
+    typedef directory_entry            value_type;
+    typedef const directory_entry&     reference;
+    typedef const directory_entry*     pointer;
+    typedef _CCW_STD::ptrdiff_t             difference_type;
+    typedef input_iterator_tag         iterator_category;
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator() : __pending_(true) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit recursive_directory_iterator(const path& __p) : __pending_(true) {
+        directory_iterator __it(__p);
+        if (__it != directory_iterator()) __stk_.push_back(__it);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator(const path& __p, directory_options __o)
+        : __pending_(true), __opt_(__o) {
+        directory_iterator __it(__p);
+        if (__it != directory_iterator()) __stk_.push_back(__it);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_options options() const { return __opt_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI const directory_entry& operator*() const { return *__stk_.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const directory_entry* operator->() const { return &*__stk_.back(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int  depth() const { return (int)__stk_.size() - 1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool recursion_pending() const { return __pending_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void disable_recursion_pending() { __pending_ = false; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator& operator++() {
+        if (!__stk_.empty() && __pending_ && is_directory((*__stk_.back()).path())) {
+            directory_iterator __sub((*__stk_.back()).path());
+            if (__sub != directory_iterator()) { __stk_.push_back(__sub); __pending_ = true; return *this; }
+        }
+        __pending_ = true;
+        while (!__stk_.empty()) {
+            ++__stk_.back();
+            if (__stk_.back() != directory_iterator()) break;
+            __stk_.pop_back();
+        }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void pop() {
+        if (!__stk_.empty()) __stk_.pop_back();
+        while (!__stk_.empty()) { ++__stk_.back(); if (__stk_.back() != directory_iterator()) break; __stk_.pop_back(); }
+        __pending_ = true;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const recursive_directory_iterator& __o) const { return __stk_.empty() && __o.__stk_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const recursive_directory_iterator& __o) const { return !(*this == __o); }
+};
+_CCW_LIBCPP_HIDE_FROM_ABI inline recursive_directory_iterator begin(recursive_directory_iterator __it) { return __it; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline recursive_directory_iterator end(recursive_directory_iterator) { return recursive_directory_iterator(); }
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to, copy_options __o) {
+    if (!exists(__from))
+        return;
+    if (!is_directory(__from)) {
+        if (exists(__to)) {
+            if ((__o & copy_options(copy_options::skip_existing)) != copy_options(copy_options::none))
+                return;
+            if ((__o & copy_options(copy_options::overwrite_existing)) == copy_options(copy_options::none))
+                return;                  // no option says what to do: leave the target alone
+        }
+        copy_file(__from, __to);
+        return;
+    }
+    if (!exists(__to))
+        create_directory(__to);
+    bool __rec = (__o & copy_options(copy_options::recursive)) != copy_options(copy_options::none);
+    bool __dirs_only = (__o & copy_options(copy_options::directories_only)) != copy_options(copy_options::none);
+    for (directory_iterator __it(__from), __en; __it != __en; ++__it) {
+        const path& __src = __it->path();
+        path __dst = __to / __src.filename();
+        if (is_directory(__src)) {
+            if (__rec) copy(__src, __dst, __o);
+            else       create_directory(__dst);
+        } else if (!__dirs_only) {
+            copy(__src, __dst, __o);
+        }
+    }
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to) {
+    copy(__from, __to, copy_options());
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    copy(__f, __t);
+    __ccw_fs_ec_set(exists(__f), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __f, const path& __t, copy_options __o,
+                                           _CCW_STD::error_code& __ec) {
+    errno = 0;
+    copy(__f, __t, __o);
+    __ccw_fs_ec_set(exists(__f), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, copy_options __o) {
+    if (exists(__t)) {
+        if (__o.__v_ & copy_options::skip_existing) return false;
+        if (__o.__v_ & copy_options::update_existing) {
+            if (!(__ccw_mtime(__f) > __ccw_mtime(__t))) return false;
+        } else if (!(__o.__v_ & copy_options::overwrite_existing)) {
+            return false;
+        }
+    }
+    return copy_file(__f, __t);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, copy_options __o,
+                                                _CCW_STD::error_code& __ec) {
+    errno = 0;
+    bool __r = copy_file(__f, __t, __o);
+    __ccw_fs_ec_set(__r || (exists(__t) && (__o.__v_ & (copy_options::skip_existing
+                                                       | copy_options::update_existing))), __ec);
+    return __r;
+}
+
+template <class _Cp> struct __ccw_fs_io;
+template <> struct __ccw_fs_io<char> {
+    _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::string __get(const path& __p) { return __p.string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static path __make(const ::_CCW_STD::string& __s) { return path(__s); }
+};
+template <> struct __ccw_fs_io<wchar_t> {
+    _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::wstring __get(const path& __p) { return __p.wstring(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI static path __make(const ::_CCW_STD::wstring& __s) { return path(__s); }
+};
+
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
+__ccw_path_insert(basic_ostream<_CharT, _Traits>& __os, const path& __p) {
+    const ::_CCW_STD::basic_string<_CharT> __t = __ccw_fs_io<_CharT>::__get(__p);
+    __os << (_CharT)'"';
+    for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i) {
+        if (__t[__i] == (_CharT)'"' || __t[__i] == (_CharT)'\\') __os << (_CharT)'\\';
+        __os << __t[__i];
+    }
+    __os << (_CharT)'"';
+    return __os;
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>&
+__ccw_path_extract(basic_istream<_CharT, _Traits>& __is, path& __p) {
+    ::_CCW_STD::basic_string<_CharT> __t;
+    _CharT __c;
+    if (!(__is >> __c)) return __is;               // skips leading whitespace
+    if (__c != (_CharT)'"') {                      // unquoted: a plain word
+        __t.push_back(__c);
+        while (__is.get(__c) && __c != (_CharT)' ' && __c != (_CharT)'\t' && __c != (_CharT)'\n') __t.push_back(__c);
+        __p = __ccw_fs_io<_CharT>::__make(__t);
+        return __is;
+    }
+    while (__is.get(__c)) {
+        if (__c == (_CharT)'\\') { if (!__is.get(__c)) break; __t.push_back(__c); continue; }
+        if (__c == (_CharT)'"') break;
+        __t.push_back(__c);
+    }
+    __p = __ccw_fs_io<_CharT>::__make(__t);
+    return __is;
+}
+
+#if !defined(__WATCOMC__)
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const path& __p) { return __ccw_path_insert(__os, __p); }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_istream<_CharT, _Traits>&
+operator>>(basic_istream<_CharT, _Traits>& __is, path& __p) { return __ccw_path_extract(__is, __p); }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const directory_entry& __e) { return __ccw_path_insert(__os, __e.path()); }
+#endif
+
+}   // namespace filesystem
+
+#if defined(__WATCOMC__)
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const filesystem::path& __p)
+    { return filesystem::__ccw_path_insert(__os, __p); }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_istream<_CharT, _Traits>&
+operator>>(basic_istream<_CharT, _Traits>& __is, filesystem::path& __p)
+    { return filesystem::__ccw_path_extract(__is, __p); }
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<_CharT, _Traits>&
+operator<<(basic_ostream<_CharT, _Traits>& __os, const filesystem::directory_entry& __e)
+    { return filesystem::__ccw_path_insert(__os, __e.path()); }
+#endif
+
+template <> struct hash< ::_CCW_STD::filesystem::path > {
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::size_t operator()(const ::_CCW_STD::filesystem::path& __p) const
+        { return ::_CCW_STD::filesystem::hash_value(__p); }
+};
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+_CCW_EH_ANCHOR(efs, filesystem::filesystem_error, filesystem_error)
+
+#endif // _CCW_LIBCPP_FILESYSTEM

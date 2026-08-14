@@ -1,0 +1,28 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <stdfloat> (C++23).
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_STDFLOAT
+#define _CCW_LIBCPP_STDFLOAT
+#include "__config"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+#if defined(__STDCPP_FLOAT16_T__)
+typedef _Float16 float16_t;
+#endif
+#if defined(__STDCPP_FLOAT32_T__)
+typedef _Float32 float32_t;
+#endif
+#if defined(__STDCPP_FLOAT64_T__)
+typedef _Float64 float64_t;
+#endif
+#if defined(__STDCPP_FLOAT128_T__)
+typedef _Float128 float128_t;
+#endif
+#if defined(__STDCPP_BFLOAT16_T__)
+typedef __bf16 bfloat16_t;
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_STDFLOAT

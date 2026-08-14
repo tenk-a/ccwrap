@@ -1,0 +1,10 @@
+//  ccwrap vc/ccwstd: <cstddef> wrapper + bridge for the ccwstd environment.
+#ifndef _CCW_C_CSTDDEF_
+#define _CCW_C_CSTDDEF_
+#include "../std/cstddef"
+namespace _CCW_STD {
+using ::std::size_t;
+using ::std::ptrdiff_t;
+using ::std::max_align_t; using ::std::byte; using ::std::to_integer;
+}
+#endif

@@ -1,0 +1,14 @@
+// ccwrap <system_error>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1800
+ #include _CCW_NATIVE_STL_HEADER_PATH(system_error)
+#elif _MSC_VER >= 1600   // vc10 / vc11: hijack the namespace-style errc
+ #define errc __ccw_native_errc
+ #include _CCW_NATIVE_STL_HEADER_PATH(system_error)
+ #undef errc
+#endif
+
+#include <../../detail/cxx/system_error.hpp>

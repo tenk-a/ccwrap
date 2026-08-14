@@ -1,0 +1,158 @@
+// ccwrap <cmath>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cmath)
+
+#include <math.h>
+
+#if _MSC_VER < 1800
+
+#include <math.h>
+
+namespace std {
+    using ::round;      using ::roundf;      using ::roundl;
+    using ::trunc;      using ::truncf;      using ::truncl;
+    using ::rint;       using ::rintf;       using ::rintl;
+    using ::nearbyint;  using ::nearbyintf;  using ::nearbyintl;
+    using ::lround;     using ::lroundf;     using ::lroundl;
+    using ::llround;    using ::llroundf;    using ::llroundl;
+    using ::lrint;      using ::lrintf;      using ::lrintl;
+    using ::llrint;     using ::llrintf;     using ::llrintl;
+    using ::fdim;       using ::fdimf;       using ::fdiml;
+    using ::fmin;       using ::fminf;       using ::fminl;
+    using ::fmax;       using ::fmaxf;       using ::fmaxl;
+    using ::fma;        using ::fmaf;        using ::fmal;
+    using ::copysign;   using ::copysignf;   using ::copysignl;
+    using ::cbrt;       using ::cbrtf;       using ::cbrtl;
+    using ::exp2;       using ::exp2f;       using ::exp2l;
+    using ::log2;       using ::log2f;       using ::log2l;
+    using ::expm1;      using ::expm1f;      using ::expm1l;
+    using ::log1p;      using ::log1pf;      using ::log1pl;
+    using ::scalbn;     using ::scalbnf;     using ::scalbnl;
+    using ::scalbln;    using ::scalblnf;    using ::scalblnl;
+    using ::logb;       using ::logbf;       using ::logbl;
+    using ::ilogb;      using ::ilogbf;      using ::ilogbl;
+    using ::nextafter;  using ::nextafterf;  using ::nextafterl;
+    using ::nexttoward; using ::nexttowardf; using ::nexttowardl;
+    using ::remainder;  using ::remainderf;  using ::remainderl;
+    using ::remquo;     using ::remquof;     using ::remquol;
+    using ::acosh;      using ::acoshf;      using ::acoshl;
+    using ::asinh;      using ::asinhf;      using ::asinhl;
+    using ::atanh;      using ::atanhf;      using ::atanhl;
+#if _MSC_VER < 1700  /* vc11+ already expose std::hypot (double) via native <cmath> */
+    using ::hypot;      /* ::hypot(double) is in <math.h> even on vc8/9 */
+#endif
+#if _MSC_VER < 1700
+    using ::hypotf;
+#endif
+#if _MSC_VER < 1800
+    using ::hypotl;
+#endif
+    using ::nan;        using ::nanf;        using ::nanl;
+    using ::fpclassify; using ::isnan;       using ::isinf;    using ::isfinite;
+    using ::isnormal;   using ::signbit;
+    using ::isgreater;  using ::isgreaterequal;
+    using ::isless;     using ::islessequal; using ::islessgreater;
+    using ::isunordered;
+    using ::tgamma;     using ::tgammaf;     using ::tgammal;
+    using ::lgamma;     using ::lgammaf;     using ::lgammal;
+    using ::erf;        using ::erff;        using ::erfl;
+    using ::erfc;       using ::erfcf;       using ::erfcl;
+}
+
+#endif
+
+#if __cplusplus < 202002L
+namespace _CCW_STD20 {
+namespace __ccw_m {
+template<class T> _ccw_constexpr11 T lerp_x(T a, T b, T t) { return a + t * (b - a); }
+template<class T> _ccw_constexpr11 T lerp_impl(T a, T b, T t) {
+    return ((a <= T(0) && b >= T(0)) || (a >= T(0) && b <= T(0)))
+               ? t * b + (T(1) - t) * a
+         : (t == T(1)) ? b
+         : ((t > T(1)) == (b > a))
+               ? (b < lerp_x(a, b, t) ? lerp_x(a, b, t) : b)
+               : (lerp_x(a, b, t) < b ? lerp_x(a, b, t) : b);
+}
+}   // namespace __ccw_m
+_ccw_constexpr11 inline float       lerp(float a,       float b,       float t)       { return __ccw_m::lerp_impl(a, b, t); }
+_ccw_constexpr11 inline double      lerp(double a,      double b,      double t)      { return __ccw_m::lerp_impl(a, b, t); }
+_ccw_constexpr11 inline long double lerp(long double a, long double b, long double t) { return __ccw_m::lerp_impl(a, b, t); }
+}   // _CCW_STD20
+#endif
+
+#if _CCW_TARGET_C >= 2023 || _CCW_TARGET_CXX >= 2023
+#include <math.h>
+namespace std {
+#include "../../detail/c/math_c23.h"
+}
+#endif
+
+#if !defined(__cpp_lib_math_special_functions)
+#include <../../detail/cxx/math_special.hpp>
+#else
+// The native special math gives only the f / l suffixed spellings; [sf.cmath]/2 also
+// wants the same-named float / long double overloads.
+#include <../../detail/cxx/math_special_ovl.hpp>
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+#include <../../detail/cxx/math_int_overloads.hpp>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_hypot) && _MSC_VER >= 1600
+namespace _CCW_STD17 {
+inline double __ccw_hypot3(double __x, double __y, double __z) {
+    if (__x < 0) __x = -__x;
+    if (__y < 0) __y = -__y;
+    if (__z < 0) __z = -__z;
+    double __m = __x > __y ? (__x > __z ? __x : __z) : (__y > __z ? __y : __z);
+    if (__m == 0.0) return 0.0;
+    __x /= __m; __y /= __m; __z /= __m;
+    return __m * ::sqrt(__x * __x + __y * __y + __z * __z);
+}
+inline float       hypot(float __x, float __y, float __z)                   { return (float)__ccw_hypot3(__x, __y, __z); }
+inline double      hypot(double __x, double __y, double __z)                { return __ccw_hypot3(__x, __y, __z); }
+inline long double hypot(long double __x, long double __y, long double __z) { return (long double)__ccw_hypot3((double)__x, (double)__y, (double)__z); }
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+#include <../../detail/c/math_c99_fl.h>
+namespace std {
+#define _X(_N) inline float _N(float __x) { return (float)_N((double)__x); }                inline long double _N(long double __x) { return (long double)_N((double)__x); }
+_CCW_MATH_C99ONLY_FL1_LIST(_X)
+#undef _X
+#define _X(_N) inline float _N(float __x, float __y) { return (float)_N((double)__x, (double)__y); }                inline long double _N(long double __x, long double __y) { return (long double)_N((double)__x, (double)__y); }
+_CCW_MATH_C99ONLY_FL2_LIST(_X)
+#undef _X
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+namespace std {
+using ::float_t;  using ::double_t;
+inline int  ilogb(float __x)        { return ilogb((double)__x); }
+inline int  ilogb(long double __x)  { return ilogb((double)__x); }
+inline long lrint(float __x)        { return lrint((double)__x); }
+inline long lrint(long double __x)  { return lrint((double)__x); }
+inline long lround(float __x)       { return lround((double)__x); }
+inline long lround(long double __x) { return lround((double)__x); }
+inline _ccw_llong llrint(float __x)        { return llrint((double)__x); }
+inline _ccw_llong llrint(long double __x)  { return llrint((double)__x); }
+inline _ccw_llong llround(float __x)       { return llround((double)__x); }
+inline _ccw_llong llround(long double __x) { return llround((double)__x); }
+inline float       scalbn(float __x, int __e)        { return (float)scalbn((double)__x, __e); }
+inline long double scalbn(long double __x, int __e)  { return (long double)scalbn((double)__x, __e); }
+inline float       scalbln(float __x, long __e)      { return (float)scalbln((double)__x, __e); }
+inline long double scalbln(long double __x, long __e){ return (long double)scalbln((double)__x, __e); }
+inline float       nextafter(float __x, float __y)             { return ::nextafterf(__x, __y); }
+inline long double nextafter(long double __x, long double __y) { return (long double)nextafter((double)__x, (double)__y); }
+inline float       nexttoward(float __x, long double __y)       { return ::nextafterf(__x, (float)__y); }
+inline long double nexttoward(long double __x, long double __y) { return (long double)nextafter((double)__x, (double)__y); }
+inline float       fma(float __x, float __y, float __z) { return (float)fma((double)__x, (double)__y, (double)__z); }
+inline long double fma(long double __x, long double __y, long double __z) { return (long double)fma((double)__x, (double)__y, (double)__z); }
+}
+#endif

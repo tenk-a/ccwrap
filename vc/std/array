@@ -1,0 +1,37 @@
+// ccwrap <array>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1600
+ #include _CCW_NATIVE_STL_HEADER_PATH(array)
+#else
+ #include <../../detail/llibcxx03/include/array>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_to_array)
+#include _CCW_NATIVE_STL_HEADER_PATH(cstddef)
+#include <type_traits>   /* remove_cv -- the element type of the result */
+namespace _CCW_STD20 {
+
+template <class _Tp, _CCW_STD::size_t _Nm>
+inline std::array<typename std::remove_cv<_Tp>::type, _Nm> to_array(_Tp (&__a)[_Nm]) {
+    std::array<typename std::remove_cv<_Tp>::type, _Nm> __r;
+    for (_CCW_STD::size_t __i = 0; __i < _Nm; ++__i) __r[__i] = __a[__i];
+    return __r;
+}
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1600
+template <class _Tp, _CCW_STD::size_t _Nm>
+inline std::array<typename std::remove_cv<_Tp>::type, _Nm> to_array(_Tp (&&__a)[_Nm]) {
+    std::array<typename std::remove_cv<_Tp>::type, _Nm> __r;
+    for (_CCW_STD::size_t __i = 0; __i < _Nm; ++__i) __r[__i] = __a[__i];
+    return __r;
+}
+#endif
+
+}   // _CCW_STD20
+#endif
+
+// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
+#include <iterator>

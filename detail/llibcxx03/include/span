@@ -1,0 +1,139 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <span> for Open Watcom -- a non-owning view over a contiguous
+//  sequence. Both forms are provided: span<T> (pointer + size) and span<T, N> (a
+//  static extent, where only the pointer is stored), with the standard's converting
+//  constructor from the static form to the dynamic one. Classic C++03 body.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_SPAN
+#define _CCW_LIBCPP_SPAN
+#include "__config"
+#include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
+#include "__iterator/reverse_iterator.h"
+#include <cstddef>
+#include <stdexcept>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+static const _CCW_STD::size_t dynamic_extent = (_CCW_STD::size_t)-1;
+
+template <class _Tp, _CCW_STD::size_t _Extent = dynamic_extent> class span;
+
+template <class _Up> struct __ccw_not_span { typedef _Up type; };
+template <class _Up, _CCW_STD::size_t _Np> struct __ccw_not_span< span<_Up, _Np> > { };
+
+template <class _Tp, _CCW_STD::size_t _Extent>
+class span {
+    _Tp* __data_;
+public:
+    typedef _Tp                                    element_type;
+    typedef _Tp                                    value_type;
+    typedef _CCW_STD::size_t                            size_type;
+    typedef _CCW_STD::ptrdiff_t                         difference_type;
+    typedef _Tp*                                   pointer;
+    typedef const _Tp*                             const_pointer;
+    typedef _Tp&                                   reference;
+    typedef const _Tp&                             const_reference;
+    typedef _Tp*                                   iterator;
+    typedef const _Tp*                             const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>        reverse_iterator;
+
+    static const size_type extent = _Extent;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI span() : __data_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit span(_Tp* __p) : __data_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __p, size_type) : __data_(__p) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __first, _Tp* __last) : __data_(__first) { (void)__last; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const       { return _Extent; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size_bytes() const { return _Extent * sizeof(_Tp); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const      { return _Extent == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*      data() const       { return __data_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator[](size_type __i) const { return __data_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference at(size_type __i) const {
+        if (__i >= _Extent) _CCW_THROW(_CCW_STD::out_of_range("span::at"));
+        return __data_[__i];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference front() const { return __data_[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference back() const  { return __data_[_Extent - 1]; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const { return __data_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const   { return __data_ + _Extent; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rbegin() const { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rend() const   { return reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI span<_Tp> first(size_type __n) const  { return span<_Tp>(__data_, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI span<_Tp> last(size_type __n) const   { return span<_Tp>(__data_ + (_Extent - __n), __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI span<_Tp> subspan(size_type __off, size_type __cnt = (size_type)-1) const {
+        size_type __rn = _Extent - __off; if (__cnt < __rn) __rn = __cnt;
+        return span<_Tp>(__data_ + __off, __rn);
+    }
+};
+
+template <class _Tp>
+class span<_Tp, dynamic_extent> {
+    _Tp*        __data_;
+    _CCW_STD::size_t __size_;
+public:
+    typedef _Tp                                    element_type;
+    typedef _Tp                                    value_type;
+    typedef _CCW_STD::size_t                            size_type;
+    typedef _CCW_STD::ptrdiff_t                         difference_type;
+    typedef _Tp*                                   pointer;
+    typedef const _Tp*                             const_pointer;
+    typedef _Tp&                                   reference;
+    typedef const _Tp&                             const_reference;
+    typedef _Tp*                                   iterator;
+    typedef const _Tp*                             const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>        reverse_iterator;
+
+    static const size_type extent = dynamic_extent;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI span() : __data_(0), __size_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __p, size_type __n) : __data_(__p), __size_(__n) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __first, _Tp* __last) : __data_(__first), __size_(size_type(__last - __first)) {}
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Range& __r, typename __ccw_not_span<_Range>::type* = 0)
+        : __data_(__r.empty() ? (pointer)0 : &__r[0]), __size_(__r.size()) {}
+    template <_CCW_STD::size_t _Np>
+    _CCW_LIBCPP_HIDE_FROM_ABI span(const span<_Tp, _Np>& __o) : __data_(__o.data()), __size_(__o.size()) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const       { return __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size_bytes() const { return __size_ * sizeof(_Tp); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const      { return __size_ == 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp*      data() const        { return __data_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI reference operator[](size_type __i) const { return __data_[__i]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference at(size_type __i) const {          // C++26: bounds-checked
+        if (__i >= __size_) _CCW_THROW(_CCW_STD::out_of_range("span::at"));
+        return __data_[__i];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference front() const { return __data_[0]; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reference back() const  { return __data_[__size_ - 1]; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator begin() const { return __data_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator end() const   { return __data_ + __size_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rbegin() const { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rend() const   { return reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI span first(size_type __n) const  { return span(__data_, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI span last(size_type __n) const   { return span(__data_ + (__size_ - __n), __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI span subspan(size_type __off, size_type __cnt = (size_type)-1) const {
+        size_type __rn = __size_ - __off; if (__cnt < __rn) __rn = __cnt;
+        return span(__data_ + __off, __rn);
+    }
+};
+
+#if _CCW_LIBCPP_HAS_BYTE
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI span<const byte> as_bytes(span<_Tp> __s) {
+    return span<const byte>(reinterpret_cast<const byte*>(__s.data()), __s.size_bytes());
+}
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI span<byte> as_writable_bytes(span<_Tp> __s) {
+    return span<byte>(reinterpret_cast<byte*>(__s.data()), __s.size_bytes());
+}
+#endif // _CCW_LIBCPP_HAS_BYTE
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SPAN

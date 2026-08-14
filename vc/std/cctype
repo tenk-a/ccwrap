@@ -1,0 +1,13 @@
+// ccwrap <cctype>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include _CCW_NATIVE_STL_HEADER_PATH(cctype)
+
+#if defined(__cplusplus) && _MSC_VER < 1800
+#include <ctype.h>      /* ::isblank, so that <ctype.h> alone provides it too */
+namespace std {
+using ::isblank;
+}
+#endif

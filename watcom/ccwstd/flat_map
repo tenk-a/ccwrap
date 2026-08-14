@@ -1,0 +1,2 @@
+// ccwrap <flat_map>
+#include "../std/flat_map"

@@ -1,0 +1,10 @@
+// ccwrap <chrono>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <chrono>
+#else
+ #include <../../detail/llibcxx03/include/chrono>
+#endif

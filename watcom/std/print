@@ -1,0 +1,5 @@
+// ccwrap watcom: <print> (C++23). Placeholder: a subset implementation is planned but
+// not yet written. Including this header is a hard error so accidental use is caught
+// at compile time rather than silently pulling nothing.
+#pragma once
+#error "ccwrap: <print> is not implemented for Open Watcom yet (subset planned)."

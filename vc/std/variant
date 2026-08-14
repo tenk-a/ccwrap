@@ -1,0 +1,15 @@
+// ccwrap <variant>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include _CCW_NATIVE_STL_HEADER_PATH(variant)
+ namespace _ccw {
+     using std::monostate; using std::variant_npos; using std::variant; using std::variant_size;
+     using std::variant_alternative; using std::holds_alternative; using std::get; using std::get_if;
+     using std::bad_variant_access;
+ }
+#else
+ #include <../../detail/llibcxx03/include/variant>
+#endif

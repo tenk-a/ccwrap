@@ -1,0 +1,2 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"ciso646"	"cxx03:<ciso646> alternative-token macros"	"2003"	"2017"	""	"<ciso646> は C++17 で非推奨、C++20 で削除 (N5054 表41 Zombie headers)"

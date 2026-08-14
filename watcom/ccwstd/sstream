@@ -1,0 +1,2 @@
+// ccwrap <sstream>
+#include "../std/sstream"

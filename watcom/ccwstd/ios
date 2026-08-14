@@ -1,0 +1,2 @@
+// ccwrap <ios>
+#include "../std/ios"

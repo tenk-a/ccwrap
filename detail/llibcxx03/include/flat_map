@@ -1,0 +1,375 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <flat_map> (C++23) for Open Watcom -- flat_map, a sorted-vector
+//  associative map adaptor. Classic C++03 body.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_FLAT_MAP
+#define _CCW_LIBCPP_FLAT_MAP
+#include "__config"
+#include "__utility/move.h"
+#include "__fnctmpl.h"
+#include <vector>
+#include <functional>
+#include <utility>
+#include <stdexcept>
+#include <iterator>
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+#ifndef _CCW_SORTED_UNIQUE_T_DEFINED
+#define _CCW_SORTED_UNIQUE_T_DEFINED
+struct sorted_unique_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit sorted_unique_t() {} };
+static const sorted_unique_t sorted_unique = sorted_unique_t();
+#endif
+
+#ifndef _CCW_SORTED_EQUIVALENT_T_DEFINED
+#define _CCW_SORTED_EQUIVALENT_T_DEFINED
+struct sorted_equivalent_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit sorted_equivalent_t() {} };
+static const sorted_equivalent_t sorted_equivalent = sorted_equivalent_t();
+#endif
+
+template <class _Key, class _Tp, class _Compare = less<_Key> >
+class flat_map {
+public:
+    typedef _Key                             key_type;
+    typedef _Tp                              mapped_type;
+    typedef pair<_Key, _Tp>                  value_type;
+    typedef _Compare                         key_compare;
+private:
+    typedef vector<value_type>               _Cont;
+    _Cont    __c_;
+    _Compare __comp_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __lb(const _Key& __k) const {
+        size_t __lo = 0, __hi = __c_.size();
+        while (__lo < __hi) { size_t __m = __lo + (__hi - __lo) / 2; if (__comp_(__c_[__m].first, __k)) __lo = __m + 1; else __hi = __m; }
+        return __lo;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __ub(const _Key& __k) const {
+        size_t __lo = 0, __hi = __c_.size();
+        while (__lo < __hi) { size_t __m = __lo + (__hi - __lo) / 2; if (__comp_(__k, __c_[__m].first)) __hi = __m; else __lo = __m + 1; }
+        return __lo;
+    }
+public:
+    typedef typename _Cont::size_type        size_type;
+    typedef typename _Cont::difference_type  difference_type;
+    typedef value_type&                      reference;
+    typedef const value_type&                const_reference;
+    typedef typename _Cont::iterator         iterator;
+    typedef typename _Cont::const_iterator   const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>       reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map(_CCW_RV_REF(flat_map) __r)
+        : __c_(_ccw::move(_CCW_MOVED_OBJ(__r).__c_)), __comp_(_CCW_MOVED_OBJ(__r).__comp_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map& operator=(_CCW_RV_REF(flat_map) __r) {
+        flat_map& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { __c_ = _ccw::move(__o.__c_); __comp_ = __o.__comp_; }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map(const flat_map& __o) : __c_(__o.__c_), __comp_(__o.__comp_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map& operator=(const flat_map& __o) {
+        if (this != &__o) { __c_ = __o.__c_; __comp_ = __o.__comp_; }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit flat_map(const _Compare& __c) : __comp_(__c) {}
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map(_InputIt __f, _InputIt __l) { insert(__f, __l); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_map(_InputIt __f, _InputIt __l, const _Compare& __c) : __comp_(__c) { insert(__f, __l); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()        { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()          { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const  { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const    { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rbegin()        { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator       rend()          { return reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const  { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend() const    { return const_reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend() const   { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const { return __c_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const  { return __c_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __c_.max_size(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       lower_bound(const _Key& __k)       { return __c_.begin() + __lb(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator lower_bound(const _Key& __k) const { return __c_.begin() + __lb(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       upper_bound(const _Key& __k)       { return __c_.begin() + __ub(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator upper_bound(const _Key& __k) const { return __c_.begin() + __ub(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator find(const _Key& __k) {
+        size_t __i = __lb(__k);
+        return (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) ? __c_.begin() + __i : __c_.end();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator find(const _Key& __k) const {
+        size_t __i = __lb(__k);
+        return (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) ? __c_.begin() + __i : __c_.end();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count(const _Key& __k) const { return find(__k) == cend() ? 0 : 1; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      contains(const _Key& __k) const { return find(__k) != cend(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, iterator> equal_range(const _Key& __k) {
+        return pair<iterator, iterator>(__c_.begin() + __lb(__k), __c_.begin() + __ub(__k));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI mapped_type& operator[](const _Key& __k) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) return __c_[__i].second;
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, value_type(__k, mapped_type()));
+        return __r->second;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI mapped_type& operator[](_CCW_RV_REF(_Key) __k) {
+        const _Key& __kk = _CCW_MOVED_OBJ(__k);
+        size_t __i = __lb(__kk);
+        if (__i < __c_.size() && !__comp_(__kk, __c_[__i].first)) return __c_[__i].second;
+        value_type __v; __v.first = ::_ccw::move(__k);   // default-construct then move the key in (no copy)
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return __r->second;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI mapped_type& at(const _Key& __k) {
+        iterator __it = find(__k);
+        if (__it == end()) _CCW_THROW(_CCW_STD::out_of_range("flat_map::at"));
+        return __it->second;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const mapped_type& at(const _Key& __k) const {
+        const_iterator __it = find(__k);
+        if (__it == cend()) _CCW_THROW(_CCW_STD::out_of_range("flat_map::at"));
+        return __it->second;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> insert(const value_type& __v) {
+        size_t __i = __lb(__v.first);
+        if (__i < __c_.size() && !__comp_(__v.first, __c_[__i].first)) return pair<iterator, bool>(__c_.begin() + __i, false);
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return pair<iterator, bool>(__r, true);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, const value_type& __v) { (void)__h; return insert(__v).first; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h, const value_type& __v) { (void)__h; return insert(__v).first; }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> insert(_CCW_RV_REF(value_type) __v) {
+        size_t __i = __lb(_CCW_MOVED_OBJ(__v).first);
+        if (__i < __c_.size() && !__comp_(_CCW_MOVED_OBJ(__v).first, __c_[__i].first))
+            return pair<iterator, bool>(__c_.begin() + __i, false);
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return pair<iterator, bool>(__r, true);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, _CCW_RV_REF(value_type) __v) { (void)__h; return insert(__v).first; }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert(_InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) insert(*__f); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> insert_or_assign(const _Key& __k, const mapped_type& __m) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) { __c_[__i].second = __m; return pair<iterator, bool>(__c_.begin() + __i, false); }
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, value_type(__k, __m));
+        return pair<iterator, bool>(__r, true);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> insert_or_assign(const _Key& __k, _CCW_RV_REF(mapped_type) __m) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) { __c_[__i].second = ::_ccw::move(__m); return pair<iterator, bool>(__c_.begin() + __i, false); }
+        value_type __v; __v.first = __k; __v.second = ::_ccw::move(__m);   // default then move mapped in (no copy)
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return pair<iterator, bool>(__r, true);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> insert_or_assign(_CCW_RV_REF(_Key) __k, _CCW_RV_REF(mapped_type) __m) {
+        const _Key& __kk = _CCW_MOVED_OBJ(__k);
+        size_t __i = __lb(__kk);
+        if (__i < __c_.size() && !__comp_(__kk, __c_[__i].first)) { __c_[__i].second = ::_ccw::move(__m); return pair<iterator, bool>(__c_.begin() + __i, false); }
+        value_type __v; __v.first = ::_ccw::move(__k); __v.second = ::_ccw::move(__m);   // move both key and mapped in
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return pair<iterator, bool>(__r, true);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, bool> try_emplace(const _Key& __k, const mapped_type& __m) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) return pair<iterator, bool>(__c_.begin() + __i, false);
+        typename _Cont::iterator __r = __c_.insert(__c_.begin() + __i, value_type(__k, __m));
+        return pair<iterator, bool>(__r, true);
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type erase(const _Key& __k) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) { __c_.erase(__c_.begin() + __i); return 1; }
+        return 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __pos) { return __c_.erase(__c_.begin() + (size_t)(__pos - cbegin())); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __f, const_iterator __l) {
+        return __c_.erase(__c_.begin() + (size_t)(__f - cbegin()), __c_.begin() + (size_t)(__l - cbegin()));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { __c_.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(flat_map& __o) { _Cont __tc = __c_; __c_ = __o.__c_; __o.__c_ = __tc; _Compare __t = __comp_; __comp_ = __o.__comp_; __o.__comp_ = __t; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI key_compare key_comp() const { return __comp_; }
+
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const flat_map& __x, const flat_map& __y) {
+        if (__x.size() != __y.size()) return false;
+        for (size_type __i = 0; __i < __x.size(); ++__i)
+            if (!(__x.__c_[__i].first == __y.__c_[__i].first) || !(__x.__c_[__i].second == __y.__c_[__i].second)) return false;
+        return true;
+    }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const flat_map& __x, const flat_map& __y) { return !(__x == __y); }
+};
+
+#if !defined(__WATCOMC__)
+template <class _Key, class _Tp, class _Compare>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(flat_map<_Key, _Tp, _Compare>& __x, flat_map<_Key, _Tp, _Compare>& __y) { __x.swap(__y); }
+#endif
+
+template <class _Key, class _Tp, class _Compare, class _Pred>
+_CCW_LIBCPP_HIDE_FROM_ABI typename flat_map<_Key, _Tp, _Compare>::size_type
+erase_if(flat_map<_Key, _Tp, _Compare>& __m, _Pred __p) {
+    typedef flat_map<_Key, _Tp, _Compare> _Mt;
+    typename _Mt::size_type __n = 0;
+    for (typename _Mt::iterator __it = __m.begin(); __it != __m.end(); ) {
+        if (__p(*__it)) { __it = __m.erase(__it); ++__n; } else ++__it;
+    }
+    return __n;
+}
+
+template <class _Key, class _Tp, class _Compare = less<_Key> >
+class flat_multimap {
+public:
+    typedef _Key                             key_type;
+    typedef _Tp                              mapped_type;
+    typedef pair<_Key, _Tp>                  value_type;
+    typedef _Compare                         key_compare;
+private:
+    typedef vector<value_type>               _Cont;
+    _Cont    __c_;
+    _Compare __comp_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __lb(const _Key& __k) const {
+        size_t __lo = 0, __hi = __c_.size();
+        while (__lo < __hi) { size_t __m = __lo + (__hi - __lo) / 2; if (__comp_(__c_[__m].first, __k)) __lo = __m + 1; else __hi = __m; }
+        return __lo;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_t __ub(const _Key& __k) const {
+        size_t __lo = 0, __hi = __c_.size();
+        while (__lo < __hi) { size_t __m = __lo + (__hi - __lo) / 2; if (__comp_(__k, __c_[__m].first)) __hi = __m; else __lo = __m + 1; }
+        return __lo;
+    }
+public:
+    typedef typename _Cont::size_type        size_type;
+    typedef typename _Cont::difference_type  difference_type;
+    typedef value_type&                      reference;
+    typedef const value_type&                const_reference;
+    typedef typename _Cont::iterator         iterator;
+    typedef typename _Cont::const_iterator   const_iterator;
+    typedef _CCW_STD::reverse_iterator<iterator>       reverse_iterator;
+    typedef _CCW_STD::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(_CCW_RV_REF(flat_multimap) __r)
+        : __c_(_ccw::move(_CCW_MOVED_OBJ(__r).__c_)), __comp_(_CCW_MOVED_OBJ(__r).__comp_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap& operator=(_CCW_RV_REF(flat_multimap) __r) {
+        flat_multimap& __o = _CCW_MOVED_OBJ(__r);
+        if (this != &__o) { __c_ = _ccw::move(__o.__c_); __comp_ = __o.__comp_; }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(const flat_multimap& __o) : __c_(__o.__c_), __comp_(__o.__comp_) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap& operator=(const flat_multimap& __o) {
+        if (this != &__o) { __c_ = __o.__c_; __comp_ = __o.__comp_; }
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit flat_multimap(const _Compare& __c) : __comp_(__c) {}
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(_InputIt __f, _InputIt __l) { insert(__f, __l); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(_InputIt __f, _InputIt __l, const _Compare& __c) : __comp_(__c) { insert(__f, __l); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(sorted_equivalent_t, _InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) __c_.push_back(*__f); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI flat_multimap(sorted_equivalent_t, _InputIt __f, _InputIt __l, const _Compare& __c)
+        : __comp_(__c) { for (; __f != __l; ++__f) __c_.push_back(*__f); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       begin()        { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       end()          { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator begin() const  { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator end() const    { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cbegin() const { return __c_.begin(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator cend() const   { return __c_.end(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rbegin()     { return reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI reverse_iterator rend()       { return reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rbegin() const  { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator rend() const    { return const_reverse_iterator(begin()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_reverse_iterator crend() const   { return const_reverse_iterator(begin()); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const    { return __c_.empty(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const     { return __c_.size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type max_size() const { return __c_.max_size(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI key_compare key_comp() const { return __comp_; }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       lower_bound(const _Key& __k)       { return __c_.begin() + __lb(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator lower_bound(const _Key& __k) const { return __c_.begin() + __lb(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator       upper_bound(const _Key& __k)       { return __c_.begin() + __ub(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator upper_bound(const _Key& __k) const { return __c_.begin() + __ub(__k); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator find(const _Key& __k) {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) return __c_.begin() + __i;
+        return __c_.end();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const_iterator find(const _Key& __k) const {
+        size_t __i = __lb(__k);
+        if (__i < __c_.size() && !__comp_(__k, __c_[__i].first)) return __c_.begin() + __i;
+        return __c_.end();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type count(const _Key& __k) const { return (size_type)(__ub(__k) - __lb(__k)); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool      contains(const _Key& __k) const { return find(__k) != cend(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<iterator, iterator> equal_range(const _Key& __k) {
+        return pair<iterator, iterator>(__c_.begin() + __lb(__k), __c_.begin() + __ub(__k));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI pair<const_iterator, const_iterator> equal_range(const _Key& __k) const {
+        return pair<const_iterator, const_iterator>(__c_.begin() + __lb(__k), __c_.begin() + __ub(__k));
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const value_type& __v) {
+        size_t __i = __ub(__v.first);
+        __c_.insert(__c_.begin() + __i, ::_ccw::move(__v));
+        return __c_.begin() + __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __h, const value_type& __v) { (void)__h; return insert(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace_hint(const_iterator __h, const value_type& __v) { (void)__h; return insert(__v); }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator emplace(const _Key& __k, const _Tp& __v) { return insert(value_type(__k, __v)); }
+    template <class _InputIt>
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert(_InputIt __f, _InputIt __l) { for (; __f != __l; ++__f) insert(*__f); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI size_type erase(const _Key& __k) {
+        size_t __f = __lb(__k), __l = __ub(__k);
+        if (__f == __l) return 0;
+        __c_.erase(__c_.begin() + __f, __c_.begin() + __l);
+        return (size_type)(__l - __f);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __pos) {
+        size_t __i = (size_t)(__pos - __c_.begin());
+        __c_.erase(__c_.begin() + __i);
+        return __c_.begin() + __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator erase(const_iterator __f, const_iterator __l) {
+        size_t __i = (size_t)(__f - __c_.begin()), __n = (size_t)(__l - __f);
+        __c_.erase(__c_.begin() + __i, __c_.begin() + __i + __n);
+        return __c_.begin() + __i;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void clear() { __c_.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(flat_multimap& __o) {
+        _Cont __t = __c_; __c_ = __o.__c_; __o.__c_ = __t;
+        _Compare __tc = __comp_; __comp_ = __o.__comp_; __o.__comp_ = __tc;
+    }
+};
+
+template <class _Key, class _Tp, class _Compare>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const flat_multimap<_Key, _Tp, _Compare>& __a, const flat_multimap<_Key, _Tp, _Compare>& __b) {
+    if (__a.size() != __b.size()) return false;
+    typename flat_multimap<_Key, _Tp, _Compare>::const_iterator __i = __a.begin(), __j = __b.begin();
+    for (; __i != __a.end(); ++__i, ++__j) if (!(*__i == *__j)) return false;
+    return true;
+}
+template <class _Key, class _Tp, class _Compare>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const flat_multimap<_Key, _Tp, _Compare>& __a, const flat_multimap<_Key, _Tp, _Compare>& __b) { return !(__a == __b); }
+#if !defined(__WATCOMC__)
+template <class _Key, class _Tp, class _Compare>
+_CCW_LIBCPP_HIDE_FROM_ABI void swap(flat_multimap<_Key, _Tp, _Compare>& __a, flat_multimap<_Key, _Tp, _Compare>& __b) { __a.swap(__b); }
+#endif
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_FLAT_MAP

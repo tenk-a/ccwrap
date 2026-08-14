@@ -1,0 +1,10 @@
+// ccwrap <typeindex>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if _MSC_VER >= 1600
+ #include _CCW_NATIVE_STL_HEADER_PATH(typeindex)
+#else
+ #include <../../detail/llibcxx03/include/typeindex>
+#endif

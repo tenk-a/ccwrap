@@ -1,0 +1,8 @@
+"suite"	"pass"	"since"	"until"	"status"	"note"
+"typeindex"	"cxx11:hash<type_index>"	"2011"	"*"	""	""
+"typeindex"	"cxx11:type_index"	"2011"	"*"	""	""
+"typeindex"	"cxx11:type_index as unordered_map key (hash)"	"2011"	"*"	""	""
+"typeindex"	"cxx11:type_index comparisons"	"2011"	"2017"	""	"C++20 より前の個別 relational operators"
+"typeindex"	"cxx11:type_index::hash_code"	"2011"	"*"	""	""
+"typeindex"	"cxx11:type_index::name"	"2011"	"*"	""	""
+"typeindex"	"cxx20:type_index::operator<=>"	"2020"	"*"	""	""

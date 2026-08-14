@@ -1,0 +1,22 @@
+// ccwrap vc forwarder for <hive>. This is one of the headers MSVC does not always ship,
+// so it comes from libcxx03 when the toolchain has none of its own.
+//
+// The choice is made with __has_include on the NATIVE path. Every MSVC that has this
+// header is newer than the one that gained __has_include (VS2017 15.3), so "no
+// __has_include" safely means "no native header" -- vc120 lands on libcxx03, vc145 on
+// its own.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if defined(__has_include)
+# if __has_include(_CCW_NATIVE_STL_HEADER_PATH(hive))
+#  define _CCW_HAVE_NATIVE_HIVE 1
+# endif
+#endif
+
+#ifdef _CCW_HAVE_NATIVE_HIVE
+# include _CCW_NATIVE_STL_HEADER_PATH(hive)
+#else
+# include <../../detail/llibcxx03/include/hive>
+#endif

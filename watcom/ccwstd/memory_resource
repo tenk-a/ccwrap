@@ -1,0 +1,2 @@
+// ccwrap <memory_resource>
+#include "../std/memory_resource"

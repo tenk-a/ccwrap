@@ -1,0 +1,2 @@
+// ccwrap <spanstream>
+#include "../std/spanstream"

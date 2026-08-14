@@ -1,0 +1,97 @@
+//  ccwrap llibcxx03: <compare> for Open Watcom. The three comparison-category
+//  types (partial/weak/strong_ordering) with their named results and the
+//  is_eq / is_lt / ... helpers. Open Watcom C++ has no `operator<=>`, so the
+//  operator itself and compare_three_way are NOT provided -- but the category
+//  types exist so code that names them compiles.
+#ifndef _CCW_LIBCPP_COMPARE
+#define _CCW_LIBCPP_COMPARE
+#include "__config"
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+struct __ccw_cmp_zero { _CCW_LIBCPP_HIDE_FROM_ABI __ccw_cmp_zero(int __ccw_cmp_zero::*) {} };
+
+template <class _Dummy>
+class __partial_ordering {
+    signed char __v_;   // -1 less, 0 equivalent, 1 greater, 2 unordered
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __partial_ordering(signed char __v) : __v_(__v) {}
+    static const __partial_ordering less;
+    static const __partial_ordering equivalent;
+    static const __partial_ordering greater;
+    static const __partial_ordering unordered;
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__partial_ordering __x, __partial_ordering __y) { return __x.__v_ == __y.__v_; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ == 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ != 0 || __x.__v_ == 2; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator< (__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ == -1; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator> (__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ == 1; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ == -1 || __x.__v_ == 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(__partial_ordering __x, __ccw_cmp_zero) { return __x.__v_ == 1 || __x.__v_ == 0; }
+};
+template <class _D> const __partial_ordering<_D> __partial_ordering<_D>::less       = __partial_ordering<_D>((signed char)-1);
+template <class _D> const __partial_ordering<_D> __partial_ordering<_D>::equivalent = __partial_ordering<_D>((signed char)0);
+template <class _D> const __partial_ordering<_D> __partial_ordering<_D>::greater    = __partial_ordering<_D>((signed char)1);
+template <class _D> const __partial_ordering<_D> __partial_ordering<_D>::unordered  = __partial_ordering<_D>((signed char)2);
+typedef __partial_ordering<void> partial_ordering;
+
+template <class _Dummy>
+class __weak_ordering {
+    signed char __v_;   // -1 less, 0 equivalent, 1 greater
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __weak_ordering(signed char __v) : __v_(__v) {}
+    static const __weak_ordering less;
+    static const __weak_ordering equivalent;
+    static const __weak_ordering greater;
+    _CCW_LIBCPP_HIDE_FROM_ABI operator partial_ordering() const {
+        return __v_ == -1 ? partial_ordering::less : __v_ == 1 ? partial_ordering::greater : partial_ordering::equivalent;
+    }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__weak_ordering __x, __weak_ordering __y) { return __x.__v_ == __y.__v_; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ == 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ != 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator< (__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ < 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator> (__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ > 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ <= 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(__weak_ordering __x, __ccw_cmp_zero) { return __x.__v_ >= 0; }
+};
+template <class _D> const __weak_ordering<_D> __weak_ordering<_D>::less       = __weak_ordering<_D>((signed char)-1);
+template <class _D> const __weak_ordering<_D> __weak_ordering<_D>::equivalent = __weak_ordering<_D>((signed char)0);
+template <class _D> const __weak_ordering<_D> __weak_ordering<_D>::greater    = __weak_ordering<_D>((signed char)1);
+typedef __weak_ordering<void> weak_ordering;
+
+template <class _Dummy>
+class __strong_ordering {
+    signed char __v_;   // -1 less, 0 equal/equivalent, 1 greater
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit __strong_ordering(signed char __v) : __v_(__v) {}
+    static const __strong_ordering less;
+    static const __strong_ordering equal;
+    static const __strong_ordering equivalent;
+    static const __strong_ordering greater;
+    _CCW_LIBCPP_HIDE_FROM_ABI operator partial_ordering() const {
+        return __v_ == -1 ? partial_ordering::less : __v_ == 1 ? partial_ordering::greater : partial_ordering::equivalent;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI operator weak_ordering() const {
+        return __v_ == -1 ? weak_ordering::less : __v_ == 1 ? weak_ordering::greater : weak_ordering::equivalent;
+    }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__strong_ordering __x, __strong_ordering __y) { return __x.__v_ == __y.__v_; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ == 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ != 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator< (__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ < 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator> (__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ > 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ <= 0; }
+    friend _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(__strong_ordering __x, __ccw_cmp_zero) { return __x.__v_ >= 0; }
+};
+template <class _D> const __strong_ordering<_D> __strong_ordering<_D>::less       = __strong_ordering<_D>((signed char)-1);
+template <class _D> const __strong_ordering<_D> __strong_ordering<_D>::equal      = __strong_ordering<_D>((signed char)0);
+template <class _D> const __strong_ordering<_D> __strong_ordering<_D>::equivalent = __strong_ordering<_D>((signed char)0);
+template <class _D> const __strong_ordering<_D> __strong_ordering<_D>::greater    = __strong_ordering<_D>((signed char)1);
+typedef __strong_ordering<void> strong_ordering;
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_eq  (partial_ordering __c) { return __c == 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_neq (partial_ordering __c) { return __c != 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_lt  (partial_ordering __c) { return __c <  0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_gt  (partial_ordering __c) { return __c >  0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_lteq(partial_ordering __c) { return __c <= 0; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_gteq(partial_ordering __c) { return __c >= 0; }
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_COMPARE

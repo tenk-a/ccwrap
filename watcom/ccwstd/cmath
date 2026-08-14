@@ -1,0 +1,53 @@
+// ccwrap watcom/ccwstd: <cmath> wrapper + bridge for the ccwstd environment.
+// Pulls in the real watcom/cmath (std) and re-exports the math names libcxx03 references
+// into namespace ccwstd. See ccwstd/cstddef for the rationale.
+#ifndef _CCW_CCWSTD_CMATH_
+#define _CCW_CCWSTD_CMATH_
+#include "../std/cmath"
+namespace _CCW_STD {
+using ::std::abs;   using ::std::fabs;  using ::std::sqrt;  using ::std::pow;
+using ::std::sin;   using ::std::cos;   using ::std::tan;
+using ::std::asin;  using ::std::acos;  using ::std::atan;  using ::std::atan2;
+using ::std::sinh;  using ::std::cosh;  using ::std::tanh;
+using ::std::asinh; using ::std::acosh; using ::std::atanh;
+using ::std::exp;   using ::std::log;   using ::std::log10;
+using ::std::floor; using ::std::ceil;  using ::std::fmod;
+using ::std::frexp; using ::std::ldexp; using ::std::modf;
+using ::std::cbrt; using ::std::copysign; using ::std::erf; using ::std::erfc; using ::std::exp2; using ::std::expm1;
+using ::std::fdim; using ::std::fma; using ::std::fmax; using ::std::fmin; using ::std::hypot; using ::std::ilogb;
+using ::std::lgamma; using ::std::llrint; using ::std::llround; using ::std::log1p; using ::std::log2; using ::std::logb;
+using ::std::lrint; using ::std::lround; using ::std::nan; using ::std::nearbyint; using ::std::nextafter; using ::std::nexttoward;
+using ::std::remainder; using ::std::remquo; using ::std::rint; using ::std::round; using ::std::scalbln; using ::std::scalbn;
+using ::std::tgamma; using ::std::trunc; using ::std::lerp;
+using ::std::roundeven; using ::std::roundevenf; using ::std::roundevenl; using ::std::fmaximum; using ::std::fmaximumf;
+using ::std::fmaximuml; using ::std::fmaximum_mag; using ::std::fmaximum_magf; using ::std::fmaximum_magl; using ::std::fmaximum_num;
+using ::std::fmaximum_numf; using ::std::fmaximum_numl; using ::std::fminimum; using ::std::fminimumf; using ::std::fminimuml;
+using ::std::fminimum_mag; using ::std::fminimum_magf; using ::std::fminimum_magl; using ::std::fminimum_num; using ::std::fminimum_numf;
+using ::std::fminimum_numl; using ::std::issignaling; using ::std::iscanonical;
+using ::std::fpclassify; using ::std::isfinite; using ::std::isinf; using ::std::isnan; using ::std::isnormal; using ::std::signbit;
+using ::std::isgreater; using ::std::isgreaterequal; using ::std::isless; using ::std::islessequal; using ::std::islessgreater; using ::std::isunordered;
+using ::std::acosf;  using ::std::asinf;  using ::std::atanf;  using ::std::atan2f;  using ::std::ceilf;  using ::std::cosf;
+using ::std::acosl;  using ::std::asinl;  using ::std::atanl;  using ::std::atan2l;  using ::std::ceill;  using ::std::cosl;
+using ::std::coshf;  using ::std::fabsf;  using ::std::floorf;  using ::std::fmodf;  using ::std::frexpf;  using ::std::ilogbf;
+using ::std::coshl;  using ::std::fabsl;  using ::std::floorl;  using ::std::fmodl;  using ::std::frexpl;  using ::std::ilogbl;
+using ::std::ldexpf;  using ::std::logbf;  using ::std::modff;  using ::std::sinf;  using ::std::sinhf;  using ::std::tanf;
+using ::std::ldexpl;  using ::std::logbl;  using ::std::modfl;  using ::std::sinl;  using ::std::sinhl;  using ::std::tanl;
+using ::std::tanhf;  using ::std::truncf;  using ::std::expf;  using ::std::logf;  using ::std::log10f;  using ::std::powf;
+using ::std::tanhl;  using ::std::truncl;  using ::std::expl;  using ::std::logl;  using ::std::log10l;  using ::std::powl;
+using ::std::sqrtf;  using ::std::acoshf;  using ::std::asinhf;  using ::std::atanhf;  using ::std::cbrtf;  using ::std::copysignf;
+using ::std::sqrtl;  using ::std::acoshl;  using ::std::asinhl;  using ::std::atanhl;  using ::std::cbrtl;  using ::std::copysignl;
+using ::std::erff;  using ::std::erfcf;  using ::std::exp2f;  using ::std::expm1f;  using ::std::fdimf;  using ::std::fmaf;
+using ::std::erfl;  using ::std::erfcl;  using ::std::exp2l;  using ::std::expm1l;  using ::std::fdiml;  using ::std::fmal;
+using ::std::fmaxf;  using ::std::fminf;  using ::std::hypotf;  using ::std::lgammaf;  using ::std::llrintf;  using ::std::llroundf;
+using ::std::fmaxl;  using ::std::fminl;  using ::std::hypotl;  using ::std::lgammal;  using ::std::llrintl;  using ::std::llroundl;
+using ::std::log1pf;  using ::std::log2f;  using ::std::lrintf;  using ::std::lroundf;  using ::std::nearbyintf;  using ::std::nextafterf;
+using ::std::log1pl;  using ::std::log2l;  using ::std::lrintl;  using ::std::lroundl;  using ::std::nearbyintl;  using ::std::nextafterl;
+using ::std::nexttowardf;  using ::std::remainderf;  using ::std::remquof;  using ::std::rintf;  using ::std::roundf;  using ::std::scalblnf;
+using ::std::nexttowardl;  using ::std::remainderl;  using ::std::remquol;  using ::std::rintl;  using ::std::roundl;  using ::std::scalblnl;
+using ::std::scalbnf;  using ::std::tgammaf;
+using ::std::scalbnl;  using ::std::tgammal;
+using ::std::nanf; using ::std::nanl;
+typedef ::std::float_t  float_t;
+typedef ::std::double_t double_t;
+}
+#endif

@@ -1,0 +1,83 @@
+// ccwrap <exception>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus < 202302L && _CCW_TARGET_CXX >= 2023
+ #pragma push_macro("unexpected")
+ #undef unexpected
+ #define unexpected __ccw_native_unexpected
+ #include _CCW_NATIVE_STL_HEADER_PATH(exception)
+ #undef unexpected
+ #pragma pop_macro("unexpected")
+#else
+ #include _CCW_NATIVE_STL_HEADER_PATH(exception)
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1700
+namespace std {
+inline terminate_handler get_terminate() {
+    terminate_handler __h = set_terminate(0);
+    set_terminate(__h);
+    return __h;
+}
+inline unexpected_handler get_unexpected() {
+    unexpected_handler __h = set_unexpected(0);
+    set_unexpected(__h);
+    return __h;
+}
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER < 1900
+namespace _CCW_STD17 {
+inline int uncaught_exceptions() { return ::std::uncaught_exception() ? 1 : 0; }
+}
+#endif
+
+#if defined(__cplusplus) && _MSC_VER >= 1600 && _MSC_VER < 1900
+#include <typeinfo>
+#include <type_traits>
+namespace std {
+
+class nested_exception {
+    exception_ptr __ptr_;
+public:
+    nested_exception() throw() : __ptr_(current_exception()) {}
+    nested_exception(const nested_exception& __o) throw() : __ptr_(__o.__ptr_) {}
+    nested_exception& operator=(const nested_exception& __o) throw() { __ptr_ = __o.__ptr_; return *this; }
+    virtual ~nested_exception() {}
+
+    void rethrow_nested() const {
+        if (__ptr_ == exception_ptr()) std::terminate();
+        rethrow_exception(__ptr_);
+    }
+    exception_ptr nested_ptr() const throw() { return __ptr_; }
+};
+
+template <class _Tp>
+struct __ccw_nested : public _Tp, public nested_exception {
+    explicit __ccw_nested(const _Tp& __t) : _Tp(__t), nested_exception() {}
+};
+
+template <class _Tp>
+inline void __ccw_throw_with_nested(const _Tp& __t, true_type) { throw __ccw_nested<_Tp>(__t); }
+template <class _Tp>
+inline void __ccw_throw_with_nested(const _Tp& __t, false_type) { throw __t; }
+
+template <class _Tp>
+inline void throw_with_nested(const _Tp& __t) {
+    typedef integral_constant<bool, is_class<_Tp>::value
+                                 && !is_base_of<nested_exception, _Tp>::value> __mix;
+    __ccw_throw_with_nested(__t, __mix());
+}
+
+template <class _Ep>
+inline void rethrow_if_nested(const _Ep& __e) {
+    const nested_exception* __n = dynamic_cast<const nested_exception*>(&__e);
+    if (__n) __n->rethrow_nested();
+}
+inline void rethrow_if_nested(const nested_exception& __e) { __e.rethrow_nested(); }
+
+}   // namespace std
+#endif

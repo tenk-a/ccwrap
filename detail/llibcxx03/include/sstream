@@ -1,0 +1,232 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
+//  ccwrap llibcxx03: <sstream> for Open Watcom -- the REAL string streams over the
+//  <ios>/<streambuf>/<ostream>/<istream> tower. basic_stringbuf keeps a _CCW_STD::string
+//  and services the streambuf virtuals (append on output, positional read on
+//  input); istringstream / ostringstream / stringstream layer basic_i/ostream on
+//  top. char only.
+//===----------------------------------------------------------------------===//
+#ifndef _CCW_LIBCPP_SSTREAM
+#define _CCW_LIBCPP_SSTREAM
+#include "__config"
+#include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
+#include "__fwd/sstream.h"
+#include <ios>
+#include <streambuf>
+#include <istream>
+#include <ostream>
+#include <string>
+#include <cstddef>
+_CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits >
+class basic_stringbuf : public basic_streambuf<_CharT, _Traits> {
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef _CCW_STD::allocator<_CharT> allocator_type;
+public:
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+private:
+    basic_string<_CharT, _Traits> __str_;
+    _CCW_STD::size_t                   __rpos_;   // get position
+    _CCW_STD::size_t                   __wpos_;   // put position
+    ios_base::openmode            __mode_;
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __put(char_type __c) {
+        if (__wpos_ < __str_.size()) __str_[__wpos_] = __c;
+        else                         __str_.push_back(__c);
+        ++__wpos_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t __init_wpos() const {
+        return (__mode_ & (ios_base::ate | ios_base::app)) ? __str_.size() : 0;
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(ios_base::openmode __m = ios_base::in | ios_base::out) : __rpos_(0), __wpos_(0), __mode_(__m) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_stringbuf(const basic_string<_CharT, _Traits>& __s, ios_base::openmode __m = ios_base::in | ios_base::out) : __str_(__s), __rpos_(0), __wpos_(0), __mode_(__m) { __wpos_ = __init_wpos(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _Traits> str() const { return __str_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void str(const basic_string<_CharT, _Traits>& __s) { __str_ = __s; __rpos_ = 0; __wpos_ = __init_wpos(); }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringbuf(_CCW_RV_REF_BEG basic_stringbuf _CCW_RV_REF_END __rr)
+        : __rpos_(0), __wpos_(0), __mode_(ios_base::in | ios_base::out) {
+        basic_stringbuf& __r = _CCW_MOVED_OBJ(__rr);
+        __str_  = _CCW_MOVE(__r.__str_);
+        __rpos_ = __r.__rpos_; __wpos_ = __r.__wpos_; __mode_ = __r.__mode_;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringbuf& operator=(_CCW_RV_REF_BEG basic_stringbuf _CCW_RV_REF_END __rr) {
+        basic_stringbuf& __r = _CCW_MOVED_OBJ(__rr);
+        __str_  = _CCW_MOVE(__r.__str_);
+        __rpos_ = __r.__rpos_; __wpos_ = __r.__wpos_; __mode_ = __r.__mode_;
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_stringbuf& __r) {
+        __str_.swap(__r.__str_);
+        _CCW_STD::size_t __t;
+        __t = __rpos_; __rpos_ = __r.__rpos_; __r.__rpos_ = __t;
+        __t = __wpos_; __wpos_ = __r.__wpos_; __r.__wpos_ = __t;
+        ios_base::openmode __m = __mode_; __mode_ = __r.__mode_; __r.__mode_ = __m;
+    }
+
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type __c = _Traits::eof()) {
+        if (__c == _Traits::eof()) return _Traits::not_eof(__c);
+        if (__mode_ & ios_base::out) { __put(_Traits::to_char_type(__c)); return __c; }
+        return _Traits::eof();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsputn(const char_type* __s, _CCW_STD::streamsize __n) {
+        if (!(__mode_ & ios_base::out)) return 0;
+        for (_CCW_STD::streamsize __i = 0; __i < __n; ++__i) __put(__s[__i]);
+        return __n;
+    }
+
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekoff(off_type __off, ios_base::seekdir __way,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        bool __gi = (__which & ios_base::in)  != 0;
+        bool __pi = (__which & ios_base::out) != 0;
+        if (!__gi && !__pi) return pos_type(-1);
+        if (__gi && __pi && __way == ios_base::cur) return pos_type(-1);
+
+        const off_type __size = (off_type)__str_.size();
+        off_type __base;
+        if      (__way == ios_base::beg) __base = 0;
+        else if (__way == ios_base::end) __base = __size;
+        else                             __base = (off_type)(__gi ? __rpos_ : __wpos_);
+
+        const off_type __np = __base + __off;
+        if (__np < 0 || __np > __size) return pos_type(-1);
+
+        if (__gi) __rpos_ = (_CCW_STD::size_t)__np;
+        if (__pi) __wpos_ = (_CCW_STD::size_t)__np;
+        return pos_type(__np);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pos_type seekpos(pos_type __pos,
+                                                   ios_base::openmode __which = ios_base::in | ios_base::out) {
+        return seekoff((off_type)__pos, ios_base::beg, __which);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize showmanyc() {
+        if (!(__mode_ & ios_base::in) || __rpos_ >= __str_.size()) return -1;
+        return (_CCW_STD::streamsize)(__str_.size() - __rpos_);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type underflow() {
+        if ((__mode_ & ios_base::in) && __rpos_ < __str_.size()) return _Traits::to_int_type(__str_[__rpos_]);
+        return _Traits::eof();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type uflow() {
+        if ((__mode_ & ios_base::in) && __rpos_ < __str_.size()) { int_type __c = _Traits::to_int_type(__str_[__rpos_]); ++__rpos_; return __c; }
+        return _Traits::eof();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type pbackfail(int_type __c = _Traits::eof()) {
+        if ((__mode_ & ios_base::in) && __rpos_ > 0) { --__rpos_; return __c == _Traits::eof() ? _Traits::to_int_type(__str_[__rpos_]) : __c; }
+        return _Traits::eof();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsgetn(char_type* __s, _CCW_STD::streamsize __n) {
+        _CCW_STD::streamsize __i = 0;
+        if (!(__mode_ & ios_base::in)) return 0;
+        while (__i < __n && __rpos_ < __str_.size()) __s[__i++] = __str_[__rpos_++];
+        return __i;
+    }
+};
+
+template <class _CharT, class _Traits >
+class basic_ostringstream : public basic_ostream<_CharT, _Traits> {
+    basic_stringbuf<_CharT, _Traits> __sb_;
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+    typedef _CCW_STD::allocator<_CharT> allocator_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ostringstream(ios_base::openmode __m = ios_base::out)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(__m | ios_base::out) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_ostringstream(const basic_string<_CharT, _Traits>& __s, ios_base::openmode __m = ios_base::out)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(__s, __m | ios_base::out) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostringstream(_CCW_RV_REF_BEG basic_ostringstream _CCW_RV_REF_END __rr)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostringstream& operator=(_CCW_RV_REF_BEG basic_ostringstream _CCW_RV_REF_END __rr) {
+        basic_ostringstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ostringstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _Traits> str() const { return __sb_.str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void str(const basic_string<_CharT, _Traits>& __s) { __sb_.str(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_stringbuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+template <class _CharT, class _Traits >
+class basic_istringstream : public basic_istream<_CharT, _Traits> {
+    basic_stringbuf<_CharT, _Traits> __sb_;
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+    typedef _CCW_STD::allocator<_CharT> allocator_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_istringstream(ios_base::openmode __m = ios_base::in)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_(__m | ios_base::in) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_istringstream(const basic_string<_CharT, _Traits>& __s, ios_base::openmode __m = ios_base::in)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_(__s, __m | ios_base::in) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_istringstream(_CCW_RV_REF_BEG basic_istringstream _CCW_RV_REF_END __rr)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_istringstream& operator=(_CCW_RV_REF_BEG basic_istringstream _CCW_RV_REF_END __rr) {
+        basic_istringstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_istringstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _Traits> str() const { return __sb_.str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void str(const basic_string<_CharT, _Traits>& __s) { __sb_.str(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_stringbuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+template <class _CharT, class _Traits >
+class basic_stringstream : public basic_iostream<_CharT, _Traits> {
+    basic_stringbuf<_CharT, _Traits> __sb_;
+public:
+    typedef _CharT                     char_type;
+    typedef _Traits                    traits_type;
+    typedef typename _Traits::int_type int_type;
+    typedef typename _Traits::pos_type pos_type;
+    typedef typename _Traits::off_type off_type;
+    typedef _CCW_STD::allocator<_CharT> allocator_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_stringstream(ios_base::openmode __m = ios_base::in | ios_base::out)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_(__m) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_stringstream(const basic_string<_CharT, _Traits>& __s, ios_base::openmode __m = ios_base::in | ios_base::out)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_(__s, __m) { }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringstream(_CCW_RV_REF_BEG basic_stringstream _CCW_RV_REF_END __rr)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
+        this->set_rdbuf(&__sb_);
+        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringstream& operator=(_CCW_RV_REF_BEG basic_stringstream _CCW_RV_REF_END __rr) {
+        basic_stringstream& __s = _CCW_MOVED_OBJ(__rr);
+        __sb_ = _CCW_MOVE(__s.__sb_);
+        this->__ccw_move_ios(__s);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_stringstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _Traits> str() const { return __sb_.str(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void str(const basic_string<_CharT, _Traits>& __s) { __sb_.str(__s); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_stringbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_stringbuf<_CharT, _Traits>*>(&__sb_); }
+};
+
+typedef basic_stringbuf<char>    stringbuf;
+typedef basic_ostringstream<char> ostringstream;
+typedef basic_istringstream<char> istringstream;
+typedef basic_stringstream<char>  stringstream;
+
+_CCW_LIBCPP_END_NAMESPACE_STD
+#endif // _CCW_LIBCPP_SSTREAM
