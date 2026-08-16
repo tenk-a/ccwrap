@@ -2,11 +2,21 @@
 # filesystem) into a static libccwcxx.lib, once per variant. Link the matching variant
 # into an app instead of adding the .cpp to every build:
 #
-#   watcom/lib/<os>-<ns>[-fs-char][-<opts>]/libccwcxx.lib
+#   watcom/lib/<os>-<ns>[-fs-char][-lfn][-<opts>]/libccwcxx.lib
 #
 #   <os>    win32 | dos32
 #   <ns>    std | ccwstd
 #   -fs-char  filesystem::path::value_type forced to char (see below)
+#   -lfn      DOS long file names (-D__WATCOM_LFN__). **DOS のみ、既定で両方作る。**
+#             プログラム側を -D__WATCOM_LFN__ で組むならこちらを対で使う。
+#             これは ABI の切り替えで、リンクするライブラリが変わるだけではない:
+#             _MAX_PATH 144 -> 260 / NAME_MAX 12 -> 259 になり、
+#             struct _finddata_t (char name[_MAX_PATH]) の大きさが変わる。
+#             filesystem.cpp が _findfirst / _findnext に渡すのがまさにその構造体で、
+#             LFN 無しのライブラリを LFN のランタイムで動かすと 144 バイトの領域に
+#             259 バイトの名前が入る。名前修飾は変わらないので**黙って壊れる**。
+#             実行時には LFN プロバイダ (DOSBox-X の lfn=true / Win9x の DOS 窓 /
+#             DOSLFN 等の TSR) が要る。素の MS-DOS では 8.3 に落ちる。
 #   <opts>  **推奨の既定から何を変えたか**。C++ は例外も RTTI もあるのが既定で、
 #           例外モデルは **-xst** を採る (`-xs` / `-xss` は A1'' を踏む。
 #           doc/watcom/ccwrap_watcom_bugs.md)。よって `-xst -xr` が**無印**:
@@ -26,6 +36,9 @@
 #   watcom/lib/win32-std-noeh/libccwcxx.lib      namespace std,    (どちらも無し)
 #   watcom/lib/win32-ccwstd/libccwcxx.lib        namespace ccwstd, -xst -xr
 #   watcom/lib/win32-ccwstd-xrxs/libccwcxx.lib   namespace ccwstd, -xs -xr
+#   watcom/lib/dos32-std/libccwcxx.lib           DOS 8.3,          -xst -xr
+#   watcom/lib/dos32-std-lfn/libccwcxx.lib       DOS 長い名前,     -xst -xr
+#   watcom/lib/dos32-std-lfn-noeh/libccwcxx.lib  DOS 長い名前,     (どちらも無し)
 #
 # The name is libccwcxx (C++ side). A C-only companion would be libccwc.
 #
@@ -49,6 +62,28 @@
 #     wcl386 -bt=nt -l=nt -bm -xd -cc++ -i=<ccwrap>\watcom\std ^
 #            -fi=<ccwrap>\watcom\std\ccwrap_header.h ^
 #            hello.cpp <ccwrap>\watcom\lib\win32-std-noeh\libccwcxx.lib
+#
+#   DOS で長いファイル名を使う -- -lfn の variant
+#     wcl386 -bt=dos -l=dos4g -cc++ -xst -xr -D__WATCOM_LFN__ ^
+#            -i=<ccwrap>\watcom\std -fi=<ccwrap>\watcom\std\ccwrap_header.h ^
+#            hello.cpp <ccwrap>\watcom\lib\dos32-std-lfn\libccwcxx.lib
+#
+#   doslfn3r.lib を自分で並べる必要は無い。native の <sys/_lfndos.h> が
+#   #pragma library("doslfn3r") を出す (-3s なら doslfn3s、16bit はメモリモデル別)。
+#   **-D__WATCOM_LFN__ と -lfn の variant は必ず対で使う。** 取り違えても
+#   診断は 1 件も出ず (実測)、長い名前を読んだ瞬間に壊れる。
+#
+#   リンク行に .lib を書かずに済ませる (自動リンク) -- **opt-in**
+#     -D_CCW_AUTO_LINK を足すと ccwrap_header.h が #pragma library ("libccwcxx") を
+#     出す。**名前だけ**なので、どの variant になるかは**リンカの検索パス**が決める:
+#
+#       set LIB=<ccwrap>\watcom\lib\win32-std            (環境変数)
+#       wcl386 ... -"LIBPATH <ccwrap>\watcom\lib\win32-std"   (コマンドライン)
+#
+#     既定は OFF。ON にして検索パスに置き忘れると W1008 (cannot open libccwcxx.lib)
+#     が出て未解決になる -- 黙って通らないので、そこは気づける。
+#     ただし **variant の取り違えは相変わらず検出できない** (どの variant も
+#     ファイル名が同じなので、検索パスに置いたものがそのまま使われる)。
 #
 #   -bm (static MT ランタイム) はライブラリ側と揃える。-cc++ が無いと wcl386 は
 #   .cpp を C として処理する。-fi= は '/' 始まりを誤解析するので **native パス**で渡す。
@@ -133,7 +168,7 @@ endif()
 #       cmake --build --preset watcom --target ccwrap_win32_std_xst
 #   よく使う組は buildPreset にしてある (watcom-default / watcom-noeh …)。
 function(ccwrap_lib_variant fi incdir outdir)
-    cmake_parse_arguments(A "RTTI;FS_CHAR;NO_EH;XS" "" "" ${ARGN})
+    cmake_parse_arguments(A "RTTI;FS_CHAR;NO_EH;XS;LFN" "" "" ${ARGN})
     # The folder name carries the options the objects were built with, because
     # mixing them is silent breakage: -xs / -xr change what the objects expect
     # without changing any mangled name.
@@ -168,6 +203,9 @@ function(ccwrap_lib_variant fi incdir outdir)
     if(A_FS_CHAR)
         set(outdir "${outdir}-fs-char")
     endif()
+    if(A_LFN)
+        set(outdir "${outdir}-lfn")
+    endif()
     set(outdir "${outdir}${sfx}")
     string(REPLACE "-" "_" tgt "ccwrap_${outdir}")
 
@@ -177,6 +215,14 @@ function(ccwrap_lib_variant fi incdir outdir)
         # filesystem::path::value_type = char, against the target default. The OS
         # layer in filesystem.cpp follows the same macro (narrow CRT instead of _w*).
         target_compile_definitions(${tgt} PRIVATE _CCW_FS_WCHAR=0)
+    endif()
+    if(A_LFN)
+        # DOS long file names. This is an ABI switch, not just a link-time one:
+        # the macro moves _MAX_PATH 144 -> 260 and NAME_MAX 12 -> 259, which resizes
+        # struct _finddata_t (char name[_MAX_PATH]) -- the very struct filesystem.cpp
+        # hands to _findfirst / _findnext. A non-LFN library under an LFN runtime
+        # takes a 259-byte name into a 144-byte field.
+        target_compile_definitions(${tgt} PRIVATE __WATCOM_LFN__)
     endif()
     target_compile_options(${tgt} PRIVATE ${opts})
     # watcom/std (または watcom/ccwstd) だけでよい: llibcxx03 の内部 include は相対なので、
@@ -204,6 +250,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "DOS")
     # なので -fs-char も無い。
     set(CCW_NS_LIST "std")
     set(CCW_FS_LIST "")
+    # LFN は DOS だけの軸で、**既定で両方作る**。opt-in にしない理由は取り違えの
+    # 危険が高いこと: __WATCOM_LFN__ は _MAX_PATH / NAME_MAX を変えるので ABI が
+    # 変わるのに、名前修飾は変わらない (= 混ぜても黙ってリンクが通る)。
+    set(CCW_LFN_LIST "LFN")
     set(CCW_OUT_PREFIX "dos32")
 else()
     set(CCW_NS_LIST "std")
@@ -214,6 +264,8 @@ else()
     if(CCW_LIB_FS_CHAR)
         list(APPEND CCW_FS_LIST "FS_CHAR")
     endif()
+    # __WATCOM_LFN__ は __DOS__ のときだけ効く (native の <sys/_lfndos.h>)。
+    set(CCW_LFN_LIST "")
     set(CCW_OUT_PREFIX "win32")
 endif()
 
@@ -227,13 +279,16 @@ foreach(ns IN LISTS CCW_NS_LIST)
     endif()
     # "" = path の既定文字型、"FS_CHAR" = char 固定
     foreach(fs "" ${CCW_FS_LIST})
-        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI     ${fs})
-        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" NO_EH    ${fs})
+    # "" = 8.3 のまま、"LFN" = DOS 長いファイル名 (DOS のみ)
+    foreach(lfn "" ${CCW_LFN_LIST})
+        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI     ${fs} ${lfn})
+        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" NO_EH    ${fs} ${lfn})
         if(CCW_LIB_XS)
-            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI XS ${fs})
+            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI XS ${fs} ${lfn})
         endif()
         if(CCW_LIB_XST)
-            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" ${fs})
+            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" ${fs} ${lfn})
         endif()
+    endforeach()
     endforeach()
 endforeach()

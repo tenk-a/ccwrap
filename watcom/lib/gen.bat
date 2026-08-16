@@ -44,6 +44,10 @@ rem    watcom-dos32       -> watcom/lib/dos32-std[-<opts>]/
 rem    watcom-dos32-debug -> watcom/lib/debug/dos32-std[-<opts>]/
 rem
 rem  <ns>   = std | ccwstd            (ccwstd is Win32 only)
+rem  -lfn   = DOS long file names (-D__WATCOM_LFN__). **DOS only, and always built**:
+rem           it is an ABI switch (_MAX_PATH 144->260, NAME_MAX 12->259 resize
+rem           struct _finddata_t), so a program built with -D__WATCOM_LFN__ must link
+rem           the -lfn library. Mixing links cleanly and then overruns a buffer.
 rem  <opts> = what was changed from the recommended default (-xst -xr): nothing,
 rem           -xrxs (-xs -xr), -xst (-xst only), -xr (-xr only), -noeh (neither).
 rem           -xs / -xss miscompile at -o<n> (ccwrap_watcom_bugs.md A1''), so the

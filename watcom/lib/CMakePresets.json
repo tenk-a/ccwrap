@@ -260,7 +260,8 @@
       "configurePreset": "watcom-dos32",
       "displayName": "watcom-dos32 -- the unsuffixed variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_dos32_std"
+        "ccwrap_dos32_std",
+        "ccwrap_dos32_std_lfn"
       ]
     },
     {
@@ -276,7 +277,8 @@
       "configurePreset": "watcom-dos32",
       "displayName": "watcom-dos32 -- the -noeh variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_dos32_std_noeh"
+        "ccwrap_dos32_std_noeh",
+        "ccwrap_dos32_std_lfn_noeh"
       ]
     },
     {
@@ -294,7 +296,8 @@
       "configurePreset": "watcom-dos32-debug",
       "displayName": "watcom-dos32-debug -- the unsuffixed variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_dos32_std"
+        "ccwrap_dos32_std",
+        "ccwrap_dos32_std_lfn"
       ]
     },
     {
@@ -310,7 +313,8 @@
       "configurePreset": "watcom-dos32-debug",
       "displayName": "watcom-dos32-debug -- the -noeh variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_dos32_std_noeh"
+        "ccwrap_dos32_std_noeh",
+        "ccwrap_dos32_std_lfn_noeh"
       ]
     },
     {

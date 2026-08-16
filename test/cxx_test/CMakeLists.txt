@@ -190,6 +190,11 @@ if(TST_CC STREQUAL "watcom" AND TEST_TARGET_CXX)
     if(TEST_FS_CHAR AND NOT CMAKE_SYSTEM_NAME STREQUAL "DOS")
         set(TST_LIB_VARIANT "${TST_LIB_VARIANT}-fs-char")
     endif()
+    # LFN も同じ理由で対にする。__WATCOM_LFN__ は _MAX_PATH / NAME_MAX を広げるので
+    # struct _finddata_t の大きさが変わり、filesystem.cpp はそれを _findfirst へ渡す。
+    if(TEST_WATCOM_LFN AND CMAKE_SYSTEM_NAME STREQUAL "DOS")
+        set(TST_LIB_VARIANT "${TST_LIB_VARIANT}-lfn")
+    endif()
     # 接尾辞は「推奨の既定 (-xst -xr) から何を変えたか」。
     # (watcom/lib/CMakeLists.txt と同じ規則)
     if(TEST_NO_EH AND TEST_WATCOM_RTTI)

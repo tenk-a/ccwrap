@@ -190,6 +190,8 @@ watcom の static Cランタイム(-bm) 前提で、dll Cランタイム(-br) �
 | win32-std-fs-char-xrxs/   | win32 例外&rtti 有 char path版    | -bt=nt -l=nt -bm -xst -xr -d_CCW_FS_WCHAR=0   |
 | dos32-std/                | dos32 例外&rtti 有                | -bt=dos -l=dos4g -xst -xr                     |
 | dos32-std-noeh/           | dos32 例外&rtti 無                | -bt=dos -l=dos4g -xd                          |
+| dos32-std-lfn/            | dos32 LFN有効 例外&rtti 有        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xst -xr    |
+| dos32-std-noeh-lfn/       | dos32 LFN有効 例外&rtti 無        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xd         |
 | debug/win32-std/          | debug版win32-std                  | release版に -d2 を足す                        |
 | debug/(その他)            |                                   | release版に -d2 を足す                        |
 
@@ -222,17 +224,20 @@ c++ 標準ライブラリ追加を利用。例外&RTTI 有
 ```batch
 wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  [CCWRAP]/watcom/lib/win32-std/libccwcxx.lib
 ```
-
+あるいは
+```batch
+wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  -"LIBPATH [CCWRAP]/watcom/lib/win32-std"
+```
 あるいは
 ```batch
 set "INCLUDE=[CCWRAP]/watcom/std;%INCLUDE%"
 set "LIB=[CCWRAP]/watcom/lib/win32-std;%LIB%"
-wcl386 -bt=nt -l=nt -bm -xr -xst -fi=ccwrap_header.h src/hoge.cpp libccwcxx.lib
+wcl386 -bt=nt -l=nt -bm -xr -xst -fi=ccwrap_header.h src/hoge.cpp
 ```
 
 c++ 標準ライブラリ 例外&RTTI 無
 ```batch
-wcl386 -bt=nt -l=nt -bm -xd -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  [CCWRAP]/watcom/lib/win32-std-noeh/libccwcxx.lib
+wcl386 -bt=nt -l=nt -bm -xd -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  -"LIBPATH [CCWRAP]/watcom/lib/win32-std"
 ```
 
 dos4g で 例外&RTTI 有

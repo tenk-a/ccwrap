@@ -5,3 +5,7 @@
 
 #include "../../detail/c/ccwrap_config.h"
 #include "../../detail/c/ccwrap_common_sub.h"
+
+#if defined(__cplusplus)
+#pragma library ("libccwcxx")
+#endif

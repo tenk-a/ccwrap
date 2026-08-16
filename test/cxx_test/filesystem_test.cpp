@@ -1615,7 +1615,7 @@ TEST_CASE(filesystem, feature_test_macros) {
 }
 
 TEST_CASE(filesystem, iterator_and_container_lifetime) {
-    fs::path base = fs::temp_directory_path() / "ccw_fs_life";
+    fs::path base = fs::temp_directory_path() / "ccw_life";
     fs::remove_all(base);
     test_true( fs::create_directories(base) );
 
@@ -1668,7 +1668,7 @@ TEST_CASE(filesystem, iterator_and_container_lifetime) {
 
 TEST_CASE(filesystem, error_code_overloads) {
     STD::error_code ec;
-    fs::path base = fs::temp_directory_path() / "ccw_fs_ec";
+    fs::path base = fs::temp_directory_path() / "ccw_ec";
     fs::remove_all(base);
     test_true( fs::create_directories(base, ec) );
     test_true( !ec );
