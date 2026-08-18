@@ -50,6 +50,9 @@ __pycache__/
 
 # tool build dirs
 tools/*/build/
+.claude
+.vscode
+.codex
 
 /ccwrap/test/result_c_test/*/
 /ccwrap/test/result_cxx_test/*/
