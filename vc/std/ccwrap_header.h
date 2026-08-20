@@ -24,9 +24,6 @@
     #define _CCW_NATIVE_C_HEADER_DIR    ../include
     #define _CCW_NATIVE_UC_HEADER_DIR   ../ucrt
     #define _CCW_NATIVE_STL_HEADER_DIR  ../include
-  //#elif _MSC_VER >= 1900
-  //  #define _CCW_NATIVE_C_HEADER_DIR    ../../VC/include
-  //  #define _CCW_NATIVE_UC_HEADER_DIR   ../ucrt
   #elif _MSC_VER >= 1400
     #define _CCW_NATIVE_C_HEADER_DIR    ../../VC/include
     #define _CCW_NATIVE_UC_HEADER_DIR   ../../VC/include
@@ -53,8 +50,43 @@
 #endif
 
 
+#if defined(__cplusplus)
+ #ifndef _CCW_TARGET_CXX
+  //#if _MSVC_LANG >= 201103L
+   //#define _CCW_TARGET_CXX    (_MSVC_LANG/100)
+  //#else
+   //#define _CCW_TARGET_CXX    2014    // vc14.0
+  //#endif
+  #define _CCW_TARGET_CXX       2026
+ #endif
+ #undef _CCW_TARGET_C
+#else
+ #ifndef _CCW_TARGET_C
+  //#if __STDC_VERSION__ >= 201100L
+   //#define _CCW_TARGET_C      (__STDC_VERSION__/100)
+  //#else
+   //#define _CCW_TARGET_C      2011
+  //#endif
+  #define _CCW_TARGET_C         2023
+ #endif
+ #undef _CCW_TARGET_CXX
+#endif
+
 // ---------------------------------------------------------------------------
 // c & c++
+
+#if defined(__cplusplus)
+ #if _MSVC_LANG && __cplusplus < _MSVC_LANG
+  #define _ccw_cplusplus     _MSVC_LANG
+ #elif _MSC_VER >= 1900 && __cplusplus < 201402L
+  #define _ccw_cplusplus     201402L
+ //#elif _MSC_VER >= 1800
+ // Since VC12 has significant shortcomings regarding C++11 support, treat it as C++03 plus extensions.
+ //#define _ccw_cplusplus    201103L
+ #else
+  #define _ccw_cplusplus     __cplusplus
+ #endif
+#endif
 
 #ifndef _CCW_M_CAT
  #define _CCW_M_CAT(a,b)        _CCW_M_CAT_S2(a,b)
@@ -86,21 +118,11 @@
 #define _CCW_MESSAGE(x)         __pragma(message(x))
 
 #if defined(__cplusplus)
- #ifndef _CCW_TARGET_CXX
-  #if _MSVC_LANG >= 201103L
-   #define _CCW_TARGET_CXX      (_MSVC_LANG/100)
-  #else
-   #define _CCW_TARGET_CXX      2014    // vc14.0
-  #endif
- #endif
+  typedef bool                  _ccw_bool;
+#elif __STDC_VERSION__ >= 199901L
+  typedef _Bool	                _ccw_bool;
 #else
- #ifndef _CCW_TARGET_C
-  #if __STDC_VERSION__ >= 201100L
-   #define _CCW_TARGET_C        (__STDC_VERSION__/100)
-  #else
-   #define _CCW_TARGET_C        2011
-  #endif
- #endif
+  typedef unsigned char         _ccw_bool;
 #endif
 
 #if defined(__cpp_char8_t) // _MSC_VER >= 1922 || _MSVC_LANG >= 202000
@@ -108,7 +130,7 @@
 #else
   typedef unsigned char         _ccw_char8;
 #endif
-#if __cplusplus
+#if defined(__cplusplus)
 typedef wchar_t                 _ccw_wchar;
 #else
 typedef unsigned __int16        _ccw_wchar;
@@ -131,7 +153,18 @@ typedef unsigned __int64        _ccw_uint64;
  typedef unsigned long long     _ccw_ullong;
 #endif
 
+#if _ccw_cplusplus >= 201103L
+typedef char16_t                _ccw_char16;
+typedef char32_t                _ccw_char32;
+#else
+typedef _ccw_uint16             _ccw_char16;
+typedef _ccw_uint32             _ccw_char32;
+#endif
+
+#define _ccw_bool               _ccw_bool
 #define _ccw_char8              _ccw_char8
+#define _ccw_char16             _ccw_char16
+#define _ccw_char32             _ccw_char32
 #define _ccw_wchar              _ccw_wchar
 #define _ccw_int8               _ccw_int8
 #define _ccw_uint8              _ccw_uint8
@@ -182,26 +215,14 @@ typedef unsigned __int64        _ccw_uint64;
 
 #if defined(__cplusplus)
 
-#if _MSVC_LANG && __cplusplus < _MSVC_LANG
- #define _ccw_cplusplus     _MSVC_LANG
-#elif _MSC_VER >= 1900 && __cplusplus < 201402L
- #define _ccw_cplusplus     201402L
-//#elif _MSC_VER >= 1800
-// Since VC12 has significant shortcomings regarding C++11 support, treat it as C++03 plus extensions.
-//#define _ccw_cplusplus    201103L
-#else
- #define _ccw_cplusplus     __cplusplus
-#endif
-
-
 #if _MSC_VER >= 1914 && _MSVC_LANG && _MSVC_LANG != __cplusplus
  #pragma message("ccwrap: set /Zc:__cplusplus so __cplusplus follows /std:c++NN")
  //#warning from 19.29 (VS2019 16.10).
 #endif
 
-#if _MSC_VER >= 1914 && ((__cplusplus / 100) < _CCW_TARGET_CXX)
- #pragma message("ccwrap: raise /std:c++NN so __cplusplus reaches _CCW_TARGET_CXX")
-#endif
+//#if _MSC_VER >= 1914 && ((__cplusplus / 100) < _CCW_TARGET_CXX)
+// #pragma message("ccwrap: raise /std:c++NN so __cplusplus reaches _CCW_TARGET_CXX")
+//#endif
 
 #if _MSC_VER < 1400     // vc7.1 and earlier
  #if !defined(override)
@@ -210,9 +231,10 @@ typedef unsigned __int64        _ccw_uint64;
  //#define WCHAR_MAX                ((wchar_t)-1)
 #endif
 
+#define _CCW_16_32_DEFINED
 #if _MSC_VER < 1900     // vc12 and earlier: char16_t/char32_t are not native
- typedef unsigned short             char16_t;
- typedef unsigned int               char32_t;
+ typedef _ccw_char16                char16_t;
+ typedef _ccw_char32                char32_t;
 #endif
 
 #if _MSC_VER < 1600     // vc9 and earlier
@@ -312,6 +334,15 @@ typedef unsigned __int64        _ccw_uint64;
  #define _ENABLE_ATOMIC_ALIGNMENT_FIX
 #endif
 
+#if !defined(__CCW_HAS_CHAR8_T)
+ #if defined(__cpp_char8_t)
+  #define __CCW_HAS_CHAR8_T        1
+ #elif _CCW_TARGET_CXX >= 2020
+  #define __CCW_HAS_CHAR8_T        1
+  typedef _ccw_char8               char8_t;
+ #endif
+#endif
+
 // user-defined literals: MSVC from vc14 (VS2015).
 #ifndef _CCW_HAS_UDL
  #if defined(__cpp_user_defined_literals)
@@ -409,6 +440,14 @@ typedef unsigned __int64        _ccw_uint64;
  #endif
 #endif
 
+#ifndef _ccw_inline_const
+ #if defined(__cpp_inline_variables) && __cpp_inline_variables >= 201606L
+  #define _ccw_inline_const         inline const
+ #else
+  #define _ccw_inline_const         extern __declspec(selectany) const
+ #endif
+#endif
+
 #ifndef _ccw_move_or_swap
  #if _ccw_cplusplus >= 201103L
   #define _ccw_move_or_swap(l,r)    ((l) = std::move(r))
@@ -474,8 +513,10 @@ namespace __ccw { namespace detail {} }
 #if !defined inline
  #define inline                 __inline
 #endif
-#if !defined _Bool
- #define _Bool                  char
+#if __STDC_VERSION__ < 199901L
+ #if !defined _Bool
+  #define _Bool                 _ccw_bool
+ #endif
 #endif
 
 #if _CCW_TARGET_C >= 2023

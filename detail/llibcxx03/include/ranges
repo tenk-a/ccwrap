@@ -54,7 +54,7 @@ public:
 } // namespace ranges
 
 struct from_range_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit from_range_t() {} };
-static const from_range_t from_range = from_range_t();
+_ccw_inline_const from_range_t from_range = from_range_t();
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif // _CCW_LIBCPP_RANGES

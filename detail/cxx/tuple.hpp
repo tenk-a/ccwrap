@@ -311,7 +311,7 @@ inline const T& get(const tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>& t) {
 struct __ccw_ignore_t {
     template<class T> const __ccw_ignore_t& operator=(const T&) const { return *this; }
 };
-static const __ccw_ignore_t ignore = __ccw_ignore_t();
+_ccw_inline_const __ccw_ignore_t ignore = __ccw_ignore_t();
 
 }   // namespace _CCW_STD
 

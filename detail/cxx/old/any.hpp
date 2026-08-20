@@ -19,7 +19,6 @@
 #include <exception>
 #include "fnctmpl.hpp"
 
-// _CCW_STD17 == std iff _CCW_TARGET_CXX>=2017, else _ccw (see doc/ccwrap_impl_rule.md).
 namespace _CCW_STD17 {
 using namespace ::std;   /* resolve unqualified std names when this ns is _ccw */
 

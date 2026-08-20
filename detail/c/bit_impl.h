@@ -23,51 +23,64 @@
    #define _CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC 1
   #endif
  #endif
+ #define _CCW_BIT_IMPL_INL  static _ccw_forceinline
 #elif defined(__WATCOMC__) && defined(__386__)
  #include <intrin.h>
  #define _CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC 1
+ #define _CCW_BIT_IMPL_INL  static inline
+#elif defined(__GNUC__)
+ #if defined(__clang__) || __GNUC__ >= 4
+  #if defined(__SIZEOF_INT__) && (__SIZEOF_INT__ == 4)
+   #if defined(__SIZEOF_LONG_LONG__) && (__SIZEOF_LONG_LONG__ == 8)
+    #define _CCW_BITIMPL_HAS_GNU_BUILTIN 1
+   #endif
+  #endif
+ #endif
+ #define _CCW_BIT_IMPL_INL  static inline
+#else
+ #define _CCW_BIT_IMPL_INL  static inline
 #endif
 
-static _ccw_forceinline bool _ccw_stdbit_has_single_bit_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL _ccw_bool _ccw_stdbit_has_single_bit_u8(_ccw_uint8 value) {
     return value != 0 && (value & (_ccw_uint8)(value - 1)) == 0;
 }
 
-static _ccw_forceinline bool _ccw_stdbit_has_single_bit_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL _ccw_bool _ccw_stdbit_has_single_bit_u16(_ccw_uint16 value) {
     return value != 0 && (value & (_ccw_uint16)(value - 1)) == 0;
 }
 
-static _ccw_forceinline bool _ccw_stdbit_has_single_bit_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL _ccw_bool _ccw_stdbit_has_single_bit_u32(_ccw_uint32 value) {
     return value != 0 && (value & (_ccw_uint32)(value - 1)) == 0;
 }
 
-static _ccw_forceinline bool _ccw_stdbit_has_single_bit_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL _ccw_bool _ccw_stdbit_has_single_bit_u64(_ccw_uint64 value) {
     _ccw_uint64 t = value & (_ccw_uint64)(value - 1);
     return value != 0 && t == 0;
 }
 
-#if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_zero_u8(_ccw_uint8 value) {
+ #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
     return _BitScanForward(&index, (unsigned long)value) ? (unsigned int)index : 8;
-}
-#else
-static inline unsigned int _ccw_stdbit_countr_zero_u8(_ccw_uint8 value) {
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 8 : (unsigned int)__builtin_ctz((unsigned int)value);
+ #else
     unsigned int count = 0;
     if (value == 0)
         return 8;
     if ((value & 0x0f) == 0) { count += 4; value >>= 4; }
     if ((value & 0x03) == 0) { count += 2; value >>= 2; }
     return count + ((value & 0x01) ^ 1);
+ #endif
 }
-#endif
 
-#if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_zero_u16(_ccw_uint16 value) {
+ #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
     return _BitScanForward(&index, (unsigned long)value) ? (unsigned int)index : 16;
-}
-#else
-static inline unsigned int _ccw_stdbit_countr_zero_u16(_ccw_uint16 value) {
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 16 : (unsigned int)__builtin_ctz((unsigned int)value);
+ #else
     unsigned int count = 0;
     if (value == 0)
         return 16;
@@ -75,16 +88,16 @@ static inline unsigned int _ccw_stdbit_countr_zero_u16(_ccw_uint16 value) {
     if ((value & 0x000f) == 0) { count += 4; value >>= 4; }
     if ((value & 0x0003) == 0) { count += 2; value >>= 2; }
     return count + ((value & 0x0001) ^ 1);
+ #endif
 }
-#endif
 
-#if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_zero_u32(_ccw_uint32 value) {
+ #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
     return _BitScanForward(&index, (unsigned long)value) ? (unsigned int)index : 32;
-}
-#else
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u32(_ccw_uint32 value) {
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 32 : (unsigned int)__builtin_ctz((unsigned int)value);
+ #else
     unsigned int count = 0;
     if (value == 0)
         return 32;
@@ -93,20 +106,18 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u32(_ccw_uint32 val
     if ((value & 0x0000000fU) == 0) { count += 4; value >>= 4; }
     if ((value & 0x00000003U) == 0) { count += 2; value >>= 2; }
     return count + ((value & 0x00000001U) ^ 1);
+ #endif
 }
-#endif
 
-#if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
-#if defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM64EC)
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 value) {
+ #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
+  #if defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM64EC)
     unsigned long index;
     if (value == 0)
         return 64;
     _BitScanForward64(&index, (unsigned __int64)value);
     return (unsigned int)index;
-}
-#else
-static inline unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 value) {
+  #else
     unsigned long index;
     _ccw_uint32 lo;
     if (value == 0)
@@ -116,10 +127,10 @@ static inline unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 value) {
         return (unsigned int)index;
     _BitScanForward(&index, (unsigned long)(value >> 32));
     return (unsigned int)index + 32;
-}
-#endif
-#else
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 value) {
+  #endif
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 64 : (unsigned int)__builtin_ctzll((unsigned long long)value);
+ #else
     unsigned int count = 0;
     _ccw_uint64 t;
     if (value == 0)
@@ -131,30 +142,32 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countr_zero_u64(_ccw_uint64 val
     t = value & 0x0000000000000003ULL; if (t == 0) { count += 2; value >>= 2; }
     t = value & 0x0000000000000001ULL;
     return count + (unsigned int)(t ^ 1);
+ #endif
 }
-#endif
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_one_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_one_u8(_ccw_uint8 value) {
     return _ccw_stdbit_countr_zero_u8((_ccw_uint8)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_one_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_one_u16(_ccw_uint16 value) {
     return _ccw_stdbit_countr_zero_u16((_ccw_uint16)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_one_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_one_u32(_ccw_uint32 value) {
     return _ccw_stdbit_countr_zero_u32((_ccw_uint32)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countr_one_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countr_one_u64(_ccw_uint64 value) {
     return _ccw_stdbit_countr_zero_u64((_ccw_uint64)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_zero_u8(_ccw_uint8 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
 
     return _BitScanReverse(&index, (unsigned long)value) ? 7 - (unsigned int)index : 8;
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 8 : (unsigned int)__builtin_clz((unsigned int)value) - 24;
  #else
     unsigned int count = 0;
 
@@ -166,11 +179,13 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u8(_ccw_uint8 value
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_zero_u16(_ccw_uint16 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
 
     return _BitScanReverse(&index, (unsigned long)value) ? 15 - (unsigned int)index : 16;
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 16 : (unsigned int)__builtin_clz((unsigned int)value) - 16;
  #else
     unsigned int count = 0;
 
@@ -183,11 +198,13 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u16(_ccw_uint16 val
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_zero_u32(_ccw_uint32 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
 
     return _BitScanReverse(&index, (unsigned long)value) ? 31 - (unsigned int)index : 32;
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 32 : (unsigned int)__builtin_clz((unsigned int)value);
  #else
     unsigned int count = 0;
 
@@ -201,7 +218,7 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u32(_ccw_uint32 val
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_zero_u64(_ccw_uint64 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_BITSCAN_INTRINSIC)
     unsigned long index;
   #if !(defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM64EC))
@@ -220,6 +237,8 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u64(_ccw_uint64 val
     _BitScanReverse(&index, (unsigned long)value);
     return 63 - (unsigned int)index;
   #endif
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return value == 0 ? 64 : (unsigned int)__builtin_clzll((unsigned long long)value);
  #else
     unsigned int count = 0;
     _ccw_uint64 t;
@@ -235,91 +254,95 @@ static _ccw_forceinline unsigned int _ccw_stdbit_countl_zero_u64(_ccw_uint64 val
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_one_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_one_u8(_ccw_uint8 value) {
     return _ccw_stdbit_countl_zero_u8((_ccw_uint8)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_one_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_one_u16(_ccw_uint16 value) {
     return _ccw_stdbit_countl_zero_u16((_ccw_uint16)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_one_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_one_u32(_ccw_uint32 value) {
     return _ccw_stdbit_countl_zero_u32((_ccw_uint32)~value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_countl_one_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_countl_one_u64(_ccw_uint64 value) {
     return _ccw_stdbit_countl_zero_u64((_ccw_uint64)~value);
 }
 
-static _ccw_forceinline _ccw_uint8 _ccw_stdbit_bit_floor_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL _ccw_uint8 _ccw_stdbit_bit_floor_u8(_ccw_uint8 value) {
     return value == 0 ? 0 : (_ccw_uint8)(1U << (7 - _ccw_stdbit_countl_zero_u8(value)));
 }
 
-static _ccw_forceinline _ccw_uint16 _ccw_stdbit_bit_floor_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL _ccw_uint16 _ccw_stdbit_bit_floor_u16(_ccw_uint16 value) {
     return value == 0 ? 0 : (_ccw_uint16)(1U << (15 - _ccw_stdbit_countl_zero_u16(value)));
 }
 
-static _ccw_forceinline _ccw_uint32 _ccw_stdbit_bit_floor_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL _ccw_uint32 _ccw_stdbit_bit_floor_u32(_ccw_uint32 value) {
     return value == 0 ? 0 : (_ccw_uint32)(1UL << (31 - _ccw_stdbit_countl_zero_u32(value)));
 }
 
-static _ccw_forceinline _ccw_uint64 _ccw_stdbit_bit_floor_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL _ccw_uint64 _ccw_stdbit_bit_floor_u64(_ccw_uint64 value) {
     return value == 0 ? 0 : (_ccw_uint64)(1ULL << (63 - _ccw_stdbit_countl_zero_u64(value)));
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_bit_width_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_bit_width_u8(_ccw_uint8 value) {
     return 8 - _ccw_stdbit_countl_zero_u8(value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_bit_width_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_bit_width_u16(_ccw_uint16 value) {
     return 16 - _ccw_stdbit_countl_zero_u16(value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_bit_width_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_bit_width_u32(_ccw_uint32 value) {
     return 32 - _ccw_stdbit_countl_zero_u32(value);
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_bit_width_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_bit_width_u64(_ccw_uint64 value) {
     return 64 - _ccw_stdbit_countl_zero_u64(value);
 }
 
-static _ccw_forceinline _ccw_uint8 _ccw_stdbit_bit_ceil_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL _ccw_uint8 _ccw_stdbit_bit_ceil_u8(_ccw_uint8 value) {
     if (value <= 1)
         return 1;
     return _ccw_stdbit_bit_width_u8((_ccw_uint8)(value - 1)) >= 8 ? 0 : (_ccw_uint8)(1U << _ccw_stdbit_bit_width_u8((_ccw_uint8)(value - 1)));
 }
 
-static _ccw_forceinline _ccw_uint16 _ccw_stdbit_bit_ceil_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL _ccw_uint16 _ccw_stdbit_bit_ceil_u16(_ccw_uint16 value) {
     if (value <= 1)
         return 1;
     return _ccw_stdbit_bit_width_u16((_ccw_uint16)(value - 1)) >= 16 ? 0 : (_ccw_uint16)(1U << _ccw_stdbit_bit_width_u16((_ccw_uint16)(value - 1)));
 }
 
-static _ccw_forceinline _ccw_uint32 _ccw_stdbit_bit_ceil_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL _ccw_uint32 _ccw_stdbit_bit_ceil_u32(_ccw_uint32 value) {
     if (value <= 1)
         return 1;
     return _ccw_stdbit_bit_width_u32((_ccw_uint32)(value - 1)) >= 32 ? 0 : (_ccw_uint32)(1UL << _ccw_stdbit_bit_width_u32((_ccw_uint32)(value - 1)));
 }
 
-static _ccw_forceinline _ccw_uint64 _ccw_stdbit_bit_ceil_u64(_ccw_uint64 value) {
+_CCW_BIT_IMPL_INL _ccw_uint64 _ccw_stdbit_bit_ceil_u64(_ccw_uint64 value) {
     if (value <= 1)
         return 1;
     return _ccw_stdbit_bit_width_u64((_ccw_uint64)(value - 1)) >= 64 ? 0 : (_ccw_uint64)(1ULL << _ccw_stdbit_bit_width_u64((_ccw_uint64)(value - 1)));
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u8(_ccw_uint8 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_popcount_u8(_ccw_uint8 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC)
     return (unsigned int)__popcnt16((unsigned short)value);
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return (unsigned int)__builtin_popcount((unsigned int)value);
  #else
     value = (_ccw_uint8)((value & 0x55) + ((value >> 1) & 0x55));
     value = (_ccw_uint8)((value & 0x33) + ((value >> 2) & 0x33));
     return (unsigned int)((value & 0x0f) + ((value >> 4) & 0x0f));
-#endif
+ #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u16(_ccw_uint16 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_popcount_u16(_ccw_uint16 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC)
     return (unsigned int)__popcnt16((unsigned short)value);
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return (unsigned int)__builtin_popcount((unsigned int)value);
  #else
     value = (_ccw_uint16)((value & 0x5555) + ((value >> 1) & 0x5555));
     value = (_ccw_uint16)((value & 0x3333) + ((value >> 2) & 0x3333));
@@ -328,9 +351,11 @@ static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u16(_ccw_uint16 value)
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u32(_ccw_uint32 value) {
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_popcount_u32(_ccw_uint32 value) {
  #if defined(_CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC)
     return (unsigned int)__popcnt((unsigned int)value);
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return (unsigned int)__builtin_popcount((unsigned int)value);
  #else
     value = (value & 0x55555555U) + ((value >> 1) & 0x55555555U);
     value = (value & 0x33333333U) + ((value >> 2) & 0x33333333U);
@@ -340,21 +365,25 @@ static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u32(_ccw_uint32 value)
  #endif
 }
 
-static _ccw_forceinline unsigned int _ccw_stdbit_popcount_u64(_ccw_uint64 value) {
-#if defined(_CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC)
- #if defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM64EC)
+_CCW_BIT_IMPL_INL unsigned int _ccw_stdbit_popcount_u64(_ccw_uint64 value) {
+ #if defined(_CCW_BITIMPL_HAS_VC_POPCNT_INTRINSIC)
+  #if defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM64EC)
     return (unsigned int)__popcnt64((unsigned __int64)value);
- #else
+  #else
     return (unsigned int)(__popcnt((unsigned int)value) + __popcnt((unsigned int)(value >> 32)));
- #endif
-#else
+  #endif
+ #elif defined(_CCW_BITIMPL_HAS_GNU_BUILTIN)
+    return (unsigned int)__builtin_popcountll((unsigned long long)value);
+ #else
     value = (value & 0x5555555555555555ULL) + ((value >> 1) & 0x5555555555555555ULL);
     value = (value & 0x3333333333333333ULL) + ((value >> 2) & 0x3333333333333333ULL);
     value = (value & 0x0f0f0f0f0f0f0f0fULL) + ((value >> 4) & 0x0f0f0f0f0f0f0f0fULL);
     value = (value & 0x00ff00ff00ff00ffULL) + ((value >> 8) & 0x00ff00ff00ff00ffULL);
     value = (value & 0x0000ffff0000ffffULL) + ((value >> 16) & 0x0000ffff0000ffffULL);
     return (unsigned int)((_ccw_uint32)value + (_ccw_uint32)(value >> 32));
-#endif
+ #endif
 }
 
-#endif
+#undef _CCW_BIT_IMPL_INL
+
+#endif // _CCW_BIT_IMPL_H___

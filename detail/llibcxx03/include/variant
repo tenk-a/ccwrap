@@ -254,7 +254,7 @@ _CCW_LIBCPP_HIDE_FROM_ABI const typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>:
     const _Tp* __p = get_if<_Tp>(&__v); if (!__p) _CCW_THROW(bad_variant_access()); return *__p;
 }
 
-static const _CCW_STD::size_t variant_npos = (_CCW_STD::size_t)-1;
+_ccw_inline_const _CCW_STD::size_t variant_npos = (_CCW_STD::size_t)-1;
 
 template <class _Vp> struct variant_size;
 template <class _T0, class _T1, class _T2, class _T3> struct variant_size<variant<_T0, _T1, _T2, _T3> > {

@@ -53,7 +53,7 @@
     {
       "name": "gcc-cxx26",
       "inherits": "gcc",
-      "displayName": "g++ -std=c++26 / gcc -std=c23 (spec 追従の主軸。最新規格を最も広く実装する構成)",
+      "displayName": "g++ -std=c++26 / gcc -std=c23 -- widest standard coverage; the spec reference",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "26",
         "CMAKE_C_STANDARD": "23",
@@ -112,7 +112,7 @@
     {
       "name": "dmc",
       "displayName": "Digital Mars C 8.x (Ninja, native C library)",
-      "description": "dmc.exe is invoked directly; no dmc-cc or ccwrap is used. The selected suites are the tests that link against the DMC 8.x runtime.",
+      "description": "dmc.exe directly, no ccwrap. Only the suites that link against the DMC 8.x runtime.",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/toolchains/dmc.cmake",
       "binaryDir": "${sourceDir}/_build/${presetName}",
@@ -126,7 +126,7 @@
     {
       "name": "orangec",
       "displayName": "Orange C/C++ 7.x (Ninja, native C library)",
-      "description": "occ.exe is invoked directly through CMake's native OrangeC support; no ccwrap is used. Compile/link-unsupported suites are excluded, and known OrangeC 7.10.59 fatal library calls are conditionally skipped so CTest completes.",
+      "description": "occ.exe via CMake's OrangeC support, no ccwrap. Unsupported suites are excluded.",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/toolchains/orangec.cmake",
       "binaryDir": "${sourceDir}/_build/${presetName}",
@@ -189,7 +189,7 @@
     },
     {
       "name": "watcom-fs-char",
-      "displayName": "Open Watcom 2.0 (win32), filesystem::path forced to char -- needs lib/ built with the -fs-char variants",
+      "displayName": "Open Watcom 2.0 (win32), filesystem::path forced to char -- needs lib/ built with the -fsc variants",
       "inherits": "watcom",
       "cacheVariables": {
         "TEST_FS_CHAR": "ON",
@@ -200,7 +200,7 @@
       "name": "watcom-ccwstd",
       "inherits": "watcom",
       "displayName": "Open Watcom (ccwstd relocation) -- cxx_test only",
-      "description": "libcxx03 を ccwstd 名前空間へ再配置した環境。C スイートは std/ccwstd の区別が無いので cxx_test だけを回す。",
+      "description": "C suites have no std/ccwstd split, so only cxx_test runs.",
       "cacheVariables": {
         "TST_NS": "ccwstd",
         "TST_SUITES": "cxx_test"
@@ -210,7 +210,7 @@
       "name": "watcom-std",
       "inherits": "watcom",
       "displayName": "Open Watcom, native C library only (no ccwrap) -- c_test only",
-      "description": "ccwrap を一切通さない素の Open Watcom ベースライン。C++ 側は純正ライブラリが貧弱すぎて成立しないので c_test だけ。ここで落ちる分が ccwrap の補充分そのもの。",
+      "description": "Plain Open Watcom, no ccwrap. C++ is too thin to build, so c_test only. What fails here is what ccwrap supplies.",
       "cacheVariables": {
         "TST_SUITES": "c_test",
         "TEST_TARGET_C": ""
@@ -220,7 +220,7 @@
       "name": "gcc-std",
       "hidden": true,
       "inherits": "gcc",
-      "displayName": "g++ 素の libstdc++ (ccwrap 無し) -- C++ 規格別スイープの土台",
+      "displayName": "g++ with plain libstdc++ (no ccwrap) -- base for the per-standard sweep",
       "cacheVariables": {
         "TEST_TARGET_CXX": "",
         "TEST_TARGET_C": "",
@@ -230,7 +230,7 @@
     {
       "name": "gcc-std-cxx03",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++98 / 素の libstdc++",
+      "displayName": "g++ -std=c++98 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "98"
       }
@@ -238,7 +238,7 @@
     {
       "name": "gcc-std-cxx11",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++11 / 素の libstdc++",
+      "displayName": "g++ -std=c++11 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11"
       }
@@ -246,7 +246,7 @@
     {
       "name": "gcc-std-cxx14",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++14 / 素の libstdc++",
+      "displayName": "g++ -std=c++14 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14"
       }
@@ -254,7 +254,7 @@
     {
       "name": "gcc-std-cxx17",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++17 / 素の libstdc++",
+      "displayName": "g++ -std=c++17 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "17"
       }
@@ -262,7 +262,7 @@
     {
       "name": "gcc-std-cxx20",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++20 / 素の libstdc++",
+      "displayName": "g++ -std=c++20 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20"
       }
@@ -270,7 +270,7 @@
     {
       "name": "gcc-std-cxx23",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++23 / 素の libstdc++",
+      "displayName": "g++ -std=c++23 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "23"
       }
@@ -278,7 +278,7 @@
     {
       "name": "gcc-std-cxx26",
       "inherits": "gcc-std",
-      "displayName": "g++ -std=c++26 / 素の libstdc++",
+      "displayName": "g++ -std=c++26 / plain libstdc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "26"
       }
@@ -287,7 +287,7 @@
       "name": "gcc-cstd",
       "hidden": true,
       "inherits": "gcc",
-      "displayName": "gcc 素の glibc (ccwrap 無し) -- C 規格別スイープの土台",
+      "displayName": "gcc with plain glibc (no ccwrap) -- base for the per-standard sweep",
       "cacheVariables": {
         "TEST_TARGET_CXX": "",
         "TEST_TARGET_C": "",
@@ -297,7 +297,7 @@
     {
       "name": "gcc-std-c90",
       "inherits": "gcc-cstd",
-      "displayName": "gcc -std=c90 / 素の glibc",
+      "displayName": "gcc -std=c90 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "90"
       }
@@ -305,7 +305,7 @@
     {
       "name": "gcc-std-c99",
       "inherits": "gcc-cstd",
-      "displayName": "gcc -std=c99 / 素の glibc",
+      "displayName": "gcc -std=c99 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "99"
       }
@@ -313,7 +313,7 @@
     {
       "name": "gcc-std-c11",
       "inherits": "gcc-cstd",
-      "displayName": "gcc -std=c11 / 素の glibc",
+      "displayName": "gcc -std=c11 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "11"
       }
@@ -321,7 +321,7 @@
     {
       "name": "gcc-std-c17",
       "inherits": "gcc-cstd",
-      "displayName": "gcc -std=c17 / 素の glibc",
+      "displayName": "gcc -std=c17 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "17"
       }
@@ -329,7 +329,7 @@
     {
       "name": "gcc-std-c23",
       "inherits": "gcc-cstd",
-      "displayName": "gcc -std=c23 / 素の glibc",
+      "displayName": "gcc -std=c23 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "23"
       }
@@ -338,7 +338,7 @@
       "name": "clang-libcxx",
       "hidden": true,
       "inherits": "clang",
-      "displayName": "clang++ -stdlib=libc++ (ccwrap 無し) -- C++ 規格別スイープの土台",
+      "displayName": "clang++ -stdlib=libc++ (no ccwrap) -- base for the per-standard sweep",
       "cacheVariables": {
         "TEST_TARGET_CXX": "",
         "TEST_TARGET_C": "",
@@ -407,7 +407,7 @@
       "name": "clang-cstd",
       "hidden": true,
       "inherits": "clang",
-      "displayName": "clang 素の glibc (ccwrap 無し) -- C 規格別スイープの土台",
+      "displayName": "clang with plain glibc (no ccwrap) -- base for the per-standard sweep",
       "cacheVariables": {
         "TEST_TARGET_CXX": "",
         "TEST_TARGET_C": "",
@@ -417,7 +417,7 @@
     {
       "name": "clang-std-c90",
       "inherits": "clang-cstd",
-      "displayName": "clang -std=c90 / 素の glibc",
+      "displayName": "clang -std=c90 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "90"
       }
@@ -425,7 +425,7 @@
     {
       "name": "clang-std-c99",
       "inherits": "clang-cstd",
-      "displayName": "clang -std=c99 / 素の glibc",
+      "displayName": "clang -std=c99 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "99"
       }
@@ -433,7 +433,7 @@
     {
       "name": "clang-std-c11",
       "inherits": "clang-cstd",
-      "displayName": "clang -std=c11 / 素の glibc",
+      "displayName": "clang -std=c11 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "11"
       }
@@ -441,7 +441,7 @@
     {
       "name": "clang-std-c17",
       "inherits": "clang-cstd",
-      "displayName": "clang -std=c17 / 素の glibc",
+      "displayName": "clang -std=c17 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "17"
       }
@@ -449,7 +449,7 @@
     {
       "name": "clang-std-c23",
       "inherits": "clang-cstd",
-      "displayName": "clang -std=c23 / 素の glibc",
+      "displayName": "clang -std=c23 / plain glibc",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "23"
       }

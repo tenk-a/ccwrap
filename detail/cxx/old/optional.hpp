@@ -25,9 +25,6 @@
 # pragma warning(disable:4521 4522)  /* multiple copy ctor / assign (harmless here) */
 #endif
 
-// _CCW_STD17 == std when _CCW_TARGET_CXX >= 2017, else _ccw: std::optional is
-// exposed only when the target standard includes it; _ccw::optional always works
-// (aliased below). See doc/ccwrap_impl_rule.md.
 namespace _CCW_STD17 {
 using namespace ::std;   /* resolve unqualified std names when this ns is _ccw */
 

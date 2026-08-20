@@ -17,10 +17,10 @@ class parallel_policy {};
 class parallel_unsequenced_policy {};
 class unsequenced_policy {};   // C++20
 
-static const sequenced_policy            seq       = sequenced_policy();
-static const parallel_policy             par       = parallel_policy();
-static const parallel_unsequenced_policy par_unseq = parallel_unsequenced_policy();
-static const unsequenced_policy          unseq     = unsequenced_policy();   // C++20
+_ccw_inline_const sequenced_policy            seq       = sequenced_policy();
+_ccw_inline_const parallel_policy             par       = parallel_policy();
+_ccw_inline_const parallel_unsequenced_policy par_unseq = parallel_unsequenced_policy();
+_ccw_inline_const unsequenced_policy          unseq     = unsequenced_policy();   // C++20
 
 }  // namespace execution
 

@@ -13,6 +13,16 @@ namespace _CCW_STD17 {
 }
 #endif // __MINGW32__ && __cplusplus
 
+#if !defined(__MINGW32__) && defined(__cplusplus) && __cplusplus < 201703L
+#include <time.h>
+namespace _CCW_STD17 {
+    using ::timespec;
+#if defined(TIME_UTC)
+    using ::timespec_get;
+#endif
+}
+#endif
+
 #if defined(__MINGW32__) && defined(__cplusplus) && defined(_CCW_C_CONFORM)
 #include <string.h>
 inline char* __ccw_fix_asc_cxx(char* __s) {

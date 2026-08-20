@@ -125,9 +125,9 @@ public:
 struct defer_lock_t  {};
 struct try_to_lock_t {};
 struct adopt_lock_t  {};
-static const defer_lock_t  defer_lock  = defer_lock_t();
-static const try_to_lock_t try_to_lock = try_to_lock_t();
-static const adopt_lock_t  adopt_lock  = adopt_lock_t();
+_ccw_inline_const defer_lock_t  defer_lock  = defer_lock_t();
+_ccw_inline_const try_to_lock_t try_to_lock = try_to_lock_t();
+_ccw_inline_const adopt_lock_t  adopt_lock  = adopt_lock_t();
 
 template<class M>
 class lock_guard {

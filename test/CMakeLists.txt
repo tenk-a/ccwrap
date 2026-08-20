@@ -9,35 +9,6 @@ endif()
 
 project(ccwrap_test C CXX)
 
-# ---------------------------------------------------------------------------
-# 4 スイートをまとめて 1 回の configure → build → test で回すための umbrella。
-#
-#   cd test
-#   cmake --preset watcom && cmake --build --preset watcom && ctest --preset watcom
-#   cmake --preset vc145  && cmake --build --preset vc145  && ctest --preset vc145
-#   cmake --preset gcc    && cmake --build --preset gcc    && ctest --preset gcc
-#   cmake --preset dmc    && cmake --build --preset dmc    && ctest --preset dmc
-#   cmake --preset orangec && cmake --build --preset orangec && ctest --preset orangec
-#
-# (お手軽ラッパ: test/run.bat <preset> / test/run.sh <preset> が上の 3 行を順に呼ぶ)
-#
-# スイート:
-#   c_test        ヘッダ別 C テスト
-#   cxx_test      ヘッダ別 C++ テスト
-#   compile_fail  ネガティブテスト (コンパイルが通らないことが合格)
-#   etc_vc        ヘッダ別でない MSVC スモーク (etc_test/vc)      … MSVC のときだけ
-#   etc_watcom    ヘッダ別でない Watcom スモーク (etc_test/watcom) … Watcom のときだけ
-#
-# TST_SUITES=auto (既定) は、そのコンパイラで意味のあるスイートを全部選ぶ。
-# 明示するなら  -DTST_SUITES=c_test;etc_watcom  のように書く。
-#
-# 各スイートは**単体でも configure できる** (それぞれ CMakeLists.txt と
-# CMakePresets.json を持つ)。ここはそれを束ねるだけで、配線は増やさない。
-#
-# TST_ONLY は全スイート共通の knob。umbrella では「そのスイートに無い名前」は
-# エラーにせず読み飛ばすので、-DTST_ONLY=string;watcom_c99 のようにスイートを
-# またいで指定できる。
-# ---------------------------------------------------------------------------
 
 set(CCWRAP_TEST_UMBRELLA ON)
 include("${CMAKE_CURRENT_LIST_DIR}/bin/ccwrap_test.cmake")
@@ -48,9 +19,6 @@ set(TST_SUITES "auto" CACHE STRING "Suites to build: auto | c_test;cxx_test;comp
 enable_testing()
 
 if(TST_SUITES STREQUAL "auto")
-    # compile_fail はどのコンパイラでも回る。ライブラリに機能そのものが無くて成立
-    # しないケース (numeric_satarith = C++26 のサチュレート演算) は、compile_fail 側が
-    # 基準ケースを probe して自分で外し、外したことを表示する。
     set(TST_SUITES_RESOLVED c_test cxx_test compile_fail)
     if(TST_CC STREQUAL "msvc")
         list(APPEND TST_SUITES_RESOLVED etc_vc)

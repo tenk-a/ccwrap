@@ -8,6 +8,9 @@
 #ifndef _CCW_STD
 #define _CCW_STD ccwstd
 #endif
+#ifndef _CCW_NS_CCWSTD
+#define _CCW_NS_CCWSTD 1
+#endif
 #ifndef _CCW_NATIVE_STL_HEADER_DIR
 #define _CCW_NATIVE_STL_HEADER_DIR ../../detail/llibcxx03/include
 #endif

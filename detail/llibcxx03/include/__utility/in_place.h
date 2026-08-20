@@ -39,7 +39,7 @@ _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 #  define _CCW_STD_IN_PLACE_DEFINED
 #endif
 struct in_place_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit in_place_t() {} };
-static const in_place_t in_place = in_place_t();
+_ccw_inline_const in_place_t in_place = in_place_t();
 #endif
 
 #ifndef _CCW_LIBCPP___UTILITY_IN_PLACE_TYPE_DEFINED

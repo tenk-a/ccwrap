@@ -474,12 +474,12 @@ TEST_CASE(list, ctors_ops_fill) {
     static const int r456[3] = { 4, 5, 6 };
     L m1(r456, r456 + 3);
     L m2(STD::move(m1));
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("no move below C++11: the type here is the native library's own, and a move cannot be added to it");
     test_true( list_sum(m2) == 15 && m1.empty() );
     test_pass("cxx11:list::list(list&&)");
     L m3;
     m3 = STD::move(m2);
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("no move below C++11: the type here is the native library's own, and a move cannot be added to it");
     test_true( list_sum(m3) == 15 && m2.empty() );
     test_pass("cxx11:list::operator=(list&&)");
 

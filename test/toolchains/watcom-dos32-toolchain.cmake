@@ -14,7 +14,6 @@ set(CMAKE_SYSTEM_PROCESSOR "X86")
 set(CMAKE_C_COMPILER "wcl386")
 set(CMAKE_CXX_COMPILER "wcl386")
 
-# DOS has no threads, so there is no multi-threaded runtime to pick.
 set(CMAKE_WATCOM_RUNTIME_LIBRARY "SingleThreaded")
 
 set(CMAKE_C_FLAGS   "-bt=dos ${CMAKE_C_FLAGS}")

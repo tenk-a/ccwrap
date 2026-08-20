@@ -64,7 +64,6 @@ private:
         __begin_ = __nb; __end_ = __nb + __sz; __ca_.__cap_ = __nb + __nc;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __ensure_one() { if (__end_ == __ca_.__cap_) __reallocate(capacity() ? capacity() * 2 : 1); }
-    // Grow to __nc and append __v, which may alias an element of this vector.
     _CCW_LIBCPP_HIDE_FROM_ABI void __reallocate_with(size_type __nc, const _Tp& __v) {
         pointer __nb = __alloc().allocate(__nc);
         size_type __sz = size();

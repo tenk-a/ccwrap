@@ -33,5 +33,4 @@ inline std::array<typename std::remove_cv<_Tp>::type, _Nm> to_array(_Tp (&&__a)[
 }   // _CCW_STD20
 #endif
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <iterator>

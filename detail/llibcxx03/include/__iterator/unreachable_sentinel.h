@@ -12,7 +12,7 @@
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct unreachable_sentinel_t {};
-static const unreachable_sentinel_t unreachable_sentinel = unreachable_sentinel_t();
+_ccw_inline_const unreachable_sentinel_t unreachable_sentinel = unreachable_sentinel_t();
 
 template <class _Iter>
 _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(unreachable_sentinel_t, const _Iter&) { return false; }

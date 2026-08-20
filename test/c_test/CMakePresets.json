@@ -42,7 +42,7 @@
     {
       "name": "gcc-c23",
       "inherits": "gcc",
-      "description": "gcc -std=c23: the widest C-library coverage available, used as the reference when filling spec gaps.",
+      "description": "gcc -std=c23 -- widest C library coverage; the reference for spec gaps.",
       "cacheVariables": {
         "CMAKE_C_STANDARD": "23"
       }
@@ -86,7 +86,7 @@
     {
       "name": "dmc",
       "displayName": "Digital Mars C 8.x (Ninja, native C library)",
-      "description": "dmc.exe is invoked directly; The selected suites are the tests that link against the DMC 8.x runtime.",
+      "description": "dmc.exe directly, no ccwrap. Only the suites that link against the DMC 8.x runtime.",
       "inherits": "base",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/../toolchains/dmc.cmake",
@@ -99,7 +99,7 @@
     {
       "name": "orangec",
       "displayName": "Orange C/C++ 7.x (Ninja, native C library)",
-      "description": "occ.exe is invoked directly through CMake's native OrangeC support; no ccwrap is used. Compile/link-unsupported suites are excluded, and known OrangeC 7.10.59 fatal library calls are conditionally skipped so CTest completes.",
+      "description": "occ.exe via CMake's OrangeC support, no ccwrap. Unsupported suites are excluded.",
       "inherits": "base",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/../toolchains/orangec.cmake",
@@ -132,7 +132,7 @@
     {
       "name": "watcom-dos32",
       "displayName": "Open Watcom 2.0 (32-bit DOS / DOS4GW, C)",
-      "description": "DOS \u5411\u3051\u3002toolchain \u30d5\u30a1\u30a4\u30eb\u3067 -bt=dos \u3092\u4ed8\u3051\u308b\u3002\u5b9f\u884c\u306f test/scripts/dos_ctest.ps1 \u304b\u3089 DOSBox-X \u3067\u3002",
+      "description": "DOS target; -bt=dos comes from the toolchain. Run it with test/scripts/dos_ctest.ps1 (DOSBox-X).",
       "inherits": "base",
       "generator": "Watcom WMake",
       "environment": {
@@ -151,7 +151,7 @@
     {
       "name": "watcom-std",
       "displayName": "Open Watcom 2.0 (win32, C) -- native baseline, no ccwrap",
-      "description": "ccwrap を一切通さず、素の Open Watcom の C ライブラリだけで回す。落ちた分が ccwrap の補充分。",
+      "description": "Plain Open Watcom C library, no ccwrap. What fails here is what ccwrap supplies.",
       "inherits": "watcom",
       "cacheVariables": {
         "TEST_TARGET_C": ""
@@ -162,7 +162,7 @@
       "hidden": true,
       "inherits": "base",
       "generator": "NMake Makefiles",
-      "description": "vc80..vc145 を NMake で回すための土台。cl / nmake などを ../bin/*_with_setcc.bat 経由で呼ぶので、**事前に setcc を叩く必要はない** (preset の environment で渡した CCWRAP_VC_VERSION / CCWRAP_VC_ARCH をラッパーが bin/setcc.bat に渡し、その環境で本物を起動する)。CMake には VS2015 より前の ジェネレータが無いので、古い vc は NMake でしか回せない。",
+      "description": "NMake base for vc80..vc145. cl / nmake go through ../bin/*_with_setcc.bat, so setcc need not be run first. See doc/src/test/CMakePresets.json.md.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_MAKE_PROGRAM": "${sourceDir}/../bin/nmake_with_setcc.bat",

@@ -51,7 +51,6 @@ public:
 }   // _CCW_STD17
 #endif
 
-/* Below 1700 the backport above owns scoped_lock (and __ccw_sl_nil) already. */
 #if defined(__cplusplus) && !defined(__cpp_lib_scoped_lock) && \
     defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 namespace _CCW_STD17 {

@@ -10,8 +10,6 @@
 
 #include "../__config"
 
-// vc12 has its own class template std::identity in <type_traits>, which collides
-// with the ranges identity; the ranges algorithms therefore start at vc14.
 #if _CCW_HAS_ALIAS_TEMPLATE && (!defined(_MSC_VER) || _MSC_VER >= 1900)
 
 #include "ranges_util.h"

@@ -51,6 +51,7 @@ _CCW_MI_BINARY(atan2, double)
 _CCW_MI_BINARY(fmod,  double)
 _CCW_MI_BINARY(pow,   double)
 
+#ifndef _CCW_MI_NO_C99
 _CCW_MI_UNARY(acosh,     double)
 _CCW_MI_UNARY(asinh,     double)
 _CCW_MI_UNARY(atanh,     double)
@@ -82,6 +83,7 @@ _CCW_MI_BINARY(fmin,      double)
 _CCW_MI_BINARY(hypot,     double)
 _CCW_MI_BINARY(nextafter, double)
 _CCW_MI_BINARY(remainder, double)
+#endif  /* _CCW_MI_NO_C99 */
 
 }  // namespace std
 

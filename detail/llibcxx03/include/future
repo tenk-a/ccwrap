@@ -33,9 +33,9 @@ struct future_status {
     _CCW_LIBCPP_HIDE_FROM_ABI future_status(enum_type __v = ready) : __v_(__v) {}
     _CCW_LIBCPP_HIDE_FROM_ABI operator enum_type() const { return __v_; }
 };
-static const future_status::enum_type future_ready    = future_status::ready;
-static const future_status::enum_type future_timeout  = future_status::timeout;
-static const future_status::enum_type future_deferred = future_status::deferred;
+_ccw_inline_const future_status::enum_type future_ready    = future_status::ready;
+_ccw_inline_const future_status::enum_type future_timeout  = future_status::timeout;
+_ccw_inline_const future_status::enum_type future_deferred = future_status::deferred;
 
 struct launch {
     enum enum_type { async = 1, deferred = 2 };

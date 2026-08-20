@@ -11,7 +11,7 @@
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct piecewise_construct_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit piecewise_construct_t() {} };
-static const piecewise_construct_t piecewise_construct = piecewise_construct_t();
+_ccw_inline_const piecewise_construct_t piecewise_construct = piecewise_construct_t();
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif // _CCW_LIBCPP_NATIVE_STD

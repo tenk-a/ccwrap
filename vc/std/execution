@@ -29,7 +29,7 @@ class unsequenced_policy : public _CCW_STD::_Sequenced_policy_tag {
 public:
     typedef int _Standard_execution_policy;
 };
-static const unsequenced_policy unseq = unsequenced_policy();
+_ccw_inline_const unsequenced_policy unseq = unsequenced_policy();
 } }
 namespace std {
 template <> struct is_execution_policy<execution::unsequenced_policy> : public true_type {};

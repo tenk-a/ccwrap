@@ -16,7 +16,7 @@
 #include "__exception/eh_anchor.h"
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 struct nothrow_t {};
-static const nothrow_t nothrow = nothrow_t();
+_ccw_inline_const nothrow_t nothrow = nothrow_t();
 
 class bad_array_new_length : public bad_alloc {
 public:
@@ -31,13 +31,13 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline new_handler set_new_handler(new_handler __f) _C
 }
 _CCW_LIBCPP_HIDE_FROM_ABI inline new_handler get_new_handler() _CCW_LIBCPP_NOEXCEPT { return __ccw_new_handler_slot(); }
 
-static const _CCW_STD::size_t hardware_destructive_interference_size  = 64;
-static const _CCW_STD::size_t hardware_constructive_interference_size = 64;
+_ccw_inline_const _CCW_STD::size_t hardware_destructive_interference_size  = 64;
+_ccw_inline_const _CCW_STD::size_t hardware_constructive_interference_size = 64;
 
 template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp* launder(_Tp* __p) { return __p; }
 
 struct destroying_delete_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit destroying_delete_t() {} };
-static const destroying_delete_t destroying_delete = destroying_delete_t();
+_ccw_inline_const destroying_delete_t destroying_delete = destroying_delete_t();
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 

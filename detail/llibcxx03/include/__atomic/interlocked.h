@@ -19,7 +19,6 @@ inline long __ccw_ilk_cas(long volatile* __p, long __n, long __c) { return _Inte
 inline long __ccw_ilk_inc(long volatile* __p)                     { return _InterlockedIncrement(__p); }
 inline long __ccw_ilk_dec(long volatile* __p)                     { return _InterlockedDecrement(__p); }
 
-/* A pointer is wider than long on Win64, so atomic<T*> needs its own width. */
 #  if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64)
 typedef __int64 __ccw_ilk_iptr;
 #    if defined(_MSC_VER)

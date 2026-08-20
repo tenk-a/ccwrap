@@ -11,7 +11,7 @@ ccwrap  は 古いc/c++コンパイラ用に、c11/c++11 以降の規格の一�
 llvm libc++ を元に、多くのものを追加。
 
 ※ Open Watcom C++ 公式の標準ライブラリは基本的なモノが結構欠けていて、
-その代用が目的の一つになっている。
+その代用が目的の一つ。
 
 
 ## 対象 コンパイラ
@@ -21,7 +21,7 @@ llvm libc++ を元に、多くのものを追加。
 - gcc, clang (c++11 対応以降での c++03 モード利用して確認)
 
 ※ 以前試していた borland c5.5.1, dmc は etc/ フォルダ下に残している。(が未確認)  
-※ v1,v2の boost を用いたお試しは削除。
+※ boost を用いたお試しは削除。
 
 
 ## 基本言語機能のラップ
@@ -48,23 +48,32 @@ llvm libc++ を元に、多くのものを追加。
 
 ## 標準 c/c++ ヘッダ乗っ取り
 
-システム include パスを追加するコンパイラ・オプション( vc/clang/gcc では `-I` ) 
+システム include パスを追加するコンパイラ・オプション( vc/gcc/clang/watcom で `-I` ) 
 を用いることで、本来の標準ライブラリより先に ccwrap の置換ヘッダ・ファイルを
 読み込まれるようにし、標準ヘッダを置き換えたり不足の追加を行ったりしている。
 
-c++03 コンパイラに c++11 ～ c++26 の可能そうなライブラリを追加している。  
+c90 コンパイラに c99 ～ c23、c++03 コンパイラに c++11 ～ c++26 の
+可能そうなライブラリを追加している。  
 
 当然、言語仕様的に実装不可能(cのcomplexやtgmath, c++ constexpr,auto,ラムダ等)
 なものは未実装だが、可変引数 template もどきや enum class もどき、
 右辺値参照もどき move、等似せれるものは似せて実装を足している。
-(format,print 等未実装)
 
-どのc/c++規格までのモノを利用可能にするか、を、以下で設定可能。
+一応 modern c++ での機能追加もあるが、基本 c++03 ベースなので modern c++ 用
+としては足りてなかったり効率のよい実装になっていないことも多い。
+
+watcom 以外は現状、ヘッダーオンリー。  
+（ただ、本来実体ファイルに置くべき関数もinlineで無理やり対応した状態）
+
+どのc/c++規格までのモノを利用可能にするか、を、以下のマクロで指定可能。
+(廃止規格関数利用等)
 
 ```
-_CCW_TARGET_C   = 1990 - 2023
-_CCW_TARGET_CXX = 2003 - 2026
+_CCW_TARGET_C   = 1999 ～ 2023
+_CCW_TARGET_CXX = 2011 ～ 2026
 ```
+
+デフォルトは _CCW_TARGET_C=2023、_CCW_TARGET_CXX=2026。
 
 
 ## Visual C/C++ 
@@ -73,16 +82,6 @@ vc 8.0(2005) - vc 14.5(2026) 用。
 
 vc に関しては、vc付属の c/c++ 標準ライブラリに対する抜けの追加のみにしている。  
 既存の class 等を乗っ取らないので、新しい規格の追加メンバーの類は増やせない。
-
-vc では _CCW_TARGET_C = 2011, _CCW_TARGET_CXX = 2014 をデフォルトにしている。  
-vc12以前を ccwrap で vc14.x 系まで補充、vc14以降では ccwrap を include 
-しないような運用を想定。
-
-_CCW_TARGET_CXX = 2017 にして、c++17 未対応の vc14.0 でも string_view や filesystem を
-使えるようにするのも手、全 vc ccwrap で c23,c++26 関数増やすのも。
-
-ただ ccwrap の実装は 基本的に c++03 基準なので、
-modern c++ での実装たりてなかったり効率のよい実装になっていないことが多い。  
 
 ※ vc 用にライブラリ乗っ取りをやるならば、MS STL をベースにするのがベターだとは思う…
 
@@ -93,12 +92,12 @@ ccwrap を clone して手頃なフォルダに設置したとする。
 
 ccwrap_header.h のみ利用の場合。
 ```batch
-cl -FI[CCWRAP]/vc/std/ccwrap_header.h src/hoge.c
+cl -FI[CCWRAP]/vc/std/ccwrap_header.h hello.c
 ```
 
 c/c++標準ライブラリ追加を利用。
 ```batch
-cl -I[CCWRAP]/vc/std -FIccwrap_header.h src/hoge.c
+cl -I[CCWRAP]/vc/std -FIccwrap_header.h hello.c
 ```
 
 
@@ -114,12 +113,12 @@ msys2(mingw) と wsl(ubuntu) でお試し。
 
 ccwrap_header.h のみ利用。
 ```batch
-gcc -include [CCWRAP]/vc/std/ccwrap_header.h src/hoge.c
+gcc -include [CCWRAP]/vc/std/ccwrap_header.h hello.c
 ```
 
 c/c++標準ライブラリ追加を利用。
 ```batch
-gcc -I [CCWRAP]/vc/std -include ccwrap_header.h src/hoge.c
+gcc -I [CCWRAP]/vc/std -include ccwrap_header.h hello.c
 ```
 
 ※ clang のときは gcc をclang に置き換え。
@@ -133,23 +132,18 @@ c90(c99)/c++03 コンパイラで、c 標準ライブラリについては不足
 c++ 標準ライブラリの c++専用ヘッダについては watcom 付属のものは使わず、
 LLVM libc++ 改造のものを使うように置き換えている。
 
-公式 c++ ライブラリはと互換性がないので、既存の Watcom 用 c++ライブラリ(.lib, .dll)
-等との併用は不可。
-watcom の DLL Cランタイム も不可なので、実質 static Cランタイム用。
-
-デフォルトで _CCW_TARGET_C = 2023, _CCW_TARGET_CXX = 2026 で、
-可能な限り多くを試せる状態にしている。
+公式 c++ ライブラリとは互換性がないので、既存の Watcom 用 c++ライブラリ(.lib, .dll)
+等との併用は不可。  
+watcom の DLL ランタイム も不可なので、実質 static ランタイム用。
 
 c言語で _CCW_TARGET_C >= 1999 以上に設定する場合は、
 c99 の一部機能(c++ と互換性のある機能) をサポートする -Za99
-を指定する必要がある。
+を指定する必要があるかもしれない。
 
-c++ はほぼ全て置換なので、規格対応は多くなっている。
-
-ただ、locale、filesystem、thread の実装の都合、ヘッダオンリーというわけにもいかず、
+locale、filesystem、thread は実装の都合、ヘッダオンリーというわけにもいかず、
 ライブラリのリンクが必要になる。  
-※ locale は他ライブラリで下請け的に利用されることが多いので、実質 c++ を使うときは
-ライブラリ指定する。
+locale は他ライブラリで下請け的に利用されることもあり、
+結局 c++ では、デフォルトでライブラリをリンクする #pragma library 指定をしている。
 
 
 ### Watcom C++ のバグ
@@ -168,82 +162,137 @@ Watcom の C++ はコンパイラ側バグが結構あり、
 ccwrap では、例外を使わない設定の場合は、例外発生タイミングで abort することで、標準ライブラリを使えるようにしている。
 
 
-### watcom ライブラリ
-
-[CCWRAP]/watcom/lib/gen.bat
-
-を実行すれば、ライブラリを生成する。
-
-ライブラリ名は libccwcxx.lib
-
-ライブラリ名は同じで、指定するライブラリフォルダを、
-OS や ビルドオプション、release|debug 等の組み合わせた名前で用意している。
-
-watcom の static Cランタイム(-bm) 前提で、dll Cランタイム(-br) での使用は不可。  
-必ず、オプションにあわせたフォルダの lib を選択のこと。
-
-
-| watcom/lib/下のフォルダ   | 内容                              | wcl386 オプション                             |
-|---------------------------|-----------------------------------|-----------------------------------------------|
-| win32-std/                | win32 例外&rtti 有                | -bt=nt -l=nt -bm -xst -xr                     |
-| win32-std-noeh/           | win32 例外&rtti 無                | -bt=nt -l=nt -bm -xd                          |
-| win32-std-fs-char-xrxs/   | win32 例外&rtti 有 char path版    | -bt=nt -l=nt -bm -xst -xr -d_CCW_FS_WCHAR=0   |
-| dos32-std/                | dos32 例外&rtti 有                | -bt=dos -l=dos4g -xst -xr                     |
-| dos32-std-noeh/           | dos32 例外&rtti 無                | -bt=dos -l=dos4g -xd                          |
-| dos32-std-lfn/            | dos32 LFN有効 例外&rtti 有        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xst -xr    |
-| dos32-std-noeh-lfn/       | dos32 LFN有効 例外&rtti 無        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xd         |
-| debug/win32-std/          | debug版win32-std                  | release版に -d2 を足す                        |
-| debug/(その他)            |                                   | release版に -d2 を足す                        |
-
-※ その他組み合わせ有り。
-
-※ filesystem::path は windows では wchar_t, DOS32 では char で実装。winの fs-char 版は path を char にしたバージョン。
-
-
 ### install / コンパイラ・コマンドライン指定
 
-ccwrap_header.h のみ利用。
+`・`ccwrap_header.h のみ利用。
 ```batch
-wcl386  -fi= [CCWRAP]/watcom/std/ccwrap_header.h  src/hoge.c
+wcl386  -fi=[CCWRAP]/watcom/std/ccwrap_header.h  hello.c
 ```
 
-c 標準ライブラリ追加を利用。
+`・`c 標準ライブラリを利用。
 ```batch
-wcl386  -i=[CCWRAP]/watcom/std  -fi=ccwrap_header.h  src/hoge.c
+wcl386  -i=[CCWRAP]/watcom/std  -fi=[CCWRAP]/watcom/std/ccwrap_header.h  hello.c
 ```
 
-c だけなら ライブラリ不要。
+-fi=フルパス。  
 
-c++ の場合は予め  
+すべてのソースが標準ヘッダ/watcom ヘッダの何れかをincludeしているなら -fi=ccwrap_header.h は無くても可。
+
+以後の例では省略する。（が、付けたほうが安心）
+
+`・`c++ の場合は予め  
 ```batch
  [CCWRAP]/watcom/lib/gen.bat
 ```
 を実行して ライブラリ .lib を生成しておく。
 
-c++ 標準ライブラリ追加を利用。例外&RTTI 有
+`・`c++ 標準ライブラリ 例外&RTTI 有、で、とりあえずビルド
 ```batch
-wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  [CCWRAP]/watcom/lib/win32-std/libccwcxx.lib
+wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std hello.cpp [CCWRAP]/watcom/lib/nt/ccw-eh3r.lib
 ```
-あるいは
+win32（-bt=nt -l=nt）、multithread用（-bm）、RTTI有（-xr）、例外有（-xst）
+
+`・`最適化をして、未使用ルーチン削除等する指定は
+
 ```batch
-wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  -"LIBPATH [CCWRAP]/watcom/lib/win32-std"
+wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/nt option eliminate option vfremoval"
 ```
-あるいは
+
+Releaseビルド（NDEBUG）、時間優先最適化（-ot）、未使用ルーチン削除されやすく（-xm -xv）、未使用ルーチン削除（-"option eliminate option vfremoval"）  
+ついでに ライブラリ指定を、ライブラリ検索パス指定（-"LIBPATH [CCWRAP]/watcom/lib/nt"） に変更。（ライブラリ名自体は ccwrap ヘッダ内で #pragma library で指定済）
+
+※最適化オプションはお好みで -ot でなく -os とか -ox 追加とか。最適化は、必ずしもよくなるわけでもないので、アプリごとに合ったものを設定。
+
+`・`あるいは環境変数を用い
 ```batch
 set "INCLUDE=[CCWRAP]/watcom/std;%INCLUDE%"
-set "LIB=[CCWRAP]/watcom/lib/win32-std;%LIB%"
-wcl386 -bt=nt -l=nt -bm -xr -xst -fi=ccwrap_header.h src/hoge.cpp
+set "LIB=[CCWRAP]/watcom/lib/nt;%LIB%"
+wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG hello.cpp -"option eliminate option vfremoval"
 ```
 
-c++ 標準ライブラリ 例外&RTTI 無
+`・`c++ 標準ライブラリ 例外&RTTI 有 でのデバッグビルドは
 ```batch
-wcl386 -bt=nt -l=nt -bm -xd -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h src/hoge.cpp  -"LIBPATH [CCWRAP]/watcom/lib/win32-std"
+wcl386 -bt=nt -l=nt -bm -xr -xst -d2 -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/debug/nt"
 ```
 
-dos4g で 例外&RTTI 有
-```batch:dos4g
-wcl386 -bt=dos -l=dos4g -xr -xst -i=[CCWRAP]/watcom/std -fi=ccwrap_header.h -fe=hello.exe hello.cpp [CCWRAP]/watcom/lib/dos32-std/libccwcxx.lib
+オプション -d2 か -d1 を指定。-d2 は稀にビルド失敗するので、そういうときは諦めて -d1 を指定。
+
+
+`・`c++ 標準ライブラリ で 例外&RTTI 無にするには、
+```batch
+wcl386 -bt=nt -l=nt -bm -xd -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/nt option eliminate option vfremoval"
 ```
+オプション -xr -xst(-xs,-xss) を外して -xd に変更
+
+
+`・`dos4g で 例外&RTTI 無 は
+```batch:dos4g
+wcl386 -bt=dos -l=dos4g -xd -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std -fe=helloD32.exe hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/dos option eliminate option vfremoval"
+```
+オプション -bt -l を -bt=dos -l=dos4g に変更。（dos はシングルスレッド環境で -bm 無）
+
+`・`dos4g LFN(Long File Name)有 で 例外&RTTI 有
+```batch:dos4g
+wcl386 -bt=dos -l=dos4g -xr -xst -ot -xm -xv -D__WATCOM_LFN__ -DNDEBUG -i=[CCWRAP]/watcom/std -fe=helloLFN.exe hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/dos option eliminate option vfremoval"
+```
+
+マクロ `__WATCOM_LFN__` を定義してビルドすれば watcom の lfn用ライブラリがリンクされる。
+
+
+
+
+
+### watcom ライブラリ
+
+[CCWRAP]/watcom/lib/gen.bat
+
+を実行して、ライブラリを生成する。
+
+ライブラリは、WATCOM 付属ライブラリに似せて、ターゲット OS をフォルダ名にし、他はファイル名に含めている。
+
+| ファイル               | 内容                              | wcl386 オプション                           |
+|------------------------|-----------------------------------|---------------------------------------------|
+| nt/ccw-eh3r.lib        | win32 例外&rtti 有                | -bt=nt -l=nt -bm -xst -xr                   |
+| nt/ccw-ne3r.lib        | win32 例外&rtti 無                | -bt=nt -l=nt -bm -xd                        |
+| dos/ccw-eh3r.lib       | dos32 例外&rtti 有                | -bt=dos -l=dos4g -xst -xr                   |
+| dos/ccw-ne3r.lib       | dos32 例外&rtti 無                | -bt=dos -l=dos4g -xd                        |
+| dos/ccw-lfn-eh3r.lib   | dos32 LFN対応 例外&rtti 有        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xst -xr  |
+| dos/ccw-lfn-ne3r.lib   | dos32 LFN対応 例外&rtti 無        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xd       |
+| debug/nt/ccw-…….lib  | 上の debug 版                     | release版から NDEBUG を外し -d1 を足す      |
+
+3r を 3s にした -3s オプション版も同時に生成。  
+
+その他ビルド共通オプションは、  
+コンパイラ： `-3r` or `-3s` `-DNDEBUG` `-ot` `-zm` `-zv`
+リンカー　： -"option eliminate   option vfremoval"
+
+wcl386 のデフォルトは 3r なので、無指定時は 3r のものがリンクされる。
+
+`出力名`
+| 要素    |                                                    |
+|---------|----------------------------------------------------|
+|フォルダ |                                                    |
+| `nt/`   | Win32(-bt=nt -l=nt)                                |
+| `dos/`  | Dos32(-bt=dos -l=dos4g)                            |
+| `debug/`| debugビルド                                        |
+|         |                                                    |
+| ファイル| 基本                                               |
+| `ccw`   | 基本名                                             |
+| `-lfn`  | Dos  LFN(Long File Name) 対応時                    |
+| `-eh`   | 例外＆RTTI 有効(-xst -xr)                          |
+| `-ne`   | 例外＆RTTI 無効(-xd)                               |
+| `3r`    | WATCOM ABI 関数引数がレジスタ渡し ※ デフォルト.   |
+| `3s`    | 関数引数がスタック渡し                             |
+|         |                                                    |
+| 追加    | gen all 等で生成                                   |
+| `-fsc`  | Win32 で filesystem を char ベースで構築           |
+| `-xr`   | 例外無 RTTI 有効(-xr)                              |
+| `-xst`  | 例外有(-xst) RTTI無                                |
+|`_ccwstd`| std の代わりに namespace _ccwstd を使う場合        |
+|         |                                                    |
+| テスト用| -xs(-xss) はバグ有で通常使わないが テスト用に生成  |
+| `-xrxs` | 例外＆RTTI 有効 (バグ持)                           |
+| `-xs`   | 例外有 RTTI無 (バグ持)                             |
 
 
 ## ccwrap 固有関係
@@ -315,9 +364,6 @@ cmake --preset vc145 -DTST_SUITES=c_test            :: スイートを絞る
 cmake --preset vc141-x86 -DTST_MSVC_STD=c++14       :: 言語水準
 ```
 
-<!-- ※ 正直 ライブラリ実装より、テスト実装＆チェック作るほうががたいへん... (AIが) -->
-
-
 ##  License
 
 無保証。  
@@ -336,4 +382,5 @@ LLVM libc++ ベースが多いので そのライセンスで、boost由来や�
 AI 任せ。  
 AI がんばる。  
 
-作ってみただけのまだまだバギー状態。  
+作ってみただけのまだまだバギー。  
+(locale 関係いろいろ誤。)

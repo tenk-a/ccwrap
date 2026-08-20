@@ -7,3 +7,9 @@
 #include <ccwrap_common.h>
 
 #include _CCW_NATIVE_STL_HEADER_PATH(iosfwd)
+
+#if defined(__CCW_HAS_CHAR8_T) && !defined(__cpp_char8_t)
+namespace std {
+    typedef streampos u8streampos;
+}
+#endif

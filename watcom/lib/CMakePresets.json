@@ -40,7 +40,7 @@
         "INCLUDE": "$env{WATCOM}/h"
       },
       "cacheVariables": {
-        "//": "CMAKE_SYSTEM_NAME / ランタイム / -bt=dos は toolchain 側が決める。ここで Windows を焼かないこと。",
+        "//": "Target settings come from the toolchain; do not bake Windows in here.",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../../test/toolchains/watcom-dos32-toolchain.cmake"
       }
     },
@@ -49,7 +49,7 @@
       "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "//": "-d2 だと <tuple> を含む TU がコンパイルできない (A19)。-d1 (行番号のみ) に落とす。",
+        "//": "-d2 cannot compile a TU that includes <tuple> (A19); use -d1.",
         "CMAKE_C_FLAGS_DEBUG": "-d1",
         "CMAKE_CXX_FLAGS_DEBUG": "-d1"
       }
@@ -58,7 +58,7 @@
       "name": "watcom-full-base",
       "hidden": true,
       "cacheVariables": {
-        "//": "ccwstd / -fs-char / -xst も作る。",
+        "//": "also builds ccwstd / -fsc / -xst.",
         "CCW_LIB_CCWSTD": "ON",
         "CCW_LIB_FS_CHAR": "ON",
         "CCW_LIB_XST": "ON"
@@ -67,7 +67,7 @@
     {
       "name": "watcom",
       "inherits": "watcom-win32-base",
-      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/win32-<ns>[-fs-char][-<opts>]/",
+      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/nt/ccw[_ccwstd][-fsc]-<eh><abi>.lib",
       "binaryDir": "${sourceDir}/_build/watcom",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -79,7 +79,7 @@
         "watcom-full-base",
         "watcom-win32-base"
       ],
-      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/win32-<ns>[-fs-char][-<opts>]/  + ccwstd / -fs-char / -xst",
+      "displayName": "Open Watcom 2.0 (Win32) release -- watcom/lib/nt/ccw[_ccwstd][-fsc]-<eh><abi>.lib  + ccwstd / -fsc / -xst",
       "binaryDir": "${sourceDir}/_build/watcom-full",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -91,7 +91,7 @@
         "watcom-debug-base",
         "watcom-win32-base"
       ],
-      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/win32-<ns>[-fs-char][-<opts>]/",
+      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/nt/ccw[_ccwstd][-fsc]-<eh><abi>.lib",
       "binaryDir": "${sourceDir}/_build/watcom-debug"
     },
     {
@@ -101,13 +101,13 @@
         "watcom-debug-base",
         "watcom-win32-base"
       ],
-      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/win32-<ns>[-fs-char][-<opts>]/  + ccwstd / -fs-char / -xst",
+      "displayName": "Open Watcom 2.0 (Win32) debug -- watcom/lib/debug/nt/ccw[_ccwstd][-fsc]-<eh><abi>.lib  + ccwstd / -fsc / -xst",
       "binaryDir": "${sourceDir}/_build/watcom-debug-full"
     },
     {
       "name": "watcom-dos32",
       "inherits": "watcom-dos32-base",
-      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos32-std[-<opts>]/",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos/ccw[-lfn]-<eh><abi>.lib",
       "binaryDir": "${sourceDir}/_build/watcom-dos32",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -119,7 +119,7 @@
         "watcom-full-base",
         "watcom-dos32-base"
       ],
-      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos32-std[-<opts>]/  + ccwstd / -fs-char / -xst",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) release -- watcom/lib/dos/ccw[-lfn]-<eh><abi>.lib  + -xst",
       "binaryDir": "${sourceDir}/_build/watcom-dos32-full",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -131,7 +131,7 @@
         "watcom-debug-base",
         "watcom-dos32-base"
       ],
-      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos32-std[-<opts>]/",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos/ccw[-lfn]-<eh><abi>.lib",
       "binaryDir": "${sourceDir}/_build/watcom-dos32-debug"
     },
     {
@@ -141,7 +141,7 @@
         "watcom-debug-base",
         "watcom-dos32-base"
       ],
-      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos32-std[-<opts>]/  + ccwstd / -fs-char / -xst",
+      "displayName": "Open Watcom 2.0 (32-bit DOS) debug -- watcom/lib/debug/dos/ccw[-lfn]-<eh><abi>.lib  + -xst",
       "binaryDir": "${sourceDir}/_build/watcom-dos32-debug-full"
     },
     {
@@ -185,14 +185,15 @@
     {
       "name": "watcom",
       "configurePreset": "watcom",
-      "displayName": "watcom -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+      "displayName": "watcom -- the shipping set: -eh (-xst -xr) and -ne"
     },
     {
       "name": "watcom-default",
       "configurePreset": "watcom",
-      "displayName": "watcom -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "displayName": "watcom -- the -eh variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_win32_std"
+        "ccw_eh3r",
+        "ccw_eh3s"
       ]
     },
     {
@@ -200,33 +201,36 @@
       "configurePreset": "watcom-xrxs",
       "displayName": "watcom -- the -xrxs variant only (-xs -xr: what test/ measures)",
       "targets": [
-        "ccwrap_win32_std_xrxs"
+        "ccw_xrxs3r",
+        "ccw_xrxs3s"
       ]
     },
     {
       "name": "watcom-noeh",
       "configurePreset": "watcom",
-      "displayName": "watcom -- the -noeh variant only (neither -xs nor -xr)",
+      "displayName": "watcom -- the -ne variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_win32_std_noeh"
+        "ccw_ne3r",
+        "ccw_ne3s"
       ]
     },
     {
       "name": "watcom-full",
       "configurePreset": "watcom-full",
-      "displayName": "watcom -- every variant (ccwstd / -fs-char / -xst too)"
+      "displayName": "watcom -- every variant (ccwstd / -fsc / -xst too)"
     },
     {
       "name": "watcom-debug",
       "configurePreset": "watcom-debug",
-      "displayName": "watcom-debug -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+      "displayName": "watcom-debug -- the shipping set: -eh (-xst -xr) and -ne"
     },
     {
       "name": "watcom-debug-default",
       "configurePreset": "watcom-debug",
-      "displayName": "watcom-debug -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "displayName": "watcom-debug -- the -eh variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_win32_std"
+        "ccw_eh3r",
+        "ccw_eh3s"
       ]
     },
     {
@@ -234,34 +238,38 @@
       "configurePreset": "watcom-debug-xrxs",
       "displayName": "watcom-debug -- the -xrxs variant only (-xs -xr: what test/ measures)",
       "targets": [
-        "ccwrap_win32_std_xrxs"
+        "ccw_xrxs3r",
+        "ccw_xrxs3s"
       ]
     },
     {
       "name": "watcom-debug-noeh",
       "configurePreset": "watcom-debug",
-      "displayName": "watcom-debug -- the -noeh variant only (neither -xs nor -xr)",
+      "displayName": "watcom-debug -- the -ne variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_win32_std_noeh"
+        "ccw_ne3r",
+        "ccw_ne3s"
       ]
     },
     {
       "name": "watcom-debug-full",
       "configurePreset": "watcom-debug-full",
-      "displayName": "watcom-debug -- every variant (ccwstd / -fs-char / -xst too)"
+      "displayName": "watcom-debug -- every variant (ccwstd / -fsc / -xst too)"
     },
     {
       "name": "watcom-dos32",
       "configurePreset": "watcom-dos32",
-      "displayName": "watcom-dos32 -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+      "displayName": "watcom-dos32 -- the shipping set: -eh (-xst -xr) and -ne"
     },
     {
       "name": "watcom-dos32-default",
       "configurePreset": "watcom-dos32",
-      "displayName": "watcom-dos32 -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "displayName": "watcom-dos32 -- the -eh variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_dos32_std",
-        "ccwrap_dos32_std_lfn"
+        "ccw_eh3r",
+        "ccw_eh3s",
+        "ccw_lfn_eh3r",
+        "ccw_lfn_eh3s"
       ]
     },
     {
@@ -269,35 +277,42 @@
       "configurePreset": "watcom-dos32-xrxs",
       "displayName": "watcom-dos32 -- the -xrxs variant only (-xs -xr: what test/ measures)",
       "targets": [
-        "ccwrap_dos32_std_xrxs"
+        "ccw_xrxs3r",
+        "ccw_xrxs3s",
+        "ccw_lfn_xrxs3r",
+        "ccw_lfn_xrxs3s"
       ]
     },
     {
       "name": "watcom-dos32-noeh",
       "configurePreset": "watcom-dos32",
-      "displayName": "watcom-dos32 -- the -noeh variant only (neither -xs nor -xr)",
+      "displayName": "watcom-dos32 -- the -ne variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_dos32_std_noeh",
-        "ccwrap_dos32_std_lfn_noeh"
+        "ccw_ne3r",
+        "ccw_ne3s",
+        "ccw_lfn_ne3r",
+        "ccw_lfn_ne3s"
       ]
     },
     {
       "name": "watcom-dos32-full",
       "configurePreset": "watcom-dos32-full",
-      "displayName": "watcom-dos32 -- every variant (ccwstd / -fs-char / -xst too)"
+      "displayName": "watcom-dos32 -- every variant (-xst too)"
     },
     {
       "name": "watcom-dos32-debug",
       "configurePreset": "watcom-dos32-debug",
-      "displayName": "watcom-dos32-debug -- the shipping set: unsuffixed (-xst -xr) and -noeh"
+      "displayName": "watcom-dos32-debug -- the shipping set: -eh (-xst -xr) and -ne"
     },
     {
       "name": "watcom-dos32-debug-default",
       "configurePreset": "watcom-dos32-debug",
-      "displayName": "watcom-dos32-debug -- the unsuffixed variant only (-xst -xr: the recommended build)",
+      "displayName": "watcom-dos32-debug -- the -eh variant only (-xst -xr: the recommended build)",
       "targets": [
-        "ccwrap_dos32_std",
-        "ccwrap_dos32_std_lfn"
+        "ccw_eh3r",
+        "ccw_eh3s",
+        "ccw_lfn_eh3r",
+        "ccw_lfn_eh3s"
       ]
     },
     {
@@ -305,22 +320,27 @@
       "configurePreset": "watcom-dos32-debug-xrxs",
       "displayName": "watcom-dos32-debug -- the -xrxs variant only (-xs -xr: what test/ measures)",
       "targets": [
-        "ccwrap_dos32_std_xrxs"
+        "ccw_xrxs3r",
+        "ccw_xrxs3s",
+        "ccw_lfn_xrxs3r",
+        "ccw_lfn_xrxs3s"
       ]
     },
     {
       "name": "watcom-dos32-debug-noeh",
       "configurePreset": "watcom-dos32-debug",
-      "displayName": "watcom-dos32-debug -- the -noeh variant only (neither -xs nor -xr)",
+      "displayName": "watcom-dos32-debug -- the -ne variant only (neither -xs nor -xr)",
       "targets": [
-        "ccwrap_dos32_std_noeh",
-        "ccwrap_dos32_std_lfn_noeh"
+        "ccw_ne3r",
+        "ccw_ne3s",
+        "ccw_lfn_ne3r",
+        "ccw_lfn_ne3s"
       ]
     },
     {
       "name": "watcom-dos32-debug-full",
       "configurePreset": "watcom-dos32-debug-full",
-      "displayName": "watcom-dos32-debug -- every variant (ccwstd / -fs-char / -xst too)"
+      "displayName": "watcom-dos32-debug -- every variant (-xst too)"
     }
   ]
 }

@@ -12,7 +12,7 @@
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct allocator_arg_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit allocator_arg_t() {} };
-static const allocator_arg_t allocator_arg = allocator_arg_t();
+_ccw_inline_const allocator_arg_t allocator_arg = allocator_arg_t();
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 

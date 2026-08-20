@@ -1,0 +1,17 @@
+// ccwrap <cinttypes>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <cinttypes>
+#else
+ #include <cstdint>
+ #include <inttypes.h>
+ namespace std {
+    using ::imaxdiv_t;
+    using ::imaxabs;   using ::imaxdiv;
+    using ::strtoimax; using ::strtoumax;
+    using ::wcstoimax; using ::wcstoumax;
+ }
+#endif

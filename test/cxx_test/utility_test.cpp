@@ -41,7 +41,6 @@ TEST_CASE(utility, pair) {
     test_eq( q.first, 2 );
     test_eq( q.second, 3 );
     {
-        // A class type built by a function that returns BY VALUE.
         STD::pair<STD::string, int> sp = STD::make_pair(make_key("ab"), 7);
         test_eq( sp.first, STD::string("ab") );
         test_eq( sp.second, 7 );

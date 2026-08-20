@@ -8,33 +8,8 @@
 
 #include _CCW_NATIVE_STL_HEADER_PATH(list)
 
-#if defined(__cplusplus) && !defined(__cpp_lib_erase_if)
-#include <algorithm>
-namespace _CCW_STD20 {
-
-template <class _Cont>
-inline typename _Cont::size_type __ccw_list_len(const _Cont& __c) {
-    typename _Cont::size_type __n = 0;
-    for (typename _Cont::const_iterator __i = __c.begin(); __i != __c.end(); ++__i) ++__n;
-    return __n;
-}
-
-template <class _Tp, class _Alloc, class _Up>
-inline typename std::list<_Tp, _Alloc>::size_type erase(std::list<_Tp, _Alloc>& __c, const _Up& __v) {
-    typename std::list<_Tp, _Alloc>::size_type __before = __ccw_list_len(__c);
-    __c.remove(__v);
-    return __before - __ccw_list_len(__c);
-}
-
-template <class _Tp, class _Alloc, class _Pred>
-inline typename std::list<_Tp, _Alloc>::size_type erase_if(std::list<_Tp, _Alloc>& __c, _Pred __p) {
-    typename std::list<_Tp, _Alloc>::size_type __before = __ccw_list_len(__c);
-    __c.remove_if(__p);
-    return __before - __ccw_list_len(__c);
-}
-
-}   // _CCW_STD20
+#if defined(__cplusplus)
+#include <../../detail/cxx/erase_if_list.hpp>
 #endif
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <iterator>

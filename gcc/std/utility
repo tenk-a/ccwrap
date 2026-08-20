@@ -6,3 +6,11 @@
 #include_next <utility>
 
 #include <../../detail/cxx/utility.hpp>
+
+#if _CCW_STD_LIB_LT(1600, 201103L)
+#include <../../detail/cxx/move03.hpp>
+namespace std {
+    using ::_ccw::move;
+    using ::_ccw::move_if_noexcept;
+}
+#endif

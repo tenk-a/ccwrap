@@ -1,0 +1,8 @@
+// ccwrap <vector>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <vector>
+
+#include <../../detail/cxx/erase_if_vector.hpp>

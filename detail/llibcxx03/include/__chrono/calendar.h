@@ -31,7 +31,7 @@ template <class _Dur> using local_time = time_point<local_t, _Dur>;
 struct last_spec {
     _CCW_LIBCPP_HIDE_FROM_ABI explicit last_spec() {}
 };
-static const last_spec last = last_spec();
+_ccw_inline_const last_spec last = last_spec();
 
 _CCW_LIBCPP_HIDE_FROM_ABI inline long long __ccw_days_from_civil(int __y, unsigned __m, unsigned __d) {
     __y -= __m <= 2;
@@ -51,7 +51,7 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_civil_from_days(long long __z, int& 
     const unsigned  __doy = __doe - (365u * __yoe + __yoe / 4u - __yoe / 100u);
     const unsigned  __mp  = (5u * __doy + 2u) / 153u;
     __d = __doy - (153u * __mp + 2u) / 5u + 1u;                                // [1, 31]
-    __m = __mp + (__mp < 10u ? 3u : -9u);                                      // [1, 12]
+    __m = (__mp < 10u ? __mp + 3u : __mp - 9u);                                // [1, 12]
     __y = (int)(__yy + (__m <= 2u));
 }
 
@@ -655,10 +655,10 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline year_month_weekday_last operator/(const month_w
     return year_month_weekday_last(year(__y), __mwl.month(), __mwl.weekday_last());
 }
 
-static const month January(1), February(2), March(3), April(4), May(5), June(6),
-                  July(7), August(8), September(9), October(10), November(11), December(12);
-static const weekday Sunday(0), Monday(1), Tuesday(2), Wednesday(3), Thursday(4),
-                     Friday(5), Saturday(6);
+_ccw_inline_const month January(1), February(2), March(3), April(4), May(5), June(6),
+                        July(7), August(8), September(9), October(10), November(11), December(12);
+_ccw_inline_const weekday Sunday(0), Monday(1), Tuesday(2), Wednesday(3), Thursday(4),
+                          Friday(5), Saturday(6);
 
 } // namespace chrono
 

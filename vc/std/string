@@ -12,12 +12,17 @@
 #include <../../detail/llibcxx03/include/__functional/hash_string.h>
 #endif
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <iterator>
 
 #if _MSC_VER < 1900
 namespace std {
     typedef basic_string<char16_t> u16string;
     typedef basic_string<char32_t> u32string;
+}
+#endif
+
+#if defined(__CCW_HAS_CHAR8_T) && !defined(__cpp_char8_t)
+namespace std {
+    typedef basic_string<char8_t> u8string;
 }
 #endif

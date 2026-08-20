@@ -7,9 +7,13 @@
 
 #include <time.h>
 #include <../../detail/c/timespec_vc.h>
+#include <../../detail/c/time_c23.h>
 namespace _CCW_STD17 {
     using ::timespec;
     using ::timespec_get;
+}
+namespace _CCW_STD26 {
+    using ::timegm;
 }
 
 #if _MSC_VER < 1900 && defined(_CCW_C_CONFORM)

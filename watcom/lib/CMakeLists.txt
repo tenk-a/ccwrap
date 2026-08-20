@@ -1,260 +1,113 @@
-# ccwrap prebuilt libraries: compiles the llibcxx03 out-of-line sources (thread / locale /
-# filesystem) into a static libccwcxx.lib, once per variant. Link the matching variant
-# into an app instead of adding the .cpp to every build:
-#
-#   watcom/lib/<os>-<ns>[-fs-char][-lfn][-<opts>]/libccwcxx.lib
-#
-#   <os>    win32 | dos32
-#   <ns>    std | ccwstd
-#   -fs-char  filesystem::path::value_type forced to char (see below)
-#   -lfn      DOS long file names (-D__WATCOM_LFN__). **DOS のみ、既定で両方作る。**
-#             プログラム側を -D__WATCOM_LFN__ で組むならこちらを対で使う。
-#             これは ABI の切り替えで、リンクするライブラリが変わるだけではない:
-#             _MAX_PATH 144 -> 260 / NAME_MAX 12 -> 259 になり、
-#             struct _finddata_t (char name[_MAX_PATH]) の大きさが変わる。
-#             filesystem.cpp が _findfirst / _findnext に渡すのがまさにその構造体で、
-#             LFN 無しのライブラリを LFN のランタイムで動かすと 144 バイトの領域に
-#             259 バイトの名前が入る。名前修飾は変わらないので**黙って壊れる**。
-#             実行時には LFN プロバイダ (DOSBox-X の lfn=true / Win9x の DOS 窓 /
-#             DOSLFN 等の TSR) が要る。素の MS-DOS では 8.3 に落ちる。
-#   <opts>  **推奨の既定から何を変えたか**。C++ は例外も RTTI もあるのが既定で、
-#           例外モデルは **-xst** を採る (`-xs` / `-xss` は A1'' を踏む。
-#           doc/watcom/ccwrap_watcom_bugs.md)。よって `-xst -xr` が**無印**:
-#             (なし)  -xst -xr      推奨。正式ビルドはこれ
-#             -xrxs   -xs -xr       規格どおりだが A1'' を踏む。**テスト用**
-#             -xst    -xst のみ     RTTI 無し
-#             -xr     -xr のみ      例外無し
-#             -noeh   どちらも無し
-#           取り違えるとリンクは通って実行時に壊れるので、名前がどれかを言う。
-#           **例外モデル (-xst / -xs) だけは ABI ではない** -- -xst の実行ファイルに
-#           -xrxs のライブラリを混ぜても動く (実測)。分けてあるのは、ライブラリ自身の
-#           フレームも測りたいテストのため。
-#
-#   watcom/lib/win32-std/libccwcxx.lib           namespace std,    -xst -xr
-#   watcom/lib/win32-std-xrxs/libccwcxx.lib      namespace std,    -xs -xr
-#   watcom/lib/win32-std-xst/libccwcxx.lib       namespace std,    -xst
-#   watcom/lib/win32-std-noeh/libccwcxx.lib      namespace std,    (どちらも無し)
-#   watcom/lib/win32-ccwstd/libccwcxx.lib        namespace ccwstd, -xst -xr
-#   watcom/lib/win32-ccwstd-xrxs/libccwcxx.lib   namespace ccwstd, -xs -xr
-#   watcom/lib/dos32-std/libccwcxx.lib           DOS 8.3,          -xst -xr
-#   watcom/lib/dos32-std-lfn/libccwcxx.lib       DOS 長い名前,     -xst -xr
-#   watcom/lib/dos32-std-lfn-noeh/libccwcxx.lib  DOS 長い名前,     (どちらも無し)
-#
-# The name is libccwcxx (C++ side). A C-only companion would be libccwc.
-#
-# Each is built at the DEFAULT filesystem::path character type for its target:
-# wchar_t on Win32 (matching MSVC), char on DOS. A program that overrides that with
-# -D_CCW_FS_WCHAR=0 must link the -fs-char sibling (win32-std-fs-char, ...). That is an
-# ABI switch -- path keeps its mangling but changes layout -- so mixing links cleanly
-# and then misbehaves, exactly like the RTTI split.
-#
-# Debug builds go under watcom/lib/debug/<same name>/ so that the release set stays flat
-# at the top (doc/todo.md 2026-08-02: lib/<os-種類>/ and lib/debug/<os-種類>/).
-#
-# 使う側 (wcl386 のコマンドライン。実測):
-#
-#   推奨 (例外 + RTTI、-xst) -- 無印の variant
-#     wcl386 -bt=nt -l=nt -bm -xst -xr -cc++ -i=<ccwrap>\watcom\std ^
-#            -fi=<ccwrap>\watcom\std\ccwrap_header.h ^
-#            hello.cpp <ccwrap>\watcom\lib\win32-std\libccwcxx.lib
-#
-#   例外も RTTI も無し -- -noeh の variant (-xd で例外を切り、-xr を付けない)
-#     wcl386 -bt=nt -l=nt -bm -xd -cc++ -i=<ccwrap>\watcom\std ^
-#            -fi=<ccwrap>\watcom\std\ccwrap_header.h ^
-#            hello.cpp <ccwrap>\watcom\lib\win32-std-noeh\libccwcxx.lib
-#
-#   DOS で長いファイル名を使う -- -lfn の variant
-#     wcl386 -bt=dos -l=dos4g -cc++ -xst -xr -D__WATCOM_LFN__ ^
-#            -i=<ccwrap>\watcom\std -fi=<ccwrap>\watcom\std\ccwrap_header.h ^
-#            hello.cpp <ccwrap>\watcom\lib\dos32-std-lfn\libccwcxx.lib
-#
-#   doslfn3r.lib を自分で並べる必要は無い。native の <sys/_lfndos.h> が
-#   #pragma library("doslfn3r") を出す (-3s なら doslfn3s、16bit はメモリモデル別)。
-#   **-D__WATCOM_LFN__ と -lfn の variant は必ず対で使う。** 取り違えても
-#   診断は 1 件も出ず (実測)、長い名前を読んだ瞬間に壊れる。
-#
-#   リンク行に .lib を書かずに済ませる (自動リンク) -- **opt-in**
-#     -D_CCW_AUTO_LINK を足すと ccwrap_header.h が #pragma library ("libccwcxx") を
-#     出す。**名前だけ**なので、どの variant になるかは**リンカの検索パス**が決める:
-#
-#       set LIB=<ccwrap>\watcom\lib\win32-std            (環境変数)
-#       wcl386 ... -"LIBPATH <ccwrap>\watcom\lib\win32-std"   (コマンドライン)
-#
-#     既定は OFF。ON にして検索パスに置き忘れると W1008 (cannot open libccwcxx.lib)
-#     が出て未解決になる -- 黙って通らないので、そこは気づける。
-#     ただし **variant の取り違えは相変わらず検出できない** (どの variant も
-#     ファイル名が同じなので、検索パスに置いたものがそのまま使われる)。
-#
-#   -bm (static MT ランタイム) はライブラリ側と揃える。-cc++ が無いと wcl386 は
-#   .cpp を C として処理する。-fi= は '/' 始まりを誤解析するので **native パス**で渡す。
-#
-# **全部まとめて作るなら `gen.bat`** (win32/dos32 x release/debug の 4 configure)。
-# configure は 4 つで足りる: watcom / watcom-debug / watcom-dos32 / watcom-dos32-debug。
-#
-# **variant を絞るのは build preset か target**。configure は共通で、何を作るかだけが違う:
-#
-#   cmake --build --preset watcom-default     win32 release の無印 (-xst -xr) 4 本だけ
-#   cmake --build --preset watcom-debug-noeh  win32 debug の -noeh 4 本だけ
-#   gen win32 noeh                            上の release + debug をまとめて
-#
-#   default / xrxs / noeh を 4 configure すべてに用意してある
-#   (watcom-default / watcom-dos32-debug-noeh …)。-xst は既定の派生なので preset は無し。
-#
-# **1 本だけなら target 名を指定する。target 名は出力フォルダ名の `-` を `_` にしたもの**:
-#
-#   cmake --build --preset watcom --target ccwrap_win32_std_fs_char_xst
-#
-# Each namespace variant is compiled with the corresponding force-include + include path,
-# so its out-of-line symbols land in the right namespace (the same per-build model the
-# headers use).
-#
-# Why RTTI still gets its own variant even though the default is on: -xr costs code size
-# and vtable space in every translation unit, and Open Watcom is targeted at small
-# binaries, so dropping it is a real option (-xst). But typeid / dynamic_cast are needed
-# by <typeinfo>, std::function::target_type and std::any's type(), and a program that uses
-# them must be built with -xr THROUGHOUT -- mixing an -xr program with a non-RTTI
-# libccwcxx.lib is not a supported combination. Hence one library per answer, and the
-# consumer picks. test/ selects with TEST_WATCOM_RTTI (既定 ON = 無印。OFF にすると
-# -xst)。
+# ccwrap prebuilt libraries -- see doc/src/watcom/lib/CMakeLists.txt.md
 cmake_minimum_required(VERSION 3.20)
 
-# CMP0136 (>=3.27) is what makes CMAKE_WATCOM_RUNTIME_LIBRARY effective: under its OLD
-# behaviour the Open Watcom platform hardcodes "-br -bm" (the DLL runtime) into the base
-# flags, so the library would come out DLL-runtime while test/ (and any ordinary app)
-# links statically -- they do not mix (undefined __cnvs2d_ / _EFG_Format_, W1171).
 if(POLICY CMP0136)
     cmake_policy(SET CMP0136 NEW)
 endif()
 
 project(ccwrap_lib CXX)
 
-# CMake's Open Watcom platform bakes -xs into the base CXX flags. Every variant below
-# states its own exception model, so take it out of the base. The NO_EH variants also
-# pass -xd explicitly (below) -- that is what actually turns exceptions off.
 string(REGEX REPLACE "(^| )-xs($| )" "\\2" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-# このファイルは watcom/lib/ にあるので、リポジトリのルートは 2 つ上。
 get_filename_component(CCWRAP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
 set(LLIBCXX03_SRCS
     "${CCWRAP_ROOT}/detail/llibcxx03/src/locale.cpp"
     "${CCWRAP_ROOT}/detail/llibcxx03/src/filesystem.cpp")
 
-# thread.cpp is the one that cannot follow: DOS has no threads at all, and <thread>
-# #errors on a non-Win32 Watcom target. filesystem.cpp does build for DOS -- it carries
-# both OS layers (see the _CCW_OS_WIN / _CCW_OS_DOS branches there).
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "DOS")
     list(APPEND LLIBCXX03_SRCS "${CCWRAP_ROOT}/detail/llibcxx03/src/thread.cpp")
 endif()
 
-# wcl386 mis-parses a leading '/' inside -fi=, so hand it native (backslash) paths.
 file(TO_NATIVE_PATH "${CCWRAP_ROOT}/watcom/std/ccwrap_header.h"    FI_STD)
 file(TO_NATIVE_PATH "${CCWRAP_ROOT}/watcom/ccwstd/ccwrap_header.h" FI_CCWSTD)
 
-# Debug は lib/debug/ の下へ。それ以外 (Release / RelWithDebInfo / 未指定) は lib/ 直下。
-set(LIB_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}")
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(LIB_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/debug")
+if(CMAKE_SYSTEM_NAME STREQUAL "DOS")
+    set(CCW_OS "dos")
+else()
+    set(CCW_OS "nt")
 endif()
 
-# ccwrap_lib_variant(<force-include> <include dir> <output subdir base> [RTTI] [FS_CHAR] [NO_EH] [XS])
-#
-#   **ターゲット名は出力フォルダ名から機械的に決まる**: `ccwrap_` + フォルダ名の `-` を
-#   `_` にしたもの。
-#
-#       win32-std-fs-char-xst   ->  ccwrap_win32_std_fs_char_xst
-#
-#   なので 1 本だけ作りたいときは、フォルダ名がそのまま target 名になる:
-#       cmake --build --preset watcom --target ccwrap_win32_std_xst
-#   よく使う組は buildPreset にしてある (watcom-default / watcom-noeh …)。
-function(ccwrap_lib_variant fi incdir outdir)
-    cmake_parse_arguments(A "RTTI;FS_CHAR;NO_EH;XS;LFN" "" "" ${ARGN})
-    # The folder name carries the options the objects were built with, because
-    # mixing them is silent breakage: -xs / -xr change what the objects expect
-    # without changing any mangled name.
-    set(opts "-fi=${fi}")
+set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${CCW_OS}")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/debug/${CCW_OS}")
+endif()
+
+function(ccwrap_lib_variant fi incdir ns)
+    cmake_parse_arguments(A "RTTI;FS_CHAR;NO_EH;XS;LFN;ABI_3S" "" "" ${ARGN})
+    set(opts "-fi=${fi}" -zm -zv)
+    if(A_ABI_3S)
+        list(APPEND opts -3s)
+        set(abi "3s")
+    else()
+        set(abi "3r")
+    endif()
     if(A_RTTI)
-        list(APPEND opts -xr)                   # -xr: typeid / dynamic_cast
+        list(APPEND opts -xr)
     endif()
     if(A_NO_EH)
-        list(APPEND opts -xd)                   # -xd: no exceptions. Say it, do not rely
-                                                # on merely omitting -xs (the platform
-                                                # file puts one in the base flags).
+        list(APPEND opts -xd)
     elseif(A_XS)
-        list(APPEND opts -xs)                   # -xs: exceptions, table-driven cleanup
+        list(APPEND opts -xs)
     else()
-        list(APPEND opts -xst)                  # -xst: exceptions, cleanup as real code
+        list(APPEND opts -xst)
     endif()
-    # 接尾辞は「**推奨の既定から何を変えたか**」。例外も RTTI もあるのが C++ の既定で、
-    # 例外モデルは A1'' を避ける -xst を採る。よって -xst -xr が無印。
-    #   -xst -xr -> (なし)     -xs -xr -> -xrxs      -xst のみ -> -xst
-    #   -xr のみ -> -xr        どちらも無し -> -noeh
     if(A_NO_EH AND A_RTTI)
-        set(sfx "-xr")
+        set(eh "xr")
     elseif(A_NO_EH)
-        set(sfx "-noeh")
-    elseif(NOT A_RTTI)
-        set(sfx "-xst")
+        set(eh "ne")
+    elseif(A_XS AND A_RTTI)
+        set(eh "xrxs")
     elseif(A_XS)
-        set(sfx "-xrxs")
+        set(eh "xs")
+    elseif(NOT A_RTTI)
+        set(eh "xst")
     else()
-        set(sfx "")
+        set(eh "eh")
+    endif()
+    set(mod "")
+    if(A_LFN)
+        set(mod "${mod}-lfn")
     endif()
     if(A_FS_CHAR)
-        set(outdir "${outdir}-fs-char")
+        set(mod "${mod}-fsc")
     endif()
-    if(A_LFN)
-        set(outdir "${outdir}-lfn")
+    if(ns STREQUAL "ccwstd")
+        set(name "ccw_ccwstd${mod}-${eh}${abi}")
+    else()
+        set(name "ccw${mod}-${eh}${abi}")
     endif()
-    set(outdir "${outdir}${sfx}")
-    string(REPLACE "-" "_" tgt "ccwrap_${outdir}")
+    string(REPLACE "-" "_" tgt "${name}")
 
     add_library(${tgt} STATIC ${LLIBCXX03_SRCS})
     target_compile_definitions(${tgt} PRIVATE _CCW_TARGET_CXX=2026)
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_definitions(${tgt} PRIVATE NDEBUG)
+    endif()
     if(A_FS_CHAR)
-        # filesystem::path::value_type = char, against the target default. The OS
-        # layer in filesystem.cpp follows the same macro (narrow CRT instead of _w*).
         target_compile_definitions(${tgt} PRIVATE _CCW_FS_WCHAR=0)
     endif()
     if(A_LFN)
-        # DOS long file names. This is an ABI switch, not just a link-time one:
-        # the macro moves _MAX_PATH 144 -> 260 and NAME_MAX 12 -> 259, which resizes
-        # struct _finddata_t (char name[_MAX_PATH]) -- the very struct filesystem.cpp
-        # hands to _findfirst / _findnext. A non-LFN library under an LFN runtime
-        # takes a 259-byte name into a 144-byte field.
         target_compile_definitions(${tgt} PRIVATE __WATCOM_LFN__)
     endif()
     target_compile_options(${tgt} PRIVATE ${opts})
-    # watcom/std (または watcom/ccwstd) だけでよい: llibcxx03 の内部 include は相対なので、
-    # その置き場を -i に足す必要は無い。
     target_include_directories(${tgt} PRIVATE "${incdir}")
     set_target_properties(${tgt} PROPERTIES
-        OUTPUT_NAME libccwcxx PREFIX ""
-        ARCHIVE_OUTPUT_DIRECTORY "${LIB_PREFIX}/${outdir}")
+        OUTPUT_NAME "${name}" PREFIX ""
+        ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
 endfunction()
 
-# ---------------------------------------------------------------------------
-# What gets built. Default: <os>-std (-xst -xr) and <os>-std-noeh. Everything else
-# is opt-in; `*-full` turns on the first three, which test/ needs. CCW_LIB_XS is NOT
-# part of full: -xs is banned outside the suites (A1''), so `gen xrxs` alone asks
-# for it. -xr (RTTI, no exceptions) is spelled in the suffix rule but never built.
-# ---------------------------------------------------------------------------
 option(CCW_LIB_CCWSTD  "also build the ccwstd-namespace variant (win32 only)" OFF)
 option(CCW_LIB_FS_CHAR "also build the filesystem::path::value_type=char variant (win32 only)" OFF)
 option(CCW_LIB_XST     "also build the -xst variant (-xst only, no RTTI)" OFF)
 option(CCW_LIB_XS      "also build the -xrxs variant (-xs; test only, see A1'')" OFF)
 
+set(CCW_ABI_LIST "ABI_3S")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "DOS")
-    # One namespace only: ccwstd exists to dodge a native std the toolchain already has,
-    # and on DOS ccwrap is the whole C++ library either way. DOS の path は元から narrow
-    # なので -fs-char も無い。
     set(CCW_NS_LIST "std")
     set(CCW_FS_LIST "")
-    # LFN は DOS だけの軸で、**既定で両方作る**。opt-in にしない理由は取り違えの
-    # 危険が高いこと: __WATCOM_LFN__ は _MAX_PATH / NAME_MAX を変えるので ABI が
-    # 変わるのに、名前修飾は変わらない (= 混ぜても黙ってリンクが通る)。
     set(CCW_LFN_LIST "LFN")
-    set(CCW_OUT_PREFIX "dos32")
 else()
     set(CCW_NS_LIST "std")
     if(CCW_LIB_CCWSTD)
@@ -264,9 +117,7 @@ else()
     if(CCW_LIB_FS_CHAR)
         list(APPEND CCW_FS_LIST "FS_CHAR")
     endif()
-    # __WATCOM_LFN__ は __DOS__ のときだけ効く (native の <sys/_lfndos.h>)。
     set(CCW_LFN_LIST "")
-    set(CCW_OUT_PREFIX "win32")
 endif()
 
 foreach(ns IN LISTS CCW_NS_LIST)
@@ -277,18 +128,18 @@ foreach(ns IN LISTS CCW_NS_LIST)
         set(fi "${FI_STD}")
         set(incdir "${CCWRAP_ROOT}/watcom/std")
     endif()
-    # "" = path の既定文字型、"FS_CHAR" = char 固定
     foreach(fs "" ${CCW_FS_LIST})
-    # "" = 8.3 のまま、"LFN" = DOS 長いファイル名 (DOS のみ)
     foreach(lfn "" ${CCW_LFN_LIST})
-        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI     ${fs} ${lfn})
-        ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" NO_EH    ${fs} ${lfn})
+    foreach(abi "" ${CCW_ABI_LIST})
+        ccwrap_lib_variant("${fi}" "${incdir}" "${ns}" RTTI     ${fs} ${lfn} ${abi})
+        ccwrap_lib_variant("${fi}" "${incdir}" "${ns}" NO_EH    ${fs} ${lfn} ${abi})
         if(CCW_LIB_XS)
-            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" RTTI XS ${fs} ${lfn})
+            ccwrap_lib_variant("${fi}" "${incdir}" "${ns}" RTTI XS ${fs} ${lfn} ${abi})
         endif()
         if(CCW_LIB_XST)
-            ccwrap_lib_variant("${fi}" "${incdir}" "${CCW_OUT_PREFIX}-${ns}" ${fs} ${lfn})
+            ccwrap_lib_variant("${fi}" "${incdir}" "${ns}" ${fs} ${lfn} ${abi})
         endif()
+    endforeach()
     endforeach()
     endforeach()
 endforeach()

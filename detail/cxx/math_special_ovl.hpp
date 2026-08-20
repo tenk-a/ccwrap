@@ -28,15 +28,18 @@ namespace _CCW_STD {
     inline float _Nm(unsigned __n, unsigned __m, float __x) { return _Nm##f(__n, __m, __x); } \
     inline long double _Nm(unsigned __n, unsigned __m, long double __x) { return _Nm##l(__n, __m, __x); }
 
-_CCW_SF_OVL_T(comp_ellint_1) _CCW_SF_OVL_T(comp_ellint_2)
-_CCW_SF_OVL_T(expint)        _CCW_SF_OVL_T(riemann_zeta)
+_CCW_SF_OVL_T(comp_ellint_1)  _CCW_SF_OVL_T(comp_ellint_2)
+_CCW_SF_OVL_T(expint)         _CCW_SF_OVL_T(riemann_zeta)
 _CCW_SF_OVL_TT(beta)          _CCW_SF_OVL_TT(comp_ellint_3)
 _CCW_SF_OVL_TT(ellint_1)      _CCW_SF_OVL_TT(ellint_2)
 _CCW_SF_OVL_TT(cyl_bessel_i)  _CCW_SF_OVL_TT(cyl_bessel_j)
 _CCW_SF_OVL_TT(cyl_bessel_k)  _CCW_SF_OVL_TT(cyl_neumann)
 _CCW_SF_OVL_TTT(ellint_3)
-_CCW_SF_OVL_UT(hermite)     _CCW_SF_OVL_UT(laguerre)   _CCW_SF_OVL_UT(legendre)
-_CCW_SF_OVL_UT(sph_bessel)  _CCW_SF_OVL_UT(sph_neumann)
+#ifndef _CCW_SF_NATIVE_HERMITE
+_CCW_SF_OVL_UT(hermite)
+#endif
+_CCW_SF_OVL_UT(laguerre)      _CCW_SF_OVL_UT(legendre)
+_CCW_SF_OVL_UT(sph_bessel)    _CCW_SF_OVL_UT(sph_neumann)
 _CCW_SF_OVL_UUT(assoc_laguerre) _CCW_SF_OVL_UUT(assoc_legendre) _CCW_SF_OVL_UUT(sph_legendre)
 
 #undef _CCW_SF_OVL_T

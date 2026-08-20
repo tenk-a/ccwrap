@@ -51,7 +51,7 @@ namespace _ccw {
 namespace _CCW_STD17 {
 using namespace ::std;
 struct in_place_t { in_place_t() {} };
-static const in_place_t in_place = in_place_t();
+_ccw_inline_const in_place_t in_place = in_place_t();
 }
 # endif
 #endif
@@ -61,7 +61,7 @@ namespace _CCW_STD23 {
 #ifndef _CCW_STD_UNEXPECT_DEFINED
 #define _CCW_STD_UNEXPECT_DEFINED
 struct unexpect_t { unexpect_t() {} };
-static const unexpect_t unexpect = unexpect_t();
+_ccw_inline_const unexpect_t unexpect = unexpect_t();
 #endif
 
 template<class E>

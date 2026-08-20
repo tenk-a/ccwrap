@@ -3,14 +3,6 @@
  *  @brief  for GCC g++ / Clang clang++ (mainly msys2 ucrt64, WSL Ubuntu; -std=c++03)
  *  @author Masashi Kitamura(tenka@6809.net)
  *  @license Boost Software License Version 1.0
- *
- *  Companion to vc/ccwrap_header.h. Force-include this (`g++ -include
- *  gcc/std/ccwrap_header.h -I gcc/std ...`) and put `gcc/std/` first on the include path so
- *  the extensionless forwarders here shadow the C++ standard headers; each
- *  forwarder reaches the real libstdc++/libc++ header via `#include_next`.
- *
- *  Purpose is exploratory: exercise the ccwrap backports (detail headers) under
- *  a non-MSVC compiler in C++03 mode. Not aimed at production gcc use yet.
  */
 #ifndef _CCW_CCWRAP_HEADER_H
 #define _CCW_CCWRAP_HEADER_H
@@ -54,6 +46,19 @@
 #define _CCW_CONFIG_DIR                 ../gcc
 #define _CCW_CONFIG_PATH(x)             <_CCW_CONFIG_DIR/x>
 
+
+#if defined(__cplusplus)
+ #ifndef _CCW_TARGET_CXX
+  #define _CCW_TARGET_CXX       2026
+ #endif
+ #undef _CCW_TARGET_C
+#else
+ #ifndef _CCW_TARGET_C
+  #define _CCW_TARGET_C         2023
+ #endif
+ #undef _CCW_TARGET_CXX
+#endif
+
 // ---------------------------------------------------------------------------
 
 #ifndef _CCW_M_CAT
@@ -79,23 +84,22 @@
  #define _CCW_IS_CHAR_UNSIGNED  0
 #endif
 
-#if defined(__cplusplus)
- #ifndef _CCW_TARGET_CXX
-  #define _CCW_TARGET_CXX       2011
- #endif
-#else
- #ifndef _CCW_TARGET_C
-  #define _CCW_TARGET_C         2011
- #endif
-#endif
-
 #define _CCW_MESSAGE(x)         _Pragma(_CCW_M_STR(message(x)))
+
+#if defined(__cplusplus)
+  typedef bool                  _ccw_bool;
+#elif __STDC_VERSION__ >= 199901L
+  typedef _Bool	                _ccw_bool;
+#else
+  typedef unsigned char         _ccw_bool;
+#endif
 
 #if defined(__cpp_char8_t)
  typedef char8_t                _ccw_char8;
 #else
  typedef unsigned char          _ccw_char8;
 #endif
+
 #if __cplusplus
 typedef wchar_t                 _ccw_wchar;
 #else
@@ -113,7 +117,18 @@ typedef unsigned long long      _ccw_uint64;
 typedef long long               _ccw_llong;
 typedef unsigned long long      _ccw_ullong;
 
+#if __cplusplus >= 201103L
+typedef char16_t                _ccw_char16;
+typedef char32_t                _ccw_char32;
+#else
+typedef _ccw_uint16             _ccw_char16;
+typedef _ccw_uint32             _ccw_char32;
+#endif
+
+#define _ccw_bool               _ccw_bool
 #define _ccw_char8              _ccw_char8
+#define _ccw_char16             _ccw_char16
+#define _ccw_char32             _ccw_char32
 #define _ccw_wchar              _ccw_wchar
 #define _ccw_int8               _ccw_int8
 #define _ccw_uint8              _ccw_uint8
@@ -143,8 +158,8 @@ typedef unsigned long long      _ccw_ullong;
 
 #if __STDC_VERSION__ < 199901L
 #define inline                  __inline
+#define _Bool                   _ccw_bool
 #endif
-
 #endif
 
 // ---------------------------------------------------------------------------
@@ -155,7 +170,6 @@ typedef unsigned long long      _ccw_ullong;
 #define _ccw_cplusplus  __cplusplus
 
 #if __cplusplus < 201103L      // C++03: supply C++11 keyword/type shims
-
  #if !defined(nullptr)
   #define nullptr                   __null
  #endif
@@ -219,6 +233,13 @@ typedef unsigned long long      _ccw_ullong;
  #define _ccw_fallthrough          [[fallthrough]]
  #define _ccw_maybe_unused         [[maybe_unused]]
  #define _ccw_nodiscard            [[nodiscard]]
+#endif
+
+#if _CCW_TARGET_CXX >= 2020 && !defined(__cpp_char8_t)
+ #ifndef __CCW_HAS_CHAR8_T
+  #define __CCW_HAS_CHAR8_T        1
+  typedef _ccw_char8               char8_t;
+ #endif
 #endif
 
 #ifndef _CCW_NO_VARIADIC_TEMPLATES
@@ -296,6 +317,15 @@ typedef unsigned long long      _ccw_ullong;
   #define _ccw_constexpr_or_const   constexpr
  #else
   #define _ccw_constexpr_or_const   const
+ #endif
+#endif
+#ifndef _ccw_inline_const
+ #if defined(__cpp_inline_variables) && __cpp_inline_variables >= 201606L
+  #define _ccw_inline_const         inline const
+ #elif defined(_WIN32) || defined(__CYGWIN__)
+  #define _ccw_inline_const         extern __attribute__((selectany)) const
+ #else
+  #define _ccw_inline_const         extern __attribute__((weak)) const
  #endif
 #endif
 #ifndef _ccw_move_or_swap
@@ -377,6 +407,14 @@ namespace __ccw { namespace detail {} }
  #else
   #define _CCW_HAS_RTTI 0
  #endif
+#endif
+
+#if defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_NO_MOVE03)
+#include <../../detail/cxx/move03.hpp>
+namespace std {
+    using ::_ccw::move;
+    using ::_ccw::move_if_noexcept;
+}
 #endif
 
 #endif  // _CCW_CCWRAP_HEADER_H

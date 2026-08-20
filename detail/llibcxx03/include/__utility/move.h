@@ -14,8 +14,7 @@
  *  This is an EXPLICIT move only: a temporary is never moved from automatically
  *  (Open Watcom cannot rank the conversion operators Boost uses for that).
  *  _CCW_STD::forward is NOT provided: perfect forwarding needs reference collapsing
- * See detail/move03.hpp and doc/watcom/watcom_move03.md for the full
- *  capability list and the probe results behind it.
+ * See detail/move03.hpp for the full capability list and the probe results behind it.
  */
 #ifndef _CCW_LIBCPP___UTILITY_MOVE_H
 #define _CCW_LIBCPP___UTILITY_MOVE_H

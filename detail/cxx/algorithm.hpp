@@ -143,7 +143,6 @@ template<class RA>             inline bool is_heap(RA first, RA last)           
 }   // namespace std
 #endif
 
-/* vc10 already ships the rest of the C++0x <algorithm>; only these two are missing. */
 #if _CCW_STD_LIB_LT(1700, 201103L)
 namespace std {
 
@@ -195,8 +194,6 @@ inline void shuffle(_It __first, _It __last, _Urbg& __g) {
 }   // namespace std
 #endif
 
-/* vc14 (1900) ships clamp -- but not for_each_n -- while reporting
-   __cplusplus == 199711L and no feature macro, so the two need separate gates. */
 #if __cplusplus < 201703L && (!defined(_MSC_VER) || _MSC_VER < 1900)
 namespace _CCW_STD17 {
 template<class T>

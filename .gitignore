@@ -91,3 +91,4 @@ test/etc_test/libcxx_lit/_work/
 !detail/llibcxx03/test/libcxx/numerics/rand/rand.dist/rand.dist.pois/rand.dist.pois.exp
 !detail/llibcxx03/test/std/re/re.const/re.err
 
+_build

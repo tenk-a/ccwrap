@@ -19,7 +19,7 @@
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct unexpect_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit unexpect_t() {} };
-static const unexpect_t unexpect = unexpect_t();
+_ccw_inline_const unexpect_t unexpect = unexpect_t();
 
 template <class _Ep>
 class unexpected {

@@ -18,8 +18,6 @@
 #include "win32_fwd.h"
 
 #if defined(_MSC_VER) && _MSC_VER < 1500
-/* The 2005 Platform SDK import library predates Vista, so the condition variable
-   entry points are resolved at run time instead. */
 # define _CCW_CNDVAR_DYNAMIC 1
 #endif
 
@@ -61,12 +59,14 @@ typedef void (_ccw_stdcall* __ccw_cv_void_t)(__ccw_pcondition_variable);
 typedef int  (_ccw_stdcall* __ccw_cv_sleep_t)(__ccw_pcondition_variable, __ccw_pcritical_section, unsigned long);
 
 struct __ccw_cv_fns {
-    __ccw_cv_void_t  _init, _wake, _wake_all;
+    __ccw_cv_void_t  _init;
+    __ccw_cv_void_t  _wake;
+    __ccw_cv_void_t  _wake_all;
     __ccw_cv_sleep_t _sleep;
     int              _done;
 };
 
-static struct __ccw_cv_fns* __ccw_cv(void) {
+static inline struct __ccw_cv_fns* __ccw_cv(void) {
     static struct __ccw_cv_fns f;
     if (!f._done) {
         __ccw_hmodule k = GetModuleHandleA("kernel32.dll");
@@ -99,7 +99,7 @@ typedef struct { long _s; }         once_flag;
 #define TSS_DTOR_ITERATIONS         1
 
 struct __ccw_thrd_start { thrd_start_t fn; void* arg; };
-static unsigned _ccw_stdcall __ccw_thrd_trampoline(void* p) {
+static inline unsigned _ccw_stdcall __ccw_thrd_trampoline(void* p) {
     struct __ccw_thrd_start s = *(struct __ccw_thrd_start*)p;
     free(p);
     return (unsigned)s.fn(s.arg);

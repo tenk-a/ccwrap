@@ -27,4 +27,31 @@ using ::lroundf;  using ::lroundl;  using ::llroundf; using ::llroundl;
 using ::lrintf;   using ::lrintl;
 }   // namespace std
 
+#if __cplusplus < 201103L
+#include <math.h>
+namespace std {
+#define _X(_N) using ::_N;
+_CCW_MATH_C99ONLY_FL1_LIST(_X)
+_CCW_MATH_C99ONLY_FL2_LIST(_X)
+_CCW_MATH_FLX_FMA_LIST(_X)
+_CCW_MATH_FLX_LONGARG_LIST(_X)
+_CCW_MATH_FLX_RETINT_LIST(_X)
+_CCW_MATH_FLX_RETLLONG_LIST(_X)
+_CCW_MATH_FLX_NEXTTWD_LIST(_X)
+#undef _X
+using ::scalbn;   using ::nextafter; using ::nextafterf; using ::nextafterl;
+using ::lrint;    using ::lround;    using ::llround;
+using ::nan;      using ::nanf;      using ::nanl;
+using ::float_t;  using ::double_t;
+}   // namespace std
+#endif
+
+#include "../../detail/cxx/math_lerp.hpp"
+
+#if !defined(__cpp_lib_math_special_functions)
+#include "../../detail/cxx/math_special.hpp"
+#else
+#include "../../detail/cxx/math_special_ovl.hpp"
+#endif
+
 #endif // __cplusplus

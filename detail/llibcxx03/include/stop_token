@@ -82,7 +82,7 @@ public:
 };
 
 struct nostopstate_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit nostopstate_t() {} };
-static const nostopstate_t nostopstate = nostopstate_t();
+_ccw_inline_const nostopstate_t nostopstate = nostopstate_t();
 
 class stop_source;
 

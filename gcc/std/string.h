@@ -5,7 +5,7 @@
 
 #include_next <string.h>
 
-#if defined(__MINGW32__) || defined(__MINGW64__)
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
 # define _CCW_STRING_H_HAVE_STRNLEN 1
 #endif
 

@@ -24,7 +24,7 @@
       "name": "vc145-ccwstd",
       "inherits": "vc145",
       "displayName": "vc145 + ccwstd (libcxx03 relocated out of std)",
-      "description": "C++ を native std でなく libcxx03 (namespace ccwstd) から取る構成。doc/vc/ccwstd_vc_feasibility.md 参照。",
+      "description": "C++ comes from libcxx03 (namespace ccwstd), not the native std.",
       "cacheVariables": {
         "TST_NS": "ccwstd"
       }
@@ -97,6 +97,33 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "gcc-noeh",
+      "inherits": "gcc",
+      "description": "g++ -std=c++03 + ccwrap, exceptions and RTTI off (-fno-exceptions -fno-rtti). The gcc twin of the watcom-noeh preset.",
+      "cacheVariables": {
+        "TEST_NO_EH": "ON",
+        "TEST_NO_RTTI": "ON"
+      }
+    },
+    {
+      "name": "clang-noeh",
+      "inherits": "clang",
+      "description": "clang++ -std=c++03 + ccwrap, exceptions and RTTI off (-fno-exceptions -fno-rtti).",
+      "cacheVariables": {
+        "TEST_NO_EH": "ON",
+        "TEST_NO_RTTI": "ON"
+      }
+    },
+    {
+      "name": "clang-cxx26-noeh",
+      "inherits": "clang-cxx26",
+      "description": "clang++ -std=c++26 + ccwrap, exceptions and RTTI off. C++03 の組み合わせが通らない環境 (Apple clang + libc++) 用。",
+      "cacheVariables": {
+        "TEST_NO_EH": "ON",
+        "TEST_NO_RTTI": "ON"
       }
     },
     {
@@ -189,7 +216,7 @@
       "hidden": true,
       "inherits": "base",
       "generator": "NMake Makefiles",
-      "description": "vc80..vc145 を NMake で回すための土台。cl / nmake などを ../bin/*_with_setcc.bat 経由で呼ぶので、**事前に setcc を叩く必要はない** (preset の environment で渡した CCWRAP_VC_VERSION / CCWRAP_VC_ARCH をラッパーが bin/setcc.bat に渡し、その環境で本物を起動する)。CMake には VS2015 より前の ジェネレータが無いので、古い vc は NMake でしか回せない。**ランタイムは static (/MTd)**: 既定の /MDd だと msvcp90d.dll 等の *デバッグ* CRT を side-by-side で要求し、再頒布不可なので入っていない環境では起動時に 0xC0000135 (DLL not found) で落ちる。ビルドは通るのに実行だけできない、という分かりにくい失敗になる。",
+      "description": "NMake base for vc80..vc145. cl / nmake go through ../bin/*_with_setcc.bat, so setcc need not be run first. See doc/src/test/CMakePresets.json.md. Static runtime (/MTd).",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_MAKE_PROGRAM": "${sourceDir}/../bin/nmake_with_setcc.bat",
@@ -278,7 +305,7 @@
       "name": "vc120-ccwstd",
       "inherits": "vc120-x86",
       "displayName": "vc120-x86 + ccwstd (libcxx03 relocated out of std)",
-      "description": "C++ を native std でなく libcxx03 (namespace ccwstd) から取る構成。doc/vc/ccwstd_vc_feasibility.md 参照。",
+      "description": "C++ comes from libcxx03 (namespace ccwstd), not the native std.",
       "cacheVariables": {
         "TST_NS": "ccwstd"
       }
@@ -454,6 +481,18 @@
     {
       "name": "clang",
       "configurePreset": "clang"
+    },
+    {
+      "name": "gcc-noeh",
+      "configurePreset": "gcc-noeh"
+    },
+    {
+      "name": "clang-noeh",
+      "configurePreset": "clang-noeh"
+    },
+    {
+      "name": "clang-cxx26-noeh",
+      "configurePreset": "clang-cxx26-noeh"
     },
     {
       "name": "watcom",
@@ -660,6 +699,27 @@
     {
       "name": "clang",
       "configurePreset": "clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-noeh",
+      "configurePreset": "gcc-noeh",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-noeh",
+      "configurePreset": "clang-noeh",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-cxx26-noeh",
+      "configurePreset": "clang-cxx26-noeh",
       "output": {
         "outputOnFailure": true
       }

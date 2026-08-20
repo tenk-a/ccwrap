@@ -7,7 +7,6 @@
 #define _CCW_DETAIL_STDCKDINT_C_H
 
 #include <ccwrap_common.h>
-#include <stdbool.h>
 
 #ifndef __STDC_VERSION_STDCKDINT_H__
 #define __STDC_VERSION_STDCKDINT_H__ 202311L
@@ -48,10 +47,10 @@ _CCW_F_DEF(PROC, void, __ccw_ckd_store,(void *result, unsigned int size, _ccw_ul
     ( __ccw_ckd_va = (a), __ccw_ckd_vb = (b), \
       (_ccw_ullong)(_ccw_int64)__ccw_ckd_va op (_ccw_ullong)(_ccw_int64)__ccw_ckd_vb )
 
-_CCW_F_DEF(FUNC, bool,  __ccw_ckd_add,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b), (result,size, a, b)) {
+_CCW_F_DEF(FUNC, _ccw_bool,  __ccw_ckd_add,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b), (result,size, a, b)) {
     _ccw_int64 minv = __ccw_ckd_min_for_size(size);
     _ccw_int64 maxv = __ccw_ckd_max_for_size(size);
-    bool overflow = (b > 0 && a > maxv - b) || (b < 0 && a < minv - b);
+    _ccw_bool overflow = (b > 0 && a > maxv - b) || (b < 0 && a < minv - b);
     volatile _ccw_int64 __ccw_ckd_va, __ccw_ckd_vb;
     _ccw_ullong wrapped = _CCW_CKD_WRAP2(+, a, b);      /* volatile: Watcom folds a 64-bit wrap wrongly */
 
@@ -59,10 +58,10 @@ _CCW_F_DEF(FUNC, bool,  __ccw_ckd_add,(void *result, unsigned int size, _ccw_int
     return overflow;
 }
 
-_CCW_F_DEF(FUNC, bool, __ccw_ckd_sub,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b),(result,size,a,b)) {
+_CCW_F_DEF(FUNC, _ccw_bool, __ccw_ckd_sub,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b),(result,size,a,b)) {
     _ccw_int64 minv = __ccw_ckd_min_for_size(size);
     _ccw_int64 maxv = __ccw_ckd_max_for_size(size);
-    bool overflow = (b < 0 && a > maxv + b) || (b > 0 && a < minv + b);
+    _ccw_bool overflow = (b < 0 && a > maxv + b) || (b > 0 && a < minv + b);
     volatile _ccw_int64 __ccw_ckd_va, __ccw_ckd_vb;
     _ccw_ullong wrapped = _CCW_CKD_WRAP2(-, a, b);      /* volatile: Watcom folds a 64-bit wrap wrongly */
 
@@ -70,14 +69,14 @@ _CCW_F_DEF(FUNC, bool, __ccw_ckd_sub,(void *result, unsigned int size, _ccw_int6
     return overflow;
 }
 
-_CCW_F_DEF(FUNC, bool, __ccw_ckd_mul,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b), (result,size,a,b)) {
+_CCW_F_DEF(FUNC, _ccw_bool, __ccw_ckd_mul,(void *result, unsigned int size, _ccw_int64 a, _ccw_int64 b), (result,size,a,b)) {
     _ccw_int64 minv = __ccw_ckd_min_for_size(size);
     _ccw_int64 maxv = __ccw_ckd_max_for_size(size);
-    bool neg = (a < 0) != (b < 0);
+    _ccw_bool neg = (a < 0) != (b < 0);
     _ccw_ullong ua = a < 0 ? (_ccw_ullong)(0 - (_ccw_ullong)a) : (_ccw_ullong)a;
     _ccw_ullong ub = b < 0 ? (_ccw_ullong)(0 - (_ccw_ullong)b) : (_ccw_ullong)b;
     _ccw_ullong limit = neg ? (_ccw_ullong)(0 - (_ccw_ullong)minv) : (_ccw_ullong)maxv;
-    bool overflow = ub != 0 && ua > limit / ub;
+    _ccw_bool overflow = ub != 0 && ua > limit / ub;
     volatile _ccw_int64 __ccw_ckd_va, __ccw_ckd_vb;
     _ccw_ullong wrapped = _CCW_CKD_WRAP2(*, a, b);      /* volatile: Watcom folds a 64-bit wrap wrongly */
 

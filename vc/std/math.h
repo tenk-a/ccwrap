@@ -246,8 +246,6 @@ _CCW_MATH_FL1(lgamma)
 #endif
 #endif
 
-/* VS2010/VS2012 have hypotf inline but spell hypotl as a function-like macro, which
-   would expand in the definition below; VS2013 has both for real (vc bugs D3). */
 #if _MSC_VER < 1600
 static __forceinline float       hypotf(float x, float y)             { return (float)_hypot((double)x, (double)y); }
 #endif
@@ -288,6 +286,10 @@ static __forceinline long double modfl(long double x, long double *iptr) {
     return (long double)__r;
 }
 #endif  // _CCW_MATH_NEED_MODFL
+
+#if defined(__cplusplus)
+#include <../../detail/cxx/math_c99_ovl.hpp>
+#endif
 
 #undef _CCW_MATH_FL1
 #undef _CCW_MATH_FL2

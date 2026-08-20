@@ -9,8 +9,6 @@
 
 #include "../__config"
 
-// vc12 has its own class template std::identity in <type_traits>, which collides
-// with the ranges identity; the ranges algorithms therefore start at vc14.
 #if _CCW_HAS_ALIAS_TEMPLATE && (!defined(_MSC_VER) || _MSC_VER >= 1900)
 
 #include "ranges_util.h"
@@ -26,8 +24,6 @@ namespace ranges {
 template <class _Ip, class _O1, class _O2> using partition_copy_result   = in_out_out_result<_Ip, _O1, _O2>;
 template <class _Ip, class _Op>            using partial_sort_copy_result = in_out_result<_Ip, _Op>;
 
-// A projection-and-comparator pair seen as a plain binary predicate, so the
-// bodies can hand the work to the classic <algorithm> where that is enough.
 template <class _Comp, class _Proj>
 struct __ccw_pcomp {
     _Comp __c_;

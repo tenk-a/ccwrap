@@ -8,7 +8,6 @@
 
 #include _CCW_NATIVE_STL_HEADER_PATH(map)
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <iterator>
 
 #if defined(__cplusplus) && !defined(__cpp_lib_erase_if)

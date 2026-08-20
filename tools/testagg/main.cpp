@@ -1,35 +1,10 @@
 /*
- *  testagg -- ccwrap テスト pass ログ集計ツール (spec / base モデル)
  *
- *  「確度の分離」: 標準 API 項目の一覧 (spec) と、その項目にテストがあるか (base)
- *  を別フォルダで持つ。spec が分母 (規格そのもの)、base が分子 (カバレッジ).
- *  no-test-yet は保存せず spec - base で算出する (状態が腐らない).
  *
- *  複数コンパイラの pass ログ (<suite>.tsv: suite/pass/result/note) を横に連結し,
- *  ヘッダ(suite)ごとの Markdown 表と index を生成する.
  *
- *  使い方:
- *    testagg -o OUTDIR [--spec DIR] [--tested DIR] [書込オプション] RESULTDIR...
- *      -o OUTDIR         : レポート出力先 (index.md と <suite>.md)
- *      --spec DIR        : spec マスター (項目一覧。列 suite/pass/since/until/status/note)
- *      --tested DIR      : base (テスト状態表。列 suite/pass/status/note)
- *      RESULTDIR...      : 各 1 コンパイラの pass ログdir。dir 名 = コンパイララベル.
  *
- *    書込オプション (いずれも非破壊: 既存行を消さない。削除は人が status=deleted で):
- *      --update-spec     : 結果に現れ spec に無い pass を spec に追記のみ (dedup)
- *      --update-tested   : 結果から base を union 更新 (pass->tested / skip->skip /
- *                          fail->fail を追加・昇格。既存 tested は降格しない。行は消さない)
- *      --spec-out DIR    : spec の書込先 (既定 = --spec。マスターを触らず別フォルダに出す用)
- *      --tested-out DIR  : base の書込先 (既定 = --tested)
- *      --suggest         : 報告のみ (書き込まない):
- *                            gap  = spec にありテスト無し (穴)
- *                            orphan = 結果/tested にあり spec に無い (spec 追加候補)
- *                            stale  = base にあり今回どの結果にも無い (削除マーク候補)
  *
- *  【重要】base (spec/base) は情報の確度を高める方向にしか変えない。行の削除は.
- *  ツールでは行わず、人が status=deleted (理由つき) を書く。drift は --suggest で報告のみ.
  *
- *  C++03 文法の範囲で書く (ccwrap でビルド可能に)。実運用は生の vc14.5 でビルド.
  */
 #include <cstdio>
 #include <cstring>
@@ -47,27 +22,23 @@
 typedef std::string                          Str;
 typedef std::vector<Str>                      StrVec;
 
-/* 1 セル = 1 コンパイラの 1 pass の結果 */
 struct Cell {
-    Str result;   /* "pass" / "fail" / "skip" / "" (無し) */
+    Str result;
     Str note;
     Cell() {}
 };
 
 typedef std::map<Str, std::vector<Cell> >     SuiteRows;   /* pass -> per-compiler cells */
 
-/* spec の 1 行 */
 struct SpecRow {
     Str since, until, status, note;
     SpecRow() {}
 };
-/* base の 1 行 */
 struct TestedRow {
     Str status, note;   /* status = tested / skip / fail */
     TestedRow() {}
 };
 
-/* ---- 小道具 ------------------------------------------------------------ */
 
 static Str basename_no_slash(const Str& path) {
     Str p = path;
@@ -120,7 +91,6 @@ static Str suite_of_file(const Str& fname) {
 
 static Str q(const Str& s) { return Str("\"") + s + "\""; }
 
-/* pass ログ tsv を読む。pass -> Cell を返す (header 行と空行は無視)。 */
 static void read_result_tsv(const Str& path, std::map<Str, Cell>& out) {
     std::ifstream ifs(path.c_str());
     if (!ifs) return;
@@ -139,7 +109,6 @@ static void read_result_tsv(const Str& path, std::map<Str, Cell>& out) {
     }
 }
 
-/* spec tsv を読む: pass -> SpecRow。 */
 static void read_spec(const Str& path, std::map<Str, SpecRow>& out) {
     std::ifstream ifs(path.c_str());
     if (!ifs) return;
@@ -156,11 +125,10 @@ static void read_spec(const Str& path, std::map<Str, SpecRow>& out) {
         if (f.size() >= 4) r.until  = unquote(f[3]);
         if (f.size() >= 5) r.status = unquote(f[4]);
         if (f.size() >= 6) r.note   = unquote(f[5]);
-        out[pass] = r;   /* dedup: 後勝ち */
+        out[pass] = r;
     }
 }
 
-/* base tsv を読む: pass -> TestedRow。 */
 static void read_tested(const Str& path, std::map<Str, TestedRow>& out) {
     std::ifstream ifs(path.c_str());
     if (!ifs) return;
@@ -208,7 +176,6 @@ static Str md_escape(const Str& s) {
     return o;
 }
 
-/* 結果セル群から今回の集約 status を決める (tested > skip > fail > "")。 */
 static Str agg_status(const std::vector<Cell>& cells) {
     bool ok = false, sk = false, ng = false;
     for (Str::size_type i = 0; i < cells.size(); ++i) {
@@ -223,7 +190,6 @@ static Str agg_status(const std::vector<Cell>& cells) {
     return "";
 }
 
-/* ---- main -------------------------------------------------------------- */
 
 int main(int argc, char** argv) {
     Str out_dir, spec_dir, tested_dir, spec_out, tested_out;
@@ -240,7 +206,6 @@ int main(int argc, char** argv) {
         else if (a == "--update-spec")                update_spec   = true;
         else if (a == "--update-tested")              update_tested = true;
         else if (a == "--suggest")                    suggest       = true;
-        /* 後方互換: 旧 -b/--update-base/--regen-base は廃止。誤用防止に弾く。 */
         else if (a == "-b" || a == "--update-base" || a == "--regen-base") {
             std::fprintf(stderr, "testagg: '%s' is removed (spec/base model). "
                          "Use --spec/--tested with --update-spec/--update-tested/--suggest.\n",
@@ -269,7 +234,6 @@ int main(int argc, char** argv) {
 
     std::set<Str> suites;
 
-    /* spec: suite -> (pass -> SpecRow) */
     std::map<Str, std::map<Str, SpecRow> > spec;
     if (!spec_dir.empty()) {
         StrVec sf = list_tsv(spec_dir);
@@ -279,7 +243,6 @@ int main(int argc, char** argv) {
             suites.insert(suite);
         }
     }
-    /* base: suite -> (pass -> TestedRow) */
     std::map<Str, std::map<Str, TestedRow> > tested;
     if (!tested_dir.empty()) {
         StrVec tf = list_tsv(tested_dir);
@@ -290,7 +253,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    /* results: suite -> pass -> per-compiler Cell */
     std::map<Str, SuiteRows> data;
     for (Str::size_type ci = 0; ci < result_dirs.size(); ++ci) {
         StrVec rf = list_tsv(result_dirs[ci]);
@@ -313,7 +275,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    /* ---- レポート生成 -------------------------------------------------- */
     Str index_path = out_dir + "\\index.md";
     std::ofstream idx(index_path.c_str());
     idx << "# Test result summary\n\nCompilers: ";
@@ -325,7 +286,6 @@ int main(int argc, char** argv) {
     for (Str::size_type i = 0; i < comps.size(); ++i) idx << "---|";
     idx << "\n";
 
-    /* --suggest / 更新の集計 */
     unsigned tot_gap = 0, tot_orphan = 0, tot_stale = 0, tot_added_spec = 0, tot_upd_tested = 0;
     Str sugg = "# Suggestions\n\n";
 
@@ -335,7 +295,6 @@ int main(int argc, char** argv) {
         std::map<Str, SpecRow>&   sp = spec[suite];
         std::map<Str, TestedRow>& ts = tested[suite];
 
-        /* 全 pass = spec ∪ tested ∪ 結果 */
         std::set<Str> all_pass;
         for (std::map<Str, SpecRow>::iterator p = sp.begin(); p != sp.end(); ++p) all_pass.insert(p->first);
         for (std::map<Str, TestedRow>::iterator p = ts.begin(); p != ts.end(); ++p) all_pass.insert(p->first);
@@ -361,7 +320,6 @@ int main(int argc, char** argv) {
             if (!in_spec) { spec_mark = "**orphan**"; }
             else if (!sp[pass].status.empty()) spec_mark = sp[pass].status;  /* deleted / dup */
 
-            /* tested 状態: base の記録 or 今回結果からの集約 */
             Str tstat;
             if (ts.count(pass)) tstat = ts[pass].status;
             SuiteRows::iterator r = sr.find(pass);
@@ -389,7 +347,6 @@ int main(int argc, char** argv) {
             }
             sf << "\n";
 
-            /* suggest 集計 */
             if (in_spec && sp[pass].status.empty() && tshow != "tested" && tshow != "skip") {
                 tot_gap++;
                 if (suggest) sugg += "- gap: " + suite + " / " + pass + "\n";
@@ -411,7 +368,6 @@ int main(int argc, char** argv) {
             idx << c_ok[i] << "/" << c_nok[i] << "/" << c_skip[i] << "/" << c_miss[i] << " | ";
         idx << "\n";
 
-        /* ---- --update-spec: 結果 pass で spec に無いものを追記のみ ---- */
         if (update_spec && !spec_out.empty()) {
             bool changed = false;
             for (SuiteRows::iterator r2 = sr.begin(); r2 != sr.end(); ++r2)
@@ -425,7 +381,6 @@ int main(int argc, char** argv) {
             }
         }
 
-        /* ---- --update-tested: 結果から union 更新 (非破壊) ---- */
         if (update_tested && !tested_out.empty()) {
             bool changed = false;
             for (SuiteRows::iterator r2 = sr.begin(); r2 != sr.end(); ++r2) {
@@ -435,11 +390,10 @@ int main(int argc, char** argv) {
                 if (e == ts.end()) {
                     TestedRow tr; tr.status = st; ts[r2->first] = tr; changed = true; tot_upd_tested++;
                 } else if (e->second.status != "tested" && st == "tested") {
-                    e->second.status = "tested"; changed = true; tot_upd_tested++;  /* 昇格 */
+                    e->second.status = "tested"; changed = true; tot_upd_tested++;
                 } else if (e->second.status.empty() && !st.empty()) {
                     e->second.status = st; changed = true; tot_upd_tested++;
                 }
-                /* 既存 tested の降格はしない。既存 skip を fail/skip で上書きもしない。 */
             }
             if (changed || (tested_out != tested_dir && !ts.empty())) {
                 _mkdir(tested_out.c_str());

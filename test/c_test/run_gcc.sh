@@ -31,8 +31,6 @@ done
 $CC -std="$STD" $INC $DEF $have -c "$ROOT/test/src/c_test.c" -o "$tmp/c_test.o" || exit 1
 $CC -std="$STD" $INC $DEF $have -c test_main.c -o "$tmp/main.o" || exit 1
 $CC $tmp/main.o $tmp/c_test.o $objs -lm -o "$tmp/ccw_ctest" || exit 1
-# From the repo root, so the pass logs land in the canonical test/result_c_test/<tag>
-# (the binary resolves that path relative to the working directory).
 cd "$ROOT" || exit 1
 "$tmp/ccw_ctest"
 exit $?

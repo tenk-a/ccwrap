@@ -21,8 +21,6 @@
 # define _CCW_SRWLOCK_TRY_DYNAMIC 1
 #endif
 #if defined(_MSC_VER) && _MSC_VER < 1500
-/* The 2005 Platform SDK import library predates Vista, so even the base SRWLOCK
-   entry points have to be resolved at run time (vc bugs D5). */
 # define _CCW_SRWLOCK_DYNAMIC 1
 #endif
 
@@ -42,7 +40,6 @@ _CCW_WINAPI(unsigned char) TryAcquireSRWLockShared(__ccw_psrwlock);
 }
 
 #if defined(_CCW_SRWLOCK_TRY_DYNAMIC)
-typedef int (_ccw_stdcall* __ccw_farproc_t)();
 typedef unsigned char (_ccw_stdcall* __ccw_try_srw_t)(__ccw_psrwlock);
 extern "C" {
 _CCW_WINAPI(__ccw_hmodule) GetModuleHandleA(const char*);

@@ -1,0 +1,8 @@
+// ccwrap <deque>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <deque>
+
+#include <../../detail/cxx/erase_if_deque.hpp>

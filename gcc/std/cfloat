@@ -1,0 +1,8 @@
+// ccwrap <cfloat>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <cfloat>
+
+#include <float.h>

@@ -628,6 +628,8 @@ TEST_CASE(vector, ranges_ops) {
 }
 
 #if TEST_TARGET_CXX >= 2020
+struct IsOdd { bool operator()(int x) const { return x % 2 != 0; } };
+
 TEST_CASE(vector, erase_free) {
     int raw[] = { 1, 2, 3, 2, 5, 2 };
     STD::vector<int> v(raw, raw + 6);
@@ -641,7 +643,6 @@ TEST_CASE(vector, erase_free) {
     test_pass("cxx20:erase(vector)");
 
     STD::vector<int> w(raw, raw + 6);
-    struct IsOdd { bool operator()(int x) const { return x % 2 != 0; } };
     STD::vector<int>::size_type m = STD::erase_if(w, IsOdd());
     test_eq( (long)m, 3L );
     test_eq( w.size(), 3u );

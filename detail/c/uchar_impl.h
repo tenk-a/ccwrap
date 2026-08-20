@@ -10,12 +10,14 @@
 #define __STDC_VERSION_UCHAR_H__ 202311L
 #endif
 
+#define __CCW_HAS_MBRTOC8       1
+
 #include <ccwrap_common.h>
 #include <stddef.h>     /* size_t */
 #include <errno.h>      /* EILSEQ */
 #include <wchar.h>      /* mbstate_t */
 
-static int __ccw_u8_seqlen(unsigned char __lead)
+static inline int __ccw_u8_seqlen(unsigned char __lead)
 {
     if (__lead < 0x80u)             return 1;    /* ASCII (including 0) */
     if ((__lead & 0xE0u) == 0xC0u)  return 2;
@@ -24,7 +26,9 @@ static int __ccw_u8_seqlen(unsigned char __lead)
     return 0;                                    /* 0x80..0xBF (continuation) / 0xF8.. (invalid) */
 }
 
-static int __ccw_u8_decode(const char *__s, size_t __n, unsigned long *__cp)
+#ifndef __CCW_UCHAR_IMPL_C8_ONLY
+
+static inline int __ccw_u8_decode(const char *__s, size_t __n, unsigned long *__cp)
 {
     unsigned char __lead;
     int           __len, __i;
@@ -52,7 +56,7 @@ static int __ccw_u8_decode(const char *__s, size_t __n, unsigned long *__cp)
     return __len;
 }
 
-static int __ccw_u8_encode(unsigned long __c, char *__buf)
+static inline int __ccw_u8_encode(unsigned long __c, char *__buf)
 {
     if (__c < 0x80u) {
         __buf[0] = (char)__c; return 1;
@@ -78,7 +82,9 @@ static int __ccw_u8_encode(unsigned long __c, char *__buf)
     return 0;
 }
 
-static size_t mbrtoc8(char8_t *__pc8, const char *__s, size_t __n, mbstate_t *__ps)
+#endif  /* !__CCW_UCHAR_IMPL_C8_ONLY */
+
+static inline size_t mbrtoc8(_ccw_char8 *__pc8, const char *__s, size_t __n, mbstate_t *__ps)
 {
     static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
                                       struct on glibc, so `= 0` would be an invalid
@@ -90,7 +96,7 @@ static size_t mbrtoc8(char8_t *__pc8, const char *__s, size_t __n, mbstate_t *__
     __st = (unsigned char *)(__ps ? (void *)__ps : (void *)&__internal);
     if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 0; }
     if (__st[0] != 0) {                          /* pending output code unit */
-        if (__pc8) *__pc8 = (char8_t)__st[1];
+        if (__pc8) *__pc8 = (_ccw_char8)__st[1];
         __st[1] = __st[2]; __st[2] = __st[3]; __st[3] = 0; --__st[0];
         return (size_t)-3;
     }
@@ -102,14 +108,14 @@ static size_t mbrtoc8(char8_t *__pc8, const char *__s, size_t __n, mbstate_t *__
     for (__i = 1; __i < __len; ++__i)
         if (((unsigned char)__s[__i] & 0xC0u) != 0x80u) { errno = EILSEQ; return (size_t)-1; }
     if (__lead == 0) { if (__pc8) *__pc8 = 0; return 0; }
-    if (__pc8) *__pc8 = (char8_t)__lead;
+    if (__pc8) *__pc8 = (_ccw_char8)__lead;
     __rem = __len - 1;
     for (__i = 0; __i < __rem; ++__i) __st[1 + __i] = (unsigned char)__s[1 + __i];
     __st[0] = (unsigned char)__rem;
     return (size_t)__len;
 }
 
-static size_t c8rtomb(char *__s, char8_t __c8, mbstate_t *__ps)
+static inline size_t c8rtomb(char *__s, _ccw_char8 __c8, mbstate_t *__ps)
 {
     static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
                                       struct on glibc, so `= 0` would be an invalid
@@ -143,7 +149,9 @@ static size_t c8rtomb(char *__s, char8_t __c8, mbstate_t *__ps)
     return 0;
 }
 
-static size_t mbrtoc32(char32_t *__pc32, const char *__s, size_t __n, mbstate_t *__ps)
+#ifndef __CCW_UCHAR_IMPL_C8_ONLY
+
+static inline size_t mbrtoc32(_ccw_char32 *__pc32, const char *__s, size_t __n, mbstate_t *__ps)
 {
     unsigned long __cp;
     int           __len;
@@ -153,11 +161,11 @@ static size_t mbrtoc32(char32_t *__pc32, const char *__s, size_t __n, mbstate_t 
     if (__len == -1) { errno = EILSEQ; return (size_t)-1; }
     if (__len == -2) return (size_t)-2;
     if (__cp == 0) { if (__pc32) *__pc32 = 0; return 0; }
-    if (__pc32) *__pc32 = (char32_t)__cp;
+    if (__pc32) *__pc32 = (_ccw_char32)__cp;
     return (size_t)__len;
 }
 
-static size_t c32rtomb(char *__s, char32_t __c32, mbstate_t *__ps)
+static inline size_t c32rtomb(char *__s, _ccw_char32 __c32, mbstate_t *__ps)
 {
     unsigned long __c;
     int           __len;
@@ -170,7 +178,7 @@ static size_t c32rtomb(char *__s, char32_t __c32, mbstate_t *__ps)
     return (size_t)__len;
 }
 
-static size_t mbrtoc16(char16_t *__pc16, const char *__s, size_t __n, mbstate_t *__ps)
+static inline size_t mbrtoc16(_ccw_char16 *__pc16, const char *__s, size_t __n, mbstate_t *__ps)
 {
     static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
                                       struct on glibc, so `= 0` would be an invalid
@@ -184,7 +192,7 @@ static size_t mbrtoc16(char16_t *__pc16, const char *__s, size_t __n, mbstate_t 
     if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 0; }
     if (__st[0] != 0) {                           /* pending low surrogate */
         __lo = (unsigned)__st[1] | ((unsigned)__st[2] << 8);
-        if (__pc16) *__pc16 = (char16_t)__lo;
+        if (__pc16) *__pc16 = (_ccw_char16)__lo;
         __st[0] = __st[1] = __st[2] = __st[3] = 0;
         return (size_t)-3;
     }
@@ -192,18 +200,18 @@ static size_t mbrtoc16(char16_t *__pc16, const char *__s, size_t __n, mbstate_t 
     if (__len == -1) { errno = EILSEQ; return (size_t)-1; }
     if (__len == -2) return (size_t)-2;
     if (__cp == 0) { if (__pc16) *__pc16 = 0; return 0; }
-    if (__cp <= 0xFFFFu) { if (__pc16) *__pc16 = (char16_t)__cp; return (size_t)__len; }
+    if (__cp <= 0xFFFFu) { if (__pc16) *__pc16 = (_ccw_char16)__cp; return (size_t)__len; }
     __cp -= 0x10000u;                             /* split into a surrogate pair */
     __hi = 0xD800u | (unsigned)(__cp >> 10);
     __lo = 0xDC00u | (unsigned)(__cp & 0x3FFu);
-    if (__pc16) *__pc16 = (char16_t)__hi;
+    if (__pc16) *__pc16 = (_ccw_char16)__hi;
     __st[1] = (unsigned char)(__lo & 0xFFu);
     __st[2] = (unsigned char)((__lo >> 8) & 0xFFu);
     __st[0] = 1;
     return (size_t)__len;
 }
 
-static size_t c16rtomb(char *__s, char16_t __c16, mbstate_t *__ps)
+static inline size_t c16rtomb(char *__s, _ccw_char16 __c16, mbstate_t *__ps)
 {
     static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
                                       struct on glibc, so `= 0` would be an invalid
@@ -234,5 +242,7 @@ static size_t c16rtomb(char *__s, char16_t __c16, mbstate_t *__ps)
     __len = __ccw_u8_encode((unsigned long)__u, __s);
     return (size_t)__len;
 }
+
+#endif  /* !__CCW_UCHAR_IMPL_C8_ONLY */
 
 #endif  /* _CCW_DETAIL_UCHAR_IMPL_H */

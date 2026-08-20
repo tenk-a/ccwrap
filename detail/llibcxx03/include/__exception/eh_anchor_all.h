@@ -21,9 +21,6 @@
 #include <variant>
 #include <memory>
 #include <functional>
-/* regex_error / ios_base::failure / filesystem_error / future_error live in
-   headers that need libccwcxx.lib anyway, so they are opt-in: a program that
-   catches them already links the library. */
 #if defined(_CCW_EH_ANCHOR_FULL)
 #include <regex>
 #include <ios>

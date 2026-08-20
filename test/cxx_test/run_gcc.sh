@@ -29,10 +29,6 @@ if ! $CXX -std="$STD" $INC -c test_cxx_vc.cpp -o "$tmp/test_cxx_vc.o" 2>"$tmp/cc
     echo "FATAL: harness (test_cxx_vc.cpp) failed to compile:"; cat "$tmp/ccw.err"; exit 1
 fi
 
-# Files that COMPILE but fail to LINK against the native library (not a ccwrap issue),
-# so the compile-only probe below cannot catch them; excluded from the link explicitly:
-#   codecvt -- libstdc++ never emits std::codecvt_utf8's out-of-line destructor (a known
-#   libstdc++ gap), leaving an unresolved reference. Covered on vc/watcom instead.
 LINK_EXCLUDE="codecvt_test.cpp"
 
 objs="$tmp/test_cxx_vc.o"; skipped=""; linkskip=""
@@ -48,13 +44,7 @@ done
 [ -n "$linkskip" ] && echo "# excluded (compiles but does not link natively):$linkskip"
 
 [ -n "$skipped" ] && echo "# skipped (not available at this level):$skipped"
-# -latomic: clang lowers some <atomic> ops to __atomic_* libcalls (g++ inlines them);
-# -pthread for <thread>/<mutex>. Both libs are present, so this is harmless for g++ too.
 $CXX -std="$STD" $INC $objs -pthread -latomic -o "$tmp/ccw_gcc_test" || exit 1
-# Run from the REPO ROOT, not from here: the binary resolves its results directory
-# relative to the working directory, so running it in place would write the pass logs to
-# test/cxx_test/test/result_cxx_test/... -- a second, unignored copy of the results tree
-# (which is how some of those files once got committed by accident).
 cd ../..
 if [ -x "$tmp/ccw_gcc_test" ]; then "$tmp/ccw_gcc_test"; else "$tmp/ccw_gcc_test.exe"; fi
 exit $?

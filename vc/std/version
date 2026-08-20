@@ -3,7 +3,6 @@
 
 #include <ccwrap_common.h>
 
-// MSVC ships <version> from VS2019 (1920); VS2017 has none, not even at 14.16.
 #if _MSC_VER >= 1920
  #include _CCW_NATIVE_STL_HEADER_PATH(version)
 #endif

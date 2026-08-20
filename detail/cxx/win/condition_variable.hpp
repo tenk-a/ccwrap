@@ -19,7 +19,6 @@
 #include <exception>
 
 #if defined(_MSC_VER) && _MSC_VER < 1500
-/* The 2005 Platform SDK import library predates Vista (vc bugs D5). */
 # define _CCW_CONDVAR_DYNAMIC 1
 #endif
 
@@ -32,7 +31,6 @@ _CCW_WINAPI(void) WakeConditionVariable(__ccw_pcondition_variable);
 _CCW_WINAPI(void) WakeAllConditionVariable(__ccw_pcondition_variable);
 }
 #else
-typedef int (_ccw_stdcall* __ccw_farproc_t)();
 extern "C" {
 _CCW_WINAPI(__ccw_hmodule) GetModuleHandleA(const char*);
 _CCW_WINAPI(__ccw_farproc_t) GetProcAddress(__ccw_hmodule, const char*);

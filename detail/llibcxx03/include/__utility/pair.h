@@ -79,7 +79,6 @@ _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const pair<_T1, _T2>& __x, const pair<
 template <class _T1, class _T2>
 _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) { return !(__x < __y); }
 
-// _CCW_CFG_MAKE_PAIR_BYREF: take the arguments by reference, not by value.
 #if _CCW_CFG_MAKE_PAIR_BYREF
 template <class _T1, class _T2> _CCW_LIBCPP_HIDE_FROM_ABI pair<_T1,  _T2 > make_pair(const _T1& __x, const _T2& __y) { return pair<_T1,  _T2 >(__x, __y); }
 template <class _T1, class _T2> _CCW_LIBCPP_HIDE_FROM_ABI pair<_T1*, _T2 > make_pair(_T1* __x,       const _T2& __y) { return pair<_T1*, _T2 >(__x, __y); }

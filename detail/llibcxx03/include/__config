@@ -42,8 +42,6 @@
 
 #define _CCW_LIBCPP_HAS_NATIVE_TYPE_TRAITS _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
 
-/* pointer_traits / allocator_traits landed one release later than <type_traits>
-   on MSVC (VS2012, not VS2010), so they need a boundary of their own. */
 #if defined(_MSC_VER) && _CCW_LIBCPP_NATIVE_STD
 #  if _MSC_VER >= 1700
 #    define _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS 1
@@ -54,8 +52,6 @@
 #  define _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
 #endif
 
-/* Same story for the is_constructible / is_assignable / is_destructible family:
-   vc10 only has the TR1-era has_trivial_* / has_nothrow_* spellings. */
 #if defined(_MSC_VER) && _CCW_LIBCPP_NATIVE_STD
 #  if _MSC_VER >= 1700
 #    define _CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS 1

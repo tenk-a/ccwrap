@@ -5,9 +5,10 @@
 
 #if __cplusplus >= 201103L
  #include_next <forward_list>
+ #include <../../detail/cxx/erase_if_forward_list.hpp>
 #else
  #include <../../detail/llibcxx03/include/forward_list>
 #endif
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <../../detail/cxx/iterator.hpp>
+

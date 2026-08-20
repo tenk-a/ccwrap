@@ -9,8 +9,6 @@
  #include <../../detail/llibcxx03/include/codecvt>
 #endif
 
-/* vc14 declares the char16_t / char32_t codecvt facets but ships no locale::id for
-   them, so using one is a link error. selectany lets a header carry the definition. */
 #if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1900
 #include <locale>
 __declspec(selectany) std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;

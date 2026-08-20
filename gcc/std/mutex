@@ -9,7 +9,6 @@
 #if defined(_WIN32)
  #include <../../detail/cxx/win/mutex.hpp>
 #else
- // the C++03 stand-in is Win32-only; elsewhere the native header decides
  #include_next <mutex>
 #endif
 #endif

@@ -20,13 +20,13 @@ _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 #ifndef _CCW_SORTED_UNIQUE_T_DEFINED
 #define _CCW_SORTED_UNIQUE_T_DEFINED
 struct sorted_unique_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit sorted_unique_t() {} };
-static const sorted_unique_t sorted_unique = sorted_unique_t();
+_ccw_inline_const sorted_unique_t sorted_unique = sorted_unique_t();
 #endif
 
 #ifndef _CCW_SORTED_EQUIVALENT_T_DEFINED
 #define _CCW_SORTED_EQUIVALENT_T_DEFINED
 struct sorted_equivalent_t { _CCW_LIBCPP_HIDE_FROM_ABI explicit sorted_equivalent_t() {} };
-static const sorted_equivalent_t sorted_equivalent = sorted_equivalent_t();
+_ccw_inline_const sorted_equivalent_t sorted_equivalent = sorted_equivalent_t();
 #endif
 
 template <class _Key, class _Tp, class _Compare = less<_Key> >

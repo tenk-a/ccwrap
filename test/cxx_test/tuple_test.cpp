@@ -131,7 +131,7 @@ TEST_CASE(tuple, ctors_and_assign) {
     test_pass("cxx11:tuple::tuple(const tuple&) (copy)");
 
     T c(STD::move(a));
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("no move below C++11: the type here is the native library's own, and a move cannot be added to it");
     test_true( STD::get<1>(c) == "x" && STD::get<1>(a).empty() );
     test_pass("cxx11:tuple::tuple(tuple&&) (move)");
 
@@ -174,7 +174,7 @@ TEST_CASE(tuple, ctors_and_assign) {
     test_pass("cxx11:tuple::operator=(const tuple&)");
     T mv(5, "m");
     e = STD::move(mv);
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("no move below C++11: the type here is the native library's own, and a move cannot be added to it");
     test_true( STD::get<1>(e) == "m" && STD::get<1>(mv).empty() );
     test_pass("cxx11:tuple::operator=(tuple&&)");
 #if _TST_HAS_ALIAS_TEMPLATE

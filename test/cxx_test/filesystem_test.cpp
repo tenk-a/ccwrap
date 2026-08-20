@@ -72,6 +72,7 @@ TEST_CASE(filesystem, os_operations) {
     test_true( fs::is_regular_file(f) );
     test_pass("cxx17:is_regular_file");
     test_eq( (unsigned long)fs::file_size(f), 2UL );
+    test_true( tst_type_is<STD::uintmax_t>(fs::file_size(f)) );
     test_pass("cxx17:file_size");
 
     int count = 0; bool sawfile = false;
@@ -287,9 +288,10 @@ TEST_CASE(filesystem, os_operations_more) {
     test_true( saw_b );
     test_pass("cxx17:recursive_directory_iterator");
 
-    unsigned long n = fs::remove_all(d);
+    STD::uintmax_t n = fs::remove_all(d);
     test_true( n >= 5 );
     test_true( !fs::exists(d) );
+    test_true( tst_type_is<STD::uintmax_t>(fs::remove_all(d)) );
     test_pass("cxx17:remove_all");
 
     test_true( !fs::temp_directory_path().empty() );
@@ -886,6 +888,15 @@ TEST_CASE(filesystem, copy_and_options) {
     fs::remove_all(dst);
 }
 
+static fs::file_time_type::duration lwt_hour() {
+    return STD::chrono::duration_cast<fs::file_time_type::duration>(STD::chrono::hours(1));
+}
+
+static bool lwt_near(fs::file_time_type a, fs::file_time_type b) {
+    STD::chrono::seconds d = STD::chrono::duration_cast<STD::chrono::seconds>(a - b);
+    return d.count() <= 2 && d.count() >= -2;
+}
+
 TEST_CASE(filesystem, last_write_time_set) {
     fs::path f("ccwfslwt.txt");
     fs::remove(f);
@@ -897,6 +908,18 @@ TEST_CASE(filesystem, last_write_time_set) {
     fs::last_write_time(f, t1);
     fs::file_time_type t2 = fs::last_write_time(f);
     test_true( t2 == t1 );
+
+    fs::file_time_type want = t2 - lwt_hour();
+    fs::last_write_time(f, want);
+    test_true( lwt_near(fs::last_write_time(f), want) );
+
+    fs::path d("ccwfslwtd");
+    fs::remove_all(d);
+    fs::create_directory(d);
+    fs::file_time_type dt = fs::last_write_time(d) - lwt_hour();
+    fs::last_write_time(d, dt);
+    test_true( lwt_near(fs::last_write_time(d), dt) );
+    fs::remove_all(d);
     test_pass("cxx17:last_write_time (set)");
 
     fs::remove(f);
@@ -1759,6 +1782,6 @@ TEST_CASE(filesystem, error_code_overloads) {
     fs::path missing = base / "no_such_dir" / "no_such_file";
     ec.clear();
     test_true( !fs::exists(missing, ec) );
-    test_true( fs::file_size(missing, ec) == (unsigned long)-1 );
+    test_true( fs::file_size(missing, ec) == (STD::uintmax_t)-1 );
     test_true( (bool)ec );
 }

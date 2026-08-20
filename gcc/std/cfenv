@@ -1,0 +1,18 @@
+// ccwrap <cfenv>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <cfenv>
+#else
+ #include <fenv.h>
+ namespace std {
+    using ::fenv_t;          using ::fexcept_t;
+    using ::feclearexcept;   using ::fegetexceptflag; using ::feraiseexcept;
+    using ::fesetexceptflag; using ::fetestexcept;
+    using ::fegetround;      using ::fesetround;
+    using ::fegetenv;        using ::feholdexcept;
+    using ::fesetenv;        using ::feupdateenv;
+ }
+#endif

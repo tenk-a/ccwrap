@@ -8,10 +8,8 @@
 
 #ifdef __cplusplus
 # define _CCW_M23_FN    inline
-# define _CCW_M23_BOOL  bool
 #else
 # define _CCW_M23_FN    static _ccw_forceinline
-# define _CCW_M23_BOOL  int
 #endif
 
 _CCW_M23_FN _ccw_ullong __ccw_m23_dbits(double __x) {
@@ -88,14 +86,13 @@ _CCW_C23_EXTREMUM_FL(fmaximum_mag)     _CCW_C23_EXTREMUM_FL(fminimum_mag)
 _CCW_C23_EXTREMUM_FL(fmaximum_mag_num) _CCW_C23_EXTREMUM_FL(fminimum_mag_num)
 #undef _CCW_C23_EXTREMUM_FL
 
-_CCW_M23_FN _CCW_M23_BOOL issignaling(double __x) {
+_CCW_M23_FN _ccw_bool issignaling(double __x) {
     _ccw_ullong __u = __ccw_m23_dbits(__x);
     int __is_nan = ((__u >> 52) & 0x7FFu) == 0x7FFu && (__u & 0xFFFFFFFFFFFFFULL) != 0;
     return __is_nan && (__u & 0x8000000000000ULL) == 0;
 }
-_CCW_M23_FN _CCW_M23_BOOL iscanonical(double __x) { (void)__x; return 1; }
+_CCW_M23_FN _ccw_bool iscanonical(double __x) { (void)__x; return 1; }
 
 #undef _CCW_M23_FN
-#undef _CCW_M23_BOOL
 
 #endif  /* _CCW_DETAIL_MATH_C23_H */

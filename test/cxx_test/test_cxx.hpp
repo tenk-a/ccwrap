@@ -191,8 +191,6 @@
 #  define _TST_TEST_HAS(HDR)    1
 #endif
 
-// _tst_cplusplus: <print> exists as a file well before it has any content -- libstdc++
-// gates its body on the compiler's own level, so __has_include alone is not enough.
 #if TEST_TARGET_CXX >= 2023 && _tst_cplusplus >= 202302L \
     && _TST_TEST_HAS(<print>) && !defined(__WATCOMC__) \
     && !(defined(_MSC_VER) && !defined(__has_include))
@@ -317,31 +315,26 @@
 #  endif
 #endif
 
-/* STD_NS: "std::" for the <cxxx> tests, empty for the <xxx.h> variants that
-   include the same source again (see e.g. string_h_test.cpp). */
 #ifndef STD_NS
 #  define STD_NS STD::
 #endif
 
-/* Names a <cxxx> header puts in std that ccwrap cannot also put in the global
-   namespace, so the <xxx.h> variant has to skip them. Add one macro per name and
-   say why here. TST_GLOBAL_C_NAMES marks the <xxx.h> variant. */
 #if defined(TST_GLOBAL_C_NAMES) && defined(_MSC_VER)
-   /* The UCRT's <math.h> stops at the two-argument hypot, and a global three-
-      argument overload cannot be added: <cmath> re-exports ::hypot into std, which
-      would make every std::hypot(a,b,c) ambiguous. */
 #  define _TST_NO_GLOBAL_HYPOT3 1
 #else
 #  define _TST_NO_GLOBAL_HYPOT3 0
 #endif
 
-/* Pre-VS2012 <math.h> has no C++11 integral-argument overloads in the global
-   namespace, and ccwrap cannot add them: native <cmath> imports ::sqrt into std,
-   where the integral overloads already are. */
 #if defined(TST_GLOBAL_C_NAMES) && defined(_MSC_VER) && _MSC_VER < 1700
 #  define _TST_NO_GLOBAL_MATH_INT 1
 #else
 #  define _TST_NO_GLOBAL_MATH_INT 0
+#endif
+
+#if defined(__WATCOMC__) || (defined(__GNUC__) && !defined(_MSC_VER) && __cplusplus < 201103L)
+#  define _TST_IS_CONVERTIBLE_CLASS 0
+#else
+#  define _TST_IS_CONVERTIBLE_CLASS 1
 #endif
 
 #include "../src/test.hpp"

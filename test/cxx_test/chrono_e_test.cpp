@@ -198,11 +198,16 @@ TEST_CASE(chrono, duration_mixed_period_ops) {
     test_true( milliseconds(1001) != seconds(1) );
     test_pass("cxx11:duration mixed-period comparison");
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
     long long q = minutes(2) / seconds(30);
     test_eq( q, 4LL );
     test_eq( (long long)(seconds(90) / seconds(30)), 3LL );
     seconds r = minutes(2) % seconds(35);
     test_eq( r.count(), 15LL );
+#else
+    TEST_NOTE("MSVC 12: duration/duration and duration%duration do not compile");
+    TEST_SKIP_N(3);
+#endif
     test_eq( (seconds(10) / 2).count(), 5LL );
     test_eq( (seconds(10) % 3).count(), 1LL );
     test_pass("cxx11:duration mixed-period / and %");

@@ -14,3 +14,7 @@
 #if !defined(__cplusplus) && !defined(_CCW_MATH_C23_NATIVE)
 # include "../../detail/c/math_c23.h"
 #endif
+
+#if defined(__cplusplus) && __cplusplus < 201103L
+# include "../../detail/cxx/math_c99_ovl.hpp"
+#endif

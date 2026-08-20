@@ -1,0 +1,8 @@
+// ccwrap <list>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <list>
+
+#include <../../detail/cxx/erase_if_list.hpp>

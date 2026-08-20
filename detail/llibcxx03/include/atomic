@@ -23,12 +23,12 @@ struct memory_order {
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(memory_order __a, memory_order __b) { return __a.__v_ == __b.__v_; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator!=(memory_order __a, memory_order __b) { return __a.__v_ != __b.__v_; }
 
-static const memory_order memory_order_relaxed = memory_order(memory_order::relaxed);
-static const memory_order memory_order_consume = memory_order(memory_order::consume);
-static const memory_order memory_order_acquire = memory_order(memory_order::acquire);
-static const memory_order memory_order_release = memory_order(memory_order::release);
-static const memory_order memory_order_acq_rel = memory_order(memory_order::acq_rel);
-static const memory_order memory_order_seq_cst = memory_order(memory_order::seq_cst);
+_ccw_inline_const memory_order memory_order_relaxed = memory_order(memory_order::relaxed);
+_ccw_inline_const memory_order memory_order_consume = memory_order(memory_order::consume);
+_ccw_inline_const memory_order memory_order_acquire = memory_order(memory_order::acquire);
+_ccw_inline_const memory_order memory_order_release = memory_order(memory_order::release);
+_ccw_inline_const memory_order memory_order_acq_rel = memory_order(memory_order::acq_rel);
+_ccw_inline_const memory_order memory_order_seq_cst = memory_order(memory_order::seq_cst);
 
 template <class _Tp>
 struct atomic {

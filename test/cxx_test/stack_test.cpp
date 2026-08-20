@@ -214,6 +214,7 @@ TEST_CASE(stack, move_and_allocators) {
 #endif
 
 #if TEST_TARGET_CXX >= 2011
+    TEST_SKIP_NATIVE_NO_MOVE("the native pre-C++11 stack has no allocator_type, and a member cannot be added to it");
     test_true( (STD::uses_allocator<STD::stack<int>, STD::allocator<int> >::value) );
     test_pass("cxx11:uses_allocator<stack>");
 #else

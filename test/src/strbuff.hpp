@@ -38,13 +38,13 @@
   WideCharToMultiByte(unsigned int, unsigned long, const wchar_t*, int, char*, int, const char*, int*);
  #endif
   namespace ccw {
-    static inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char const* src, size_t src_sz) {
+    inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char const* src, size_t src_sz) {
         std::size_t l = src_sz < buf_sz ? src_sz : buf_sz - 1;
         memcpy(buf, src, l);
         buf[l] = 0;
         return l;
     }
-    static inline std::size_t str_from_unienc(char buf[], size_t buf_sz, wchar_t const* src, size_t src_sz) {
+    inline std::size_t str_from_unienc(char buf[], size_t buf_sz, wchar_t const* src, size_t src_sz) {
      #if defined(_WIN32)
         return WideCharToMultiByte(0, 0, src, (int)src_sz, buf, (int)buf_sz, 0, 0);
      #else
@@ -57,9 +57,9 @@
     }
  #if (__cplusplus >= 201103L || _MSVC_LANG >= 201103L || _MSC_VER >= 1900)
   #if defined(_WIN32)
-    static inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char16_t const* src, size_t src_sz)
+    inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char16_t const* src, size_t src_sz)
   #else
-    static inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char32_t const* src, size_t src_sz)
+    inline std::size_t str_from_unienc(char buf[], size_t buf_sz, char32_t const* src, size_t src_sz)
   #endif
     {
         return str_from_unienc(buf, buf_sz, (wchar_t const*)src, src_sz);

@@ -9,9 +9,9 @@
  * Everything here is defined at GLOBAL scope and is language-neutral, so <stdlib.h>
  * (C and C++) and <cstdlib> can both use it; <cstdlib> then re-exports the names into
  * namespace std with a using-declaration. Writing the supplement only in <cstdlib>
- * would leave C without it (doc/ccwrap_impl_rule.md).
+ * would leave C without it.
  *
- * SUBSET (documented, cf. doc/ccwrap_impl_rule.md): the registry is a fixed 32 slots,
+ * SUBSET : the registry is a fixed 32 slots,
  * which is the minimum C11 requires an implementation to accept. Registering beyond
  * that reports failure rather than growing, so nothing allocates on an exit path.
  * It is also per-translation-unit (`static`), so a handler registered in one TU is not

@@ -6,6 +6,7 @@
 #include _CCW_NATIVE_UC_HEADER_PATH(time.h)
 
 #include <../../detail/c/timespec_vc.h>
+#include <../../detail/c/time_c23.h>
 
 #if _MSC_VER < 1900 && !defined(__cplusplus) && defined(_CCW_C_CONFORM)
 #include <string.h>

@@ -22,6 +22,16 @@
 
 #else
 
-# include_next <stdbit.h>
+# if defined(__has_include_next)
+#  if __has_include_next(<stdbit.h>)
+#   define _CCW_HAS_NATIVE_STDBIT_H 1
+#  endif
+# endif
+
+# if defined(_CCW_HAS_NATIVE_STDBIT_H)
+#  include_next <stdbit.h>
+# else
+#  include "../../detail/c/stdbit_c.h"
+# endif
 
 #endif // __cplusplus

@@ -82,8 +82,6 @@ template<class T> struct bit_not { T operator()(const T& a) const { return ~a; }
 }   // namespace std
 #endif
 
-// libstdc++ defines equal_to<void> / less<void> even before C++14 (it needs them for
-// <bits/predefined_ops.h>) without defining __cpp_lib_transparent_operators.
 #if defined(__GLIBCXX__)
 #  if defined(__has_include)
 #    if __has_include(<bits/predefined_ops.h>)

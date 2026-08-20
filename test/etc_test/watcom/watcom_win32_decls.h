@@ -1,5 +1,5 @@
 /* The genuine Win32 declarations, standing in for <windows.h>: that header cannot
-   be preprocessed under ccwrap's forced config (ccwrap_watcom_bugs.md C3), so the
+   be preprocessed under ccwrap's forced config, so the
    coexistence tests declare by hand exactly what it declares. The struct tags are
    the ones Open Watcom's own h/nt, the Microsoft SDK and MinGW all use. */
 #ifndef CCW_TEST_WATCOM_WIN32_DECLS_H

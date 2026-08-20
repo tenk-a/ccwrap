@@ -33,8 +33,6 @@
 #  define TST_TEST_GETCWD(b,n) getcwd((b), (n))
 #endif
 
-/* The tag names what was dropped from the C++ default (exceptions + RTTI), the
-   same way watcom/lib/ names its prebuilt variants. */
 #if defined(__cplusplus) && defined(TEST_HAS_EH) && !(TEST_HAS_EH)
 #  define TST_ENV_HAS_EH    0
 #else

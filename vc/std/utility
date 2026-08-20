@@ -21,7 +21,7 @@ namespace _CCW_STD17 {
 # ifndef _CCW_STD_IN_PLACE_DEFINED
 # define _CCW_STD_IN_PLACE_DEFINED
 struct in_place_t { explicit in_place_t() {} };
-static const in_place_t in_place = in_place_t();
+_ccw_inline_const in_place_t in_place = in_place_t();
 # endif
 # ifndef _CCW_STD_IN_PLACE_TYPE_DEFINED
 # define _CCW_STD_IN_PLACE_TYPE_DEFINED
@@ -38,8 +38,6 @@ template <_CCW_STD::size_t _Ip> const in_place_index_t<_Ip> in_place_index = in_
 #  endif
 # endif
 }
-/* When _CCW_STD17 IS std these are the same entities llibcxx03 would define, so claim
-   its guards too; otherwise they live in _ccw and llibcxx03 still needs its own. */
 # if _CCW_TARGET_CXX >= 2017
 #  define _CCW_LIBCPP___UTILITY_IN_PLACE_DEFINED
 #  define _CCW_LIBCPP___UTILITY_IN_PLACE_TYPE_DEFINED
@@ -50,6 +48,6 @@ template <_CCW_STD::size_t _Ip> const in_place_index_t<_Ip> in_place_index = in_
 #if defined(__cplusplus) && _MSC_VER < 1700
 namespace std {
 struct piecewise_construct_t {};
-static const piecewise_construct_t piecewise_construct = piecewise_construct_t();
+_ccw_inline_const piecewise_construct_t piecewise_construct = piecewise_construct_t();
 }
 #endif

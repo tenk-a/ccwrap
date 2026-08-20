@@ -10,8 +10,13 @@
 
 #if _CCW_TARGET_CXX >= 2017
 
+#if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 190000 && defined(__cpp_lib_math_special_functions) == 0
+# define _CCW_SF_NATIVE_HERMITE 1
+#endif
+
 namespace _CCW_STD {
 
+#ifndef _CCW_SF_NATIVE_HERMITE
 inline double hermite(unsigned __n, double __x) {
     if (__n == 0u) return 1.0;
     double __h0 = 1.0, __h1 = 2.0 * __x;
@@ -21,6 +26,7 @@ inline double hermite(unsigned __n, double __x) {
     }
     return __h1;
 }
+#endif // !_CCW_SF_NATIVE_HERMITE
 
 inline double laguerre(unsigned __n, double __x) {
     if (__n == 0u) return 1.0;
@@ -366,8 +372,10 @@ inline double sph_legendre(unsigned __l, unsigned __m, double __theta) {
     return __cs * ::std::exp(__lnnorm) * __plm;
 }
 
+#ifndef _CCW_SF_NATIVE_HERMITE
 inline float  hermitef(unsigned __n, float __x)        { return (float)hermite(__n, (double)__x); }
 inline long double hermitel(unsigned __n, long double __x) { return (long double)hermite(__n, (double)__x); }
+#endif // !_CCW_SF_NATIVE_HERMITE
 inline float  laguerref(unsigned __n, float __x)       { return (float)laguerre(__n, (double)__x); }
 inline long double laguerrel(unsigned __n, long double __x){ return (long double)laguerre(__n, (double)__x); }
 inline float  legendref(unsigned __l, float __x)       { return (float)legendre(__l, (double)__x); }

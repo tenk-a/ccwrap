@@ -9,8 +9,6 @@
  #include <../../detail/cxx/tuple.hpp>
 #endif
 
-/* apply / make_from_tuple are C++17; vc14 has none of them but does have the
-   variadic templates and index_sequence they need. vc15 ships them itself. */
 #if defined(__cplusplus) && _MSC_VER >= 1900 && _MSC_VER < 1910
 #include <utility>
 namespace _CCW_STD17 {

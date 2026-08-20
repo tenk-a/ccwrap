@@ -23,10 +23,14 @@
 #ifndef ATOMIC_CHAR8_T_LOCK_FREE
 # define ATOMIC_CHAR8_T_LOCK_FREE ATOMIC_CHAR_LOCK_FREE
 #endif
+
+#if defined(__CCW_HAS_CHAR8_T) && !defined(__cpp_char8_t)
+namespace std {
+    typedef atomic<char8_t> atomic_char8_t;
+}
+#endif
 #endif
 
-// The C++20 waiting / flag-test free functions. MSVC gained them with
-// __cpp_lib_atomic_wait / __cpp_lib_atomic_flag_test, so key on those, not on a version.
 #if _MSC_VER >= 1700 && !defined(__cpp_lib_atomic_wait) && !defined(__cpp_lib_atomic_flag_test)
 namespace std {
 

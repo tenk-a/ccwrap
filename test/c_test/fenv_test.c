@@ -54,6 +54,12 @@ TEST_CASE(fenv, exception_macros) {
     TEST_SKIP1(); TEST_NOTE("FE_UNDERFLOW not defined");
     test_skip("c1999:opt:FE_UNDERFLOW");
 #endif
+#ifdef FE_FLUSHTOZERO
+    seen |= FE_FLUSHTOZERO;
+#endif
+#ifdef FE_DENORMAL
+    seen |= FE_DENORMAL;
+#endif
     test_eq( seen, all );
     test_ne( all, 0 );
     test_pass("c1999:FE_ALL_EXCEPT");

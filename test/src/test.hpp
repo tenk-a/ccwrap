@@ -115,6 +115,7 @@
 #define TEST_SKIP_GCC(...)       ((void)0)
 #define TEST_SKIP_VC080(...)     ((void)0)
 #define TEST_SKIP_VC090(...)     ((void)0)
+#define TEST_SKIP_NATIVE_NO_MOVE(...) ((void)0)
 #define TEST_SKIP_VC100(...)     ((void)0)
 #define TEST_SKIP_VC110(...)     ((void)0)
 #define TEST_SKIP_VC120(...)     ((void)0)
@@ -387,6 +388,12 @@ _TeST_CASE_I(group, name) { _ccw::_test::TestMgr<>::instance().setCaseSkip(); }
 #define TEST_SKIP_VC142(...)   _TeST_SKIP_VC_LT(1930, __VA_ARGS__)
 #define TEST_SKIP_VC143(...)   _TeST_SKIP_VC_LT(1950, __VA_ARGS__)
 #define TEST_SKIP_VC145(...)   _TeST_SKIP_VC_LT(9999, __VA_ARGS__)
+
+#if (defined(_MSC_VER) && _MSC_VER < 1600)  || (defined(__GNUC__) && !defined(_MSC_VER) && !defined(__WATCOMC__) && __cplusplus < 201103L)
+# define TEST_SKIP_NATIVE_NO_MOVE(...) do { TEST_NOTE("" __VA_ARGS__); TEST_SKIP1(); } while (0)
+#else
+# define TEST_SKIP_NATIVE_NO_MOVE(...) ((void)sizeof("" __VA_ARGS__))
+#endif
 
 #if defined(_MSC_VER) || defined(_UCRT) || defined(__MINGW32__)
 # define TEST_SKIP_UCRT(...)  do { TEST_NOTE("" __VA_ARGS__); TEST_SKIP1(); } while (0)

@@ -251,6 +251,7 @@ TEST_CASE(exception, exception_ptr_basics) {
 }
 #endif  // TEST_HAS_EH
 
+#if TEST_HAS_EH
 TEST_CASE(exception, exception_ptr_swap) {
     STD::exception_ptr a = STD::make_exception_ptr(MyError(1));
     STD::exception_ptr b = STD::make_exception_ptr(MyError(2));
@@ -274,6 +275,12 @@ TEST_CASE(exception, exception_ptr_swap) {
     test_true( n == a0 );
     test_pass("cxx11:swap(exception_ptr)");
 }
+#else   // !TEST_HAS_EH
+TEST_CASE(exception, exception_ptr_swap) {
+    TEST_NOTE("needs exceptions; skipped in a no-exception build");
+    test_skip("cxx11:swap(exception_ptr)");
+}
+#endif  // TEST_HAS_EH
 
 #if TEST_HAS_EH
 TEST_CASE(exception, rethrow_and_make_exception_ptr) {
@@ -513,6 +520,7 @@ struct WatErr : STD::exception {
 }
 
 #if _TST_HAS_EXCEPTION_PTR
+#if TEST_HAS_EH
 TEST_CASE(exception, exception_ptr_subset) {
     STD::exception_ptr p;
     test_true( !p );
@@ -546,6 +554,15 @@ TEST_CASE(exception, exception_ptr_subset) {
     test_true( y == y0 );
     test_pass("cxx11:swap(exception_ptr)");
 }
+#else   // !TEST_HAS_EH
+TEST_CASE(exception, exception_ptr_subset) {
+    TEST_NOTE("needs exceptions; skipped in a no-exception build");
+    test_skip("cxx11:exception_ptr");
+    test_skip("cxx11:make_exception_ptr");
+    test_skip("cxx11:exception_ptr (copy)");
+    test_skip("cxx11:swap(exception_ptr)");
+}
+#endif  // TEST_HAS_EH
 
 #if TEST_HAS_EH
 TEST_CASE(exception, make_rethrow_exact) {

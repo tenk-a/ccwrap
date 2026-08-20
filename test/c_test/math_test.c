@@ -31,9 +31,11 @@ TEST_CASE(math, c89_basic) {
 #if TEST_TARGET_C >= 1999
     {
         volatile double outside = -1.0;
+        volatile double result;
         errno = 0;
         feclearexcept(FE_ALL_EXCEPT);
-        (void)sqrt(outside);
+        result = sqrt(outside);
+        (void)result;
         if (math_errhandling & MATH_ERRNO) test_eq( errno, EDOM );
 # if defined(FE_INVALID)
         if (math_errhandling & MATH_ERREXCEPT)

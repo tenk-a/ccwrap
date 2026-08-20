@@ -91,7 +91,7 @@ TEST_CASE(deque, member_types) {
     test_true( (STD::is_same<D::difference_type, STD::ptrdiff_t>::value) );
     test_pass("cxx03:deque#member_types");
 
-#if !defined(__WATCOMC__)
+#if _TST_IS_CONVERTIBLE_CLASS
     test_true( (STD::is_convertible<D::iterator, D::const_iterator>::value) );
     test_true( !(STD::is_convertible<D::const_iterator, D::iterator>::value) );
 #else

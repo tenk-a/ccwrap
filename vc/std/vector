@@ -8,30 +8,8 @@
 
 #include _CCW_NATIVE_STL_HEADER_PATH(vector)
 
-#if defined(__cplusplus) && !defined(__cpp_lib_erase_if)
-#include <algorithm>
-namespace _CCW_STD20 {
-
-template <class _Tp, class _Alloc, class _Up>
-inline typename std::vector<_Tp, _Alloc>::size_type erase(std::vector<_Tp, _Alloc>& __c, const _Up& __v) {
-    typename std::vector<_Tp, _Alloc>::iterator __it = std::remove(__c.begin(), __c.end(), __v);
-    typename std::vector<_Tp, _Alloc>::size_type __n =
-        static_cast<typename std::vector<_Tp, _Alloc>::size_type>(__c.end() - __it);
-    __c.erase(__it, __c.end());
-    return __n;
-}
-
-template <class _Tp, class _Alloc, class _Pred>
-inline typename std::vector<_Tp, _Alloc>::size_type erase_if(std::vector<_Tp, _Alloc>& __c, _Pred __p) {
-    typename std::vector<_Tp, _Alloc>::iterator __it = std::remove_if(__c.begin(), __c.end(), __p);
-    typename std::vector<_Tp, _Alloc>::size_type __n =
-        static_cast<typename std::vector<_Tp, _Alloc>::size_type>(__c.end() - __it);
-    __c.erase(__it, __c.end());
-    return __n;
-}
-
-}   // _CCW_STD20
+#if defined(__cplusplus)
+#include <../../detail/cxx/erase_if_vector.hpp>
 #endif
 
-// non-member begin/end/size/empty/data from every container header: see doc/c++03_tec.md #10
 #include <iterator>

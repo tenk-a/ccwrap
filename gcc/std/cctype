@@ -1,0 +1,13 @@
+// ccwrap <cctype>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <cctype>
+
+#if __cplusplus < 201103L
+#include <ctype.h>
+namespace std {
+    using ::isblank;
+}
+#endif

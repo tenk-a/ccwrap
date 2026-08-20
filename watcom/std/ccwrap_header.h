@@ -40,6 +40,18 @@
  #define _CCW_NATIVE_STL_HEADER_PATH(x) <_CCW_NATIVE_STL_HEADER_DIR/x>
 #endif
 
+#if defined(__cplusplus)
+ #ifndef _CCW_TARGET_CXX
+  #define _CCW_TARGET_CXX       2026
+ #endif
+ #undef _CCW_TARGET_C
+#else
+ #ifndef _CCW_TARGET_C
+  #define _CCW_TARGET_C         2023
+ #endif
+ #undef _CCW_TARGET_CXX
+#endif
+
 // ---------------------------------------------------------------------------
 // c & c++
 
@@ -74,16 +86,6 @@
 #endif
 #ifndef __STDC_FORMAT_MACROS
  #define __STDC_FORMAT_MACROS   1
-#endif
-
-#if defined(__cplusplus)
- #ifndef _CCW_TARGET_CXX
-  #define _CCW_TARGET_CXX       2026
- #endif
-#else
- #ifndef _CCW_TARGET_C
-  #define _CCW_TARGET_C         2023
- #endif
 #endif
 
 #define _CCW_MESSAGE(x)
@@ -169,6 +171,9 @@
  #ifndef _ccw_constexpr_or_const
   #define _ccw_constexpr_or_const   const
  #endif
+ #ifndef _ccw_inline_const
+  #define _ccw_inline_const         static const
+ #endif
 
   #ifndef _CPPRTTI
     #define _CCW_NO_RTTI        1
@@ -194,9 +199,10 @@
   //#if !defined(alignas)
   //  #define alignas(a)         //__declspec(align(a))
   //#endif
+  #define _CCW_16_32_DEFINED
   typedef unsigned short        char16_t;
-  typedef unsigned              char32_t;
-  #if (_CCW_TARGET_CXX) >= 2020
+  typedef unsigned int          char32_t;
+  #if _CCW_TARGET_CXX >= 2020
    #ifndef __CCW_HAS_CHAR8_T
     #define __CCW_HAS_CHAR8_T   1
     typedef unsigned char       char8_t;
@@ -205,6 +211,7 @@
   //#if !defined(thread_local)
   //  #define thread_local      //__declspec(thread)
   //#endif
+  typedef bool                 _ccw_bool;
 
 #else   // ---- C mode ----------------------------------------------------------
 
@@ -220,7 +227,7 @@
     #define _Alignas(a)
   #endif
   #ifndef _Bool
-    #define _Bool                   char
+    #define _Bool                   _ccw_bool
   #endif
   #ifndef _Noreturn
     #define _Noreturn
@@ -231,6 +238,8 @@
   #ifndef _Static_assert
     #define _Static_assert(c, ...)    typedef char _CCW_M_CAT(__static_assert_failed_L,__LINE__)[(c) ? 1/*OK*/ : -1/*NG*/]
   #endif
+  typedef unsigned char         _ccw_bool;
+
 #endif
 
 // ---------------------------------------------------------------------------
@@ -279,6 +288,8 @@ typedef unsigned __int64        _ccw_uint64;
 typedef __int64                 _ccw_llong;
 typedef unsigned __int64        _ccw_ullong;
 typedef unsigned char           _ccw_char8;
+typedef _ccw_uint16             _ccw_char16;
+typedef _ccw_uint32             _ccw_char32;
 #if __cplusplus
 typedef wchar_t                 _ccw_wchar;
 #else
@@ -295,7 +306,10 @@ typedef unsigned __int16        _ccw_wchar;
 #define _ccw_llong              _ccw_llong
 #define _ccw_ullong             _ccw_ullong
 #define _ccw_char8              _ccw_char8
+#define _ccw_char16             _ccw_char16
+#define _ccw_char32             _ccw_char32
 #define _ccw_wchar              _ccw_wchar
+#define _ccw_bool               _ccw_bool
 
 #if defined(__cplusplus)
  #if defined(_CPPUNWIND)

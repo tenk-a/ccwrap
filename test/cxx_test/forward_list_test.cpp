@@ -251,6 +251,8 @@ TEST_CASE(forward_list, splice_merge) {
     test_pass("cxx11:forward_list::merge(forward_list&&)");
 }
 
+struct IsOdd { bool operator()(int x) const { return x % 2 == 1; } };
+
 TEST_CASE(forward_list, cxx20_cxx23) {
 #if defined(__cpp_lib_three_way_comparison)
     STD::forward_list<int> a = { 1, 2, 3 }, b = { 1, 2, 4 };
@@ -270,7 +272,6 @@ TEST_CASE(forward_list, cxx20_cxx23) {
     test_pass("cxx20:erase(forward_list)");
     static const int r12345[5] = { 1, 2, 3, 4, 5 };
     STD::forward_list<int> e2(r12345, r12345 + 5);
-    struct IsOdd { bool operator()(int x) const { return x % 2 == 1; } };
     STD::forward_list<int>::size_type n2 = STD::erase_if(e2, IsOdd());
     test_eq( (long)n2, 3L );
     test_pass("cxx20:erase_if(forward_list)");

@@ -32,7 +32,6 @@
 # pragma warning(disable:4127)  /* conditional expression is constant */
 #endif
 
-// _CCW_STD17 == std iff _CCW_TARGET_CXX>=2017, else _ccw (see doc/ccwrap_impl_rule.md).
 namespace _CCW_STD17 {
 using namespace ::std;   /* resolve unqualified std names when this ns is _ccw */
 
@@ -46,8 +45,6 @@ inline bool operator<=(monostate, monostate) { return true; }
 inline bool operator>=(monostate, monostate) { return true; }
 
 // --- bad_variant_access ------------------------------------------------------
-// vc141+ (_MSC_VER >= 1910) declare std::bad_variant_access in <exception>
-// unconditionally (not gated by _HAS_CXX17), so define ours only on older VC.
 #if !defined(_MSC_VER) || _MSC_VER < 1910
 class bad_variant_access : public std::exception {
 public:

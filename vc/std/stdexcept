@@ -8,6 +8,4 @@
 
 #include _CCW_NATIVE_STL_HEADER_PATH(stdexcept)
 
-// the sto* family lands here, not in <string>: the native <stdexcept> includes
-// <string> while invalid_argument / out_of_range are still incomplete
 #include <../../detail/cxx/string_stox.hpp>

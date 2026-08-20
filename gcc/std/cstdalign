@@ -1,0 +1,15 @@
+// ccwrap <cstdalign>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <cstdalign>
+#else
+ #ifndef __alignas_is_defined
+ #define __alignas_is_defined 1
+ #endif
+ #ifndef __alignof_is_defined
+ #define __alignof_is_defined 1
+ #endif
+#endif

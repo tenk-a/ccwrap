@@ -7,5 +7,5 @@
 #include "../../detail/c/ccwrap_common_sub.h"
 
 #if defined(__cplusplus)
-#pragma library ("libccwcxx")
+#include "ccw_autolink.h"
 #endif

@@ -5,8 +5,26 @@ TEST_CASE(cuchar, header_compiles) { test_true( true );  test_pass("cxx11:<cucha
 
 #if defined(__CCW_HAS_CHAR8_T)
 #include <cstring>
+#include <clocale>
+#include <cstdlib>
+#include <string>
+
+static bool ccw_set_utf8_locale() {
+    static const char* const names[] = { "C.UTF-8", "en_US.UTF-8", ".UTF-8", "en_US.utf8" };
+    for (unsigned i = 0; i < sizeof names / sizeof names[0]; ++i) {
+        if (STD::setlocale(LC_ALL, names[i]) != 0 && MB_CUR_MAX > 1)
+            return true;
+    }
+    return false;
+}
 
 TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
+    STD::string saved(STD::setlocale(LC_ALL, NULL));
+#if defined(__CCW_HAS_MBRTOC8)
+    const bool utf8 = true;
+#else
+    const bool utf8 = ccw_set_utf8_locale();
+#endif
     STD_NS mbstate_t st;
     STD_NS size_t r;
 
@@ -30,7 +48,7 @@ TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
     r = ::mbrtoc8(NULL, NULL, 0, &st);
     test_eq( r, STD_NS size_t(0) );
 
-    {
+    if (utf8) {
         char two[3]; two[0] = (char)0xC3; two[1] = (char)0xA9; two[2] = 0;
         STD::memset(&st, 0, sizeof st);
         char8_t u0 = 0; STD_NS size_t k0 = ::mbrtoc8(&u0, two, 2, &st);
@@ -39,6 +57,9 @@ TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
         char8_t u1 = 0; STD_NS size_t k1 = ::mbrtoc8(&u1, two + 2, 1, &st);
         test_eq( k1, STD_NS size_t(-3) );
         test_eq( (int)u1, 0xA9 );
+    } else {
+        TEST_SKIP_N(4);
+        TEST_NOTE("no UTF-8 locale available: mbrtoc8 follows LC_CTYPE, so a multibyte sequence cannot be checked here");
     }
 
     {
@@ -64,17 +85,22 @@ TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
     STD_NS size_t we = ::c8rtomb(buf, (char8_t)0x80, &st);
     test_eq( we, STD_NS size_t(-1) );
 
-    STD::memset(&st, 0, sizeof st);
-    STD::memset(buf, 0, sizeof buf);
-    STD_NS size_t w0 = ::c8rtomb(buf, (char8_t)0xE2, &st);
-    test_eq( w0, STD_NS size_t(0) );
-    STD_NS size_t w1 = ::c8rtomb(buf, (char8_t)0x82, &st);
-    test_eq( w1, STD_NS size_t(0) );
-    STD_NS size_t w3 = ::c8rtomb(buf, (char8_t)0xAC, &st);
-    test_eq( w3, STD_NS size_t(3) );
-    test_eq( (int)(unsigned char)buf[0], 0xE2 );
-    test_eq( (int)(unsigned char)buf[1], 0x82 );
-    test_eq( (int)(unsigned char)buf[2], 0xAC );
+    if (utf8) {
+        STD::memset(&st, 0, sizeof st);
+        STD::memset(buf, 0, sizeof buf);
+        STD_NS size_t w0 = ::c8rtomb(buf, (char8_t)0xE2, &st);
+        test_eq( w0, STD_NS size_t(0) );
+        STD_NS size_t w1 = ::c8rtomb(buf, (char8_t)0x82, &st);
+        test_eq( w1, STD_NS size_t(0) );
+        STD_NS size_t w3 = ::c8rtomb(buf, (char8_t)0xAC, &st);
+        test_eq( w3, STD_NS size_t(3) );
+        test_eq( (int)(unsigned char)buf[0], 0xE2 );
+        test_eq( (int)(unsigned char)buf[1], 0x82 );
+        test_eq( (int)(unsigned char)buf[2], 0xAC );
+    } else {
+        TEST_SKIP_N(6);
+        TEST_NOTE("no UTF-8 locale available: c8rtomb writes in LC_CTYPE's encoding");
+    }
     test_pass("cxx20:c8rtomb");
 
     for (int c = 1; c < 128; ++c) {
@@ -92,9 +118,13 @@ TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
         test_eq( (int)back[0], c );
     }
     test_pass("cxx20:char8_t");
+
+    STD::setlocale(LC_ALL, saved.c_str());
 }
 
 TEST_CASE(cuchar, mbrtoc32_c32rtomb_ccw) {
+    STD::string saved(STD::setlocale(LC_ALL, NULL));
+    (void)ccw_set_utf8_locale();
     STD_NS mbstate_t st;
     STD_NS size_t r;
 
@@ -154,9 +184,13 @@ TEST_CASE(cuchar, mbrtoc32_c32rtomb_ccw) {
     STD_NS size_t we = ::c32rtomb(buf, (char32_t)0xD800, &st);
     test_eq( we, STD_NS size_t(-1) );
     test_pass("cxx11:c32rtomb");
+
+    STD::setlocale(LC_ALL, saved.c_str());
 }
 
 TEST_CASE(cuchar, mbrtoc16_c16rtomb_ccw) {
+    STD::string saved(STD::setlocale(LC_ALL, NULL));
+    (void)ccw_set_utf8_locale();
     STD_NS mbstate_t st;
     STD_NS size_t r;
 
@@ -205,6 +239,8 @@ TEST_CASE(cuchar, mbrtoc16_c16rtomb_ccw) {
     STD_NS size_t we = ::c16rtomb(buf, (char16_t)0xDE00, &st);
     test_eq( we, STD_NS size_t(-1) );
     test_pass("cxx11:c16rtomb");
+
+    STD::setlocale(LC_ALL, saved.c_str());
 }
 #else
 TEST_CASE_SKIP(cuchar, mbrtoc8_c8rtomb)

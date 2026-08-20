@@ -34,7 +34,7 @@
       "hidden": true,
       "inherits": "base",
       "generator": "NMake Makefiles",
-      "description": "vc80..vc145 を NMake で回すための土台。cl / nmake などを ../../bin/*_with_setcc.bat 経由で呼ぶので、事前に setcc を叩く必要はない (preset の environment で渡した CCWRAP_VC_VERSION / CCWRAP_VC_ARCH をラッパーが bin/setcc.bat に渡し、その環境で本物を起動する)。CMake には VS2015 より前のジェネレータが無いので、古い vc は NMake でしか回せない。",
+      "description": "NMake base for vc80..vc145. cl / nmake go through ../../bin/*_with_setcc.bat, so setcc need not be run first. See doc/src/test/CMakePresets.json.md.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_MAKE_PROGRAM": "${sourceDir}/../../bin/nmake_with_setcc.bat",
