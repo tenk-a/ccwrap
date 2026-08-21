@@ -1,0 +1,31 @@
+// ccwrap <exception>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <exception>
+
+#if __cplusplus < 201103L && defined(__GLIBCXX__)
+#include <bits/exception_ptr.h>
+#endif
+
+#if __cplusplus < 201103L
+namespace std {
+inline terminate_handler get_terminate() {
+    terminate_handler __h = set_terminate(0);
+    set_terminate(__h);
+    return __h;
+}
+inline unexpected_handler get_unexpected() {
+    unexpected_handler __h = set_unexpected(0);
+    set_unexpected(__h);
+    return __h;
+}
+}
+#endif
+
+#if __cplusplus < 201703L
+namespace _CCW_STD17 {
+inline int uncaught_exceptions() { return ::std::uncaught_exception() ? 1 : 0; }
+}
+#endif

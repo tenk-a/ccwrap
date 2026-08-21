@@ -1,6 +1,12 @@
 #include "test_cxx.hpp"
 #include <version>
 
+#if defined(__GLIBCXX__) || defined(_LIBCPP_VERSION)
+#  define _TST_FTM_LEVEL __cplusplus
+#else
+#  define _TST_FTM_LEVEL 202302L
+#endif
+
 TEST_CASE(version, contract) {
     test_true( true );
 #if defined(_CCW_LIBCXX03)
@@ -13,7 +19,7 @@ TEST_CASE(version, contract) {
 }
 
 TEST_CASE(version, complete_feature_macros) {
-#if TEST_TARGET_CXX >= 2017
+#if TEST_TARGET_CXX >= 2017 && _TST_FTM_LEVEL >= 201703L
     test_true( __cpp_lib_as_const   == 201510L );
     test_true( __cpp_lib_clamp      == 201603L );
     test_true( __cpp_lib_gcd_lcm    == 201606L );
@@ -23,7 +29,7 @@ TEST_CASE(version, complete_feature_macros) {
 #else
     TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1();
 #endif
-#if TEST_TARGET_CXX >= 2020
+#if TEST_TARGET_CXX >= 2020 && _TST_FTM_LEVEL >= 202002L
     test_true( __cpp_lib_bit_cast   == 201806L );
     test_true( __cpp_lib_bitops     == 201907L );
     test_true( __cpp_lib_endian     == 201907L );
@@ -41,11 +47,12 @@ TEST_CASE(version, complete_feature_macros) {
 #else
     TEST_SKIP1();
 #endif
-#if TEST_TARGET_CXX >= 2014 && _TST_HAS_RVALUE_REF
+#if TEST_TARGET_CXX >= 2014 && _TST_HAS_RVALUE_REF && _TST_FTM_LEVEL >= 201402L
     test_true( __cpp_lib_make_unique == 201304L );
     test_pass("cxx20:__cpp_lib_* feature-test macros");
 #else
     TEST_SKIP1();
+    TEST_NOTE("the native library owns __cpp_lib_*; ccwrap must not pre-define them there");
     test_skip("cxx20:__cpp_lib_* feature-test macros");
 #endif
 }

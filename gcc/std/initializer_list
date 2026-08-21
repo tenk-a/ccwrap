@@ -1,0 +1,8 @@
+// ccwrap <initializer_list>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <initializer_list>
+#endif

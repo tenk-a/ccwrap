@@ -180,8 +180,14 @@ TEST_CASE(map, erase_iterate_swap) {
     test_pass("cxx03:map::erase (key)");
 
     IMap::iterator it = m.find(2);
+#if _TST_ERASE_RETURNS_VOID
+    m.erase(it);
+    TEST_NOTE("libstdc++ in C++03 returns void from erase(iterator)");
+    TEST_SKIP1();
+#else
     IMap::iterator nx = m.erase(it);
     test_eq( nx->first, 4 );
+#endif
     test_pass("cxx03:map::erase (iterator)");
 
     for (IMap::iterator i = m.begin(); i != m.end(); ++i) i->second *= 10;
@@ -393,12 +399,12 @@ TEST_CASE(map, ctors_insert_ops) {
     MI m1;
     m1.insert(STD::make_pair(5, 50)); m1.insert(STD::make_pair(6, 60));
     MI m2(STD::move(m1));
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native map has no move: the emulation cannot be added to it");
     test_true( m2[5] == 50 && m1.empty() );
     test_pass("cxx11:map::map(map&&)");
     MI m3;
     m3 = STD::move(m2);
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native map has no move: the emulation cannot be added to it");
     test_true( m3[6] == 60 && m2.empty() );
     test_pass("cxx11:map::operator=(map&&)");
 

@@ -7,6 +7,18 @@
 
 #include_next <uchar.h>
 
+#if !defined(__cpp_char8_t)
+ #ifndef __CCW_HAS_CHAR8_T
+  #define __CCW_HAS_CHAR8_T   1
+  typedef _ccw_char8          char8_t;
+ #endif
+#endif
+
+#ifndef __STDC_VERSION_UCHAR_H__
+ #define __CCW_UCHAR_IMPL_C8_ONLY 1
+ #include <../../detail/c/uchar_impl.h>
+#endif
+
 #else
 
 #include <stddef.h>      /* size_t */
@@ -25,3 +37,7 @@
 #include "../../detail/c/uchar_impl.h"
 
 #endif // __cplusplus
+
+#ifndef __STDC_VERSION_UCHAR_H__
+ #define __STDC_VERSION_UCHAR_H__ 202311L
+#endif

@@ -27,7 +27,17 @@ __declspec(dllimport) void __stdcall WakeAllConditionVariable(__ccw_pcondition_v
 
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
-enum cv_status { no_timeout, timeout };
+#if _CCW_HAS_ENUM_CLASS
+enum class cv_status { no_timeout, timeout };
+#else
+struct cv_status {
+    enum enum_type { no_timeout, timeout };
+    enum_type __v_;
+    cv_status() : __v_(no_timeout) {}
+    cv_status(enum_type __v) : __v_(__v) {}
+    operator enum_type() const { return __v_; }
+};
+#endif
 
 class condition_variable {
 #if defined(__WATCOMC__)
@@ -49,7 +59,7 @@ public:
         if (__ms < 0) __ms = 0;
         int __r = SleepConditionVariableCS((__ccw_pcondition_variable)&__cv_,
             (__ccw_pcritical_section)__lk.mutex()->native_handle(), (unsigned long)__ms);
-        return __r ? no_timeout : timeout;
+        return __r ? cv_status::no_timeout : cv_status::timeout;
     }
     template <class _Rep, class _Period, class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI bool wait_for(unique_lock<mutex>& __lk, const chrono::duration<_Rep, _Period>& __rt, _Predicate __p) {
@@ -58,12 +68,12 @@ public:
     template <class _Clock, class _Duration>
     _CCW_LIBCPP_HIDE_FROM_ABI cv_status wait_until(unique_lock<mutex>& __lk, const chrono::time_point<_Clock, _Duration>& __tp) {
         typename _Clock::time_point __now = _Clock::now();
-        if (__tp <= __now) return timeout;
+        if (__tp <= __now) return cv_status::timeout;
         return wait_for(__lk, __tp - __now);
     }
     template <class _Clock, class _Duration, class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI bool wait_until(unique_lock<mutex>& __lk, const chrono::time_point<_Clock, _Duration>& __tp, _Predicate __p) {
-        while (!__p()) { if (wait_until(__lk, __tp) == timeout) return __p(); }
+        while (!__p()) { if (wait_until(__lk, __tp) == cv_status::timeout) return __p(); }
         return true;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() { WakeConditionVariable((__ccw_pcondition_variable)&__cv_); }
@@ -76,11 +86,11 @@ public:
     template <class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI void wait(unique_lock<mutex>&, _Predicate __p) { while (!__p()) { /*single-threaded: no one to wake us*/ break; } }
     template <class _Rep, class _Period>
-    _CCW_LIBCPP_HIDE_FROM_ABI cv_status wait_for(unique_lock<mutex>&, const chrono::duration<_Rep, _Period>&) { return timeout; }
+    _CCW_LIBCPP_HIDE_FROM_ABI cv_status wait_for(unique_lock<mutex>&, const chrono::duration<_Rep, _Period>&) { return cv_status::timeout; }
     template <class _Rep, class _Period, class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI bool wait_for(unique_lock<mutex>&, const chrono::duration<_Rep, _Period>&, _Predicate __p) { return __p(); }
     template <class _Clock, class _Duration>
-    _CCW_LIBCPP_HIDE_FROM_ABI cv_status wait_until(unique_lock<mutex>&, const chrono::time_point<_Clock, _Duration>&) { return timeout; }
+    _CCW_LIBCPP_HIDE_FROM_ABI cv_status wait_until(unique_lock<mutex>&, const chrono::time_point<_Clock, _Duration>&) { return cv_status::timeout; }
     template <class _Clock, class _Duration, class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI bool wait_until(unique_lock<mutex>&, const chrono::time_point<_Clock, _Duration>&, _Predicate __p) { return __p(); }
     _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() {}
@@ -119,7 +129,7 @@ public:
     }
     template <class _Lock, class _Rep, class _Period, class _Predicate>
     _CCW_LIBCPP_HIDE_FROM_ABI bool wait_for(_Lock& __ext, const chrono::duration<_Rep, _Period>& __rt, _Predicate __p) {
-        while (!__p()) if (wait_for(__ext, __rt) == timeout) return __p();
+        while (!__p()) if (wait_for(__ext, __rt) == cv_status::timeout) return __p();
         return true;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() { __cv_.notify_one(); }

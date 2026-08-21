@@ -195,6 +195,14 @@
 #else
  #define _CCW_STD_LIB_LT(vcver, cxxstd) (__cplusplus < (cxxstd))
 #endif
+
+#if defined(__GNUC__) && defined(__ELF__)
+#define _CCW_VIS_HIDDEN_BEGIN   _Pragma("GCC visibility push(hidden)")
+#define _CCW_VIS_HIDDEN_END     _Pragma("GCC visibility pop")
+#else
+#define _CCW_VIS_HIDDEN_BEGIN
+#define _CCW_VIS_HIDDEN_END
+#endif
 #endif  // defined(__cplusplus)
 
 #if defined(__cplusplus)

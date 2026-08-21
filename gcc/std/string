@@ -6,6 +6,10 @@
 #include_next <string>
 
 #include <../../detail/cxx/string.hpp>
+
+#if __cplusplus < 201103L
+#include <../../detail/llibcxx03/include/__functional/hash_string.h>
+#endif
 #include <stdexcept>   // brings the sto* family (see detail/cxx/string_stox.hpp)
 
 #if defined(__CCW_HAS_CHAR8_T) && !defined(__cpp_char8_t)

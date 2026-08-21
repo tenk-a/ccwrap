@@ -1,0 +1,10 @@
+// ccwrap <latch>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <latch>
+#else
+ #include <../../detail/llibcxx03/include/latch>
+#endif

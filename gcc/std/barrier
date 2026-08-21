@@ -1,0 +1,10 @@
+// ccwrap <barrier>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <barrier>
+#else
+ #include <../../detail/llibcxx03/include/barrier>
+#endif

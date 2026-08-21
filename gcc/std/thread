@@ -9,6 +9,6 @@
 #if defined(_WIN32)
  #include <../../detail/cxx/win/thread.hpp>
 #else
- #include_next <thread>
+ #include <../../detail/cxx/posix/thread.hpp>
 #endif
 #endif

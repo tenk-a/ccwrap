@@ -3,6 +3,11 @@
 #include <chrono>
 #include <type_traits>
 
+namespace {
+    struct OnceSet  { int* p; void operator()() const { ++*p; } };
+    struct OnceBump { int* p; void operator()() const { ++*p; } };
+}
+
 TEST_CASE(mutex, plain_mutex) {
     STD::mutex m;
     m.lock();
@@ -218,8 +223,7 @@ TEST_CASE(mutex, once_flag) {
 
     STD::once_flag f2;
     int local = 0;
-    struct Set { int* p; void operator()() const { ++*p; } };
-    Set s; s.p = &local;
+    OnceSet s; s.p = &local;
     STD::call_once(f2, s);
     STD::call_once(f2, s);
     test_eq( local, 1 );
@@ -370,8 +374,7 @@ TEST_CASE(mutex, timed_mutex_try_lock) {
 TEST_CASE(mutex, once_flag_default_ctor) {
     STD::once_flag f;
     int calls = 0;
-    struct Bump { int* p; void operator()() const { ++*p; } };
-    Bump b; b.p = &calls;
+    OnceBump b; b.p = &calls;
     STD::call_once(f, b);
     test_eq( calls, 1 );
 
@@ -565,7 +568,7 @@ TEST_CASE(mutex, mutex_type_aliases_cxx11) {
 }
 
 TEST_CASE(mutex, native_handle_types_cxx11) {
-#if !defined(_MSC_VER) && !defined(__WATCOMC__)
+#if !defined(_MSC_VER) && !defined(__WATCOMC__) && _TST_HAS_DECLTYPE
     STD::mutex m;
     test_true(( STD::is_same<STD::mutex::native_handle_type,
                              decltype(m.native_handle())>::value ));

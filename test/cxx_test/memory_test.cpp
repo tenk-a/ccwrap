@@ -180,7 +180,7 @@ TEST_CASE(memory, enable_shared_addressof) {
     test_pass("cxx11:addressof");
 }
 
-#if TEST_TARGET_CXX >= 2014 && (!defined(_MSC_VER) || _MSC_VER >= 1600)
+#if TEST_TARGET_CXX >= 2014 && (!defined(_MSC_VER) || _MSC_VER >= 1600) &&     (defined(_MSC_VER) || _TST_HAS_RVALUE_REF)
 TEST_CASE(memory, make_unique) {
     STD::unique_ptr<int> p = STD::make_unique<int>(42);
     test_eq( *p, 42 );

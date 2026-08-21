@@ -1,0 +1,18 @@
+// ccwrap <locale>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <locale>
+
+#if __cplusplus < 201103L
+namespace std {
+template <class _CharT>
+inline bool isblank(_CharT __c, const locale& __loc) {
+    const ctype<_CharT>& __ct = use_facet<ctype<_CharT> >(__loc);
+    if (!__ct.is(ctype_base::space, __c)) return false;
+    return __c != __ct.widen('\n') && __c != __ct.widen('\v')
+        && __c != __ct.widen('\f') && __c != __ct.widen('\r');
+}
+}
+#endif

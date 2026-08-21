@@ -1,0 +1,10 @@
+// ccwrap <execution>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201703L
+ #include_next <execution>
+#else
+ #include <../../detail/llibcxx03/include/execution>
+#endif

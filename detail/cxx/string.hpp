@@ -60,9 +60,18 @@ inline wstring to_wstring(unsigned long v)   { wchar_t b[24]; _CCW_SWPRINTF(b, 2
 inline wstring to_wstring(_ccw_llong v)      { wchar_t b[32]; _CCW_SWPRINTF(b, 32, L"%" _CCW_WLL L"d", v); return wstring(b); }
 inline wstring to_wstring(_ccw_ullong v)     { wchar_t b[32]; _CCW_SWPRINTF(b, 32, L"%" _CCW_WLL L"u", v); return wstring(b); }
 #endif
-#if !_CCW_STR_HAVE_TO_STRING_64
-inline wstring to_wstring(long double v)     { wchar_t b[64]; _CCW_SWPRINTF(b, 64, L"%Lf", (long double)v); return wstring(b); }
+#if defined(__MINGW32__)
+ #define _CCW_WLD_FMT      L"%f"
+ #define _CCW_WLD_VAL(v)   ((double)(v))
+#else
+ #define _CCW_WLD_FMT      L"%Lf"
+ #define _CCW_WLD_VAL(v)   ((long double)(v))
 #endif
+#if !_CCW_STR_HAVE_TO_STRING_64
+inline wstring to_wstring(long double v)     { wchar_t b[64]; _CCW_SWPRINTF(b, 64, _CCW_WLD_FMT, _CCW_WLD_VAL(v)); return wstring(b); }
+#endif
+#undef _CCW_WLD_FMT
+#undef _CCW_WLD_VAL
 inline wstring to_wstring(double v)          { wchar_t b[64]; _CCW_SWPRINTF(b, 64, L"%f", v);  return wstring(b); }
 inline wstring to_wstring(float v)           { return to_wstring((double)v); }
 #undef _CCW_SWPRINTF

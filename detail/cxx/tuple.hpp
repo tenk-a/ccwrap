@@ -197,6 +197,26 @@ inline const typename tuple_element<_Ip, _CCW_STD::pair<_T1, _T2> >::type& get(c
 }
 #endif
 
+#if _CCW_STD_LIB_LT(1900, 201402L) && !(defined(__WATCOMC__) || defined(_CCW_STD_RELOCATED))
+template<bool _Bp> struct __ccw_pget_t;
+template<> struct __ccw_pget_t<true> {
+    template<class _T1, class _T2> static _T1&       ref(_CCW_STD::pair<_T1, _T2>& __p)       { return __p.first; }
+    template<class _T1, class _T2> static const _T1& ref(const _CCW_STD::pair<_T1, _T2>& __p) { return __p.first; }
+};
+template<> struct __ccw_pget_t<false> {
+    template<class _T1, class _T2> static _T2&       ref(_CCW_STD::pair<_T1, _T2>& __p)       { return __p.second; }
+    template<class _T1, class _T2> static const _T2& ref(const _CCW_STD::pair<_T1, _T2>& __p) { return __p.second; }
+};
+template<class _Tp, class _T1, class _T2>
+inline _Tp& get(_CCW_STD::pair<_T1, _T2>& __p) {
+    return __ccw_pget_t< _CCW_STD::is_same<_Tp, _T1>::value >::ref(__p);
+}
+template<class _Tp, class _T1, class _T2>
+inline const _Tp& get(const _CCW_STD::pair<_T1, _T2>& __p) {
+    return __ccw_pget_t< _CCW_STD::is_same<_Tp, _T1>::value >::ref(__p);
+}
+#endif
+
 #if !(defined(__WATCOMC__) || defined(_CCW_STD_RELOCATED))
 template<class T, class A> struct uses_allocator;
 template<class T0, class T1, class T2, class T3, class T4,

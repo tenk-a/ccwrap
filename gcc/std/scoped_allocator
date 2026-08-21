@@ -1,0 +1,10 @@
+// ccwrap <scoped_allocator>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 201103L
+ #include_next <scoped_allocator>
+#else
+ #include <../../detail/llibcxx03/include/scoped_allocator>
+#endif

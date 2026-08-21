@@ -1,0 +1,10 @@
+// ccwrap <bitset>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <bitset>
+
+#if __cplusplus < 201103L
+#include <../../detail/llibcxx03/include/__functional/hash_bitset.h>
+#endif

@@ -1,0 +1,10 @@
+// ccwrap <syncstream>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <syncstream>
+#else
+ #include <../../detail/llibcxx03/include/syncstream>
+#endif

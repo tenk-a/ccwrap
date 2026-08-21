@@ -1,0 +1,8 @@
+// ccwrap <iomanip>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <iomanip>
+
+#include <../../detail/cxx/iomanip.hpp>

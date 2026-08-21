@@ -16,11 +16,7 @@ typedef STD::cv_status::cv_status _tst_cv_status;
 typedef STD::cv_status _tst_cv_status;
 #endif
 
-#if defined(__WATCOMC__)
-#  define _TST_CV_NO_TIMEOUT  STD::no_timeout
-#else
-#  define _TST_CV_NO_TIMEOUT  STD::cv_status::no_timeout
-#endif
+#define _TST_CV_NO_TIMEOUT  STD::cv_status::no_timeout
 
 namespace {
 template <class Cv, class Lock, class Clock, class Dur>
@@ -45,13 +41,8 @@ _tst_cv_status ccw_cv_wait_for(Cv& cv, Lock& lk,
 
 TEST_CASE(condition_variable, timed_wait_single_thread) {
 
-#if defined(__WATCOMC__)
-    const _tst_cv_status TIMED_OUT = STD::timeout;
-    const _tst_cv_status NOT_TIMED_OUT = STD::no_timeout;
-#else
     const _tst_cv_status TIMED_OUT = STD::cv_status::timeout;
     const _tst_cv_status NOT_TIMED_OUT = STD::cv_status::no_timeout;
-#endif
     STD::condition_variable cv;
     STD::mutex m;
     STD::unique_lock<STD::mutex> lk(m);
@@ -545,7 +536,7 @@ TEST_CASE(condition_variable, native_handle_and_assign_cxx11) {
     test_true( !STD::is_move_assignable<STD::condition_variable_any>::value );
     test_pass("cxx11:condition_variable_any::operator=");
 
-#if !defined(_MSC_VER) && !defined(__WATCOMC__)
+#if !defined(_MSC_VER) && !defined(__WATCOMC__) && _TST_HAS_DECLTYPE
     STD::condition_variable cv;
     test_true(( STD::is_same<STD::condition_variable::native_handle_type,
                              decltype(cv.native_handle())>::value ));

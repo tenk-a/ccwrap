@@ -162,7 +162,7 @@ basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is,
         use_facet<money_get<_CharT, istreambuf_iterator<_CharT, _Traits> > >(__is.getloc())
             .get(istreambuf_iterator<_CharT, _Traits>(__is), istreambuf_iterator<_CharT, _Traits>(),
                  __m.__intl_, __is, __err, __ld);
-        if (__err == ios_base::goodbit) *__m.__p_ = static_cast<_MoneyT>(__ld);
+        if ((__err & ios_base::failbit) == 0) *__m.__p_ = static_cast<_MoneyT>(__ld);
         __is.setstate(__err);
     }
     return __is;

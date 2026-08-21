@@ -150,9 +150,9 @@ protected:
         }
         return codecvt_base::ok;
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
         int __n = _Maxcode <= 0x7F ? 1 : _Maxcode <= 0x7FF ? 2 : _Maxcode <= 0xFFFF ? 3 : 4;
         return (_Mode & consume_header) ? __n + 3 : __n;
     }
@@ -244,9 +244,9 @@ protected:
         }
         return __frm_nxt == __frm_end ? codecvt_base::ok : codecvt_base::partial;
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
         return (_Mode & consume_header) ? 6 : 4;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
@@ -340,9 +340,9 @@ protected:
         }
         return codecvt_base::ok;
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const { return 0; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const { return false; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const {
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
         return (_Mode & consume_header) ? 7 : 4;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {

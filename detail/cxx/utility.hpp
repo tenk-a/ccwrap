@@ -13,6 +13,13 @@
 
 #include <ccwrap_common.h>
 
+#if _CCW_STD_LIB_LT(1600, 201103L)
+namespace std {
+struct piecewise_construct_t { explicit piecewise_construct_t() {} };
+_ccw_inline_const piecewise_construct_t piecewise_construct = piecewise_construct_t();
+}   // namespace std
+#endif
+
 #if !defined(__GLIBCXX__) && !defined(_LIBCPP_VERSION) && \
     (!defined(_MSC_VER) || _MSC_VER < 1600) && !defined(__WATCOMC__)
 #include <cstddef>

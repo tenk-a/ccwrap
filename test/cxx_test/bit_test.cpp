@@ -411,6 +411,8 @@ TEST_CASE(bit, endian_chk) {
 }
 #endif
 
+namespace { struct BcPair { unsigned short a, b; }; }
+
 #if TEST_TARGET_CXX >= 2020
 TEST_CASE(bit, bit_cast_chk) {
     STD::uint32_t bits = 0x40490FDBu;
@@ -418,8 +420,7 @@ TEST_CASE(bit, bit_cast_chk) {
     test_true( f > 3.14f && f < 3.15f );
     test_eq( STD::bit_cast<STD::uint32_t>(f), bits );
 
-    struct Pair { STD::uint16_t a, b; };
-    Pair p = STD::bit_cast<Pair>(STD::uint32_t(0x00020001u));
+    BcPair p = STD::bit_cast<BcPair>(STD::uint32_t(0x00020001u));
     test_eq( (int)(STD::endian::native == STD::endian::little ? p.a : p.b), 1 );
     test_pass("cxx20:bit_cast#chk");
 }

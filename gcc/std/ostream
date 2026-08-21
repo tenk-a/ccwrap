@@ -1,0 +1,36 @@
+// ccwrap <ostream>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <ostream>
+
+#if __cplusplus >= 201103L && __cplusplus < 201703L
+#include <cstddef>
+namespace std {
+template <class _CharT, class _Traits>
+inline basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, _CCW_STD::nullptr_t) {
+    return __os << "nullptr";
+}
+}   // namespace std
+#endif
+
+#if !defined(__cpp_lib_syncbuf)
+namespace _CCW_STD20 {
+template <class _CharT, class _Traits>
+inline std::basic_ostream<_CharT, _Traits>& emit_on_flush(std::basic_ostream<_CharT, _Traits>& __os)   { return __os; }
+template <class _CharT, class _Traits>
+inline std::basic_ostream<_CharT, _Traits>& noemit_on_flush(std::basic_ostream<_CharT, _Traits>& __os) { return __os; }
+template <class _CharT, class _Traits>
+inline std::basic_ostream<_CharT, _Traits>& flush_emit(std::basic_ostream<_CharT, _Traits>& __os)      { return __os; }
+}   // _CCW_STD20
+#endif
+
+#if __cplusplus < 202302L
+namespace std {
+template <class _CharT, class _Traits>
+inline basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, const volatile void* __p) {
+    return __os << const_cast<const void*>(__p);
+}
+}   // namespace std
+#endif

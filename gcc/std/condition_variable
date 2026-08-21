@@ -9,6 +9,6 @@
 #if defined(_WIN32)
  #include <../../detail/cxx/win/condition_variable.hpp>
 #else
- #include_next <condition_variable>
+ #include <../../detail/cxx/posix/condition_variable.hpp>
 #endif
 #endif

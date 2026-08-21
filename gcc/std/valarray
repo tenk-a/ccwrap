@@ -1,0 +1,19 @@
+// ccwrap <valarray>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <valarray>
+
+#if __cplusplus < 201103L
+namespace std {
+template <class _Tp> inline _Tp* begin(valarray<_Tp>& __v) { return __v.size() ? &__v[0] : (_Tp*)0; }
+template <class _Tp> inline _Tp* end(valarray<_Tp>& __v)   { return __v.size() ? &__v[0] + __v.size() : (_Tp*)0; }
+template <class _Tp> inline const _Tp* begin(const valarray<_Tp>& __v) {
+    return __v.size() ? &const_cast<valarray<_Tp>&>(__v)[0] : (const _Tp*)0;
+}
+template <class _Tp> inline const _Tp* end(const valarray<_Tp>& __v) {
+    return __v.size() ? &const_cast<valarray<_Tp>&>(__v)[0] + __v.size() : (const _Tp*)0;
+}
+}
+#endif

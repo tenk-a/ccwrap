@@ -1,0 +1,10 @@
+// ccwrap <semaphore>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if __cplusplus >= 202002L
+ #include_next <semaphore>
+#else
+ #include <../../detail/llibcxx03/include/semaphore>
+#endif

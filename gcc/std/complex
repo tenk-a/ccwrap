@@ -1,0 +1,8 @@
+// ccwrap <complex>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <complex>
+
+#include <../../detail/cxx/complex.hpp>

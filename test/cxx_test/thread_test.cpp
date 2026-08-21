@@ -352,7 +352,7 @@ TEST_CASE(thread, jthread_members) {
 
 #if TEST_TARGET_CXX >= 2011
 TEST_CASE(thread, native_handle_types_cxx11) {
-#if !defined(_MSC_VER) && !defined(__WATCOMC__)
+#if !defined(_MSC_VER) && !defined(__WATCOMC__) && _TST_HAS_DECLTYPE
     STD::thread t;
     test_true(( STD::is_same<STD::thread::native_handle_type,
                              decltype(t.native_handle())>::value ));

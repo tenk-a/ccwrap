@@ -395,6 +395,12 @@ _TeST_CASE_I(group, name) { _ccw::_test::TestMgr<>::instance().setCaseSkip(); }
 # define TEST_SKIP_NATIVE_NO_MOVE(...) ((void)sizeof("" __VA_ARGS__))
 #endif
 
+#if defined(__GNUC__) && !defined(_MSC_VER) && !defined(__WATCOMC__) && __cplusplus < 201103L
+# define TEST_SKIP_CXX03_ACCESS(...) do { TEST_NOTE("" __VA_ARGS__); TEST_SKIP1(); } while (0)
+#else
+# define TEST_SKIP_CXX03_ACCESS(...) ((void)sizeof("" __VA_ARGS__))
+#endif
+
 #if defined(_MSC_VER) || defined(_UCRT) || defined(__MINGW32__)
 # define TEST_SKIP_UCRT(...)  do { TEST_NOTE("" __VA_ARGS__); TEST_SKIP1(); } while (0)
 #else

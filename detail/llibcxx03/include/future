@@ -151,7 +151,7 @@ struct __future_state {
     }
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp __get() {
         __wait();
-        if (__eptr_) rethrow_exception(__eptr_);
+        if (__eptr_ != exception_ptr()) rethrow_exception(__eptr_);
         if (__broken_) _CCW_THROW(future_error(future_errc::broken_promise));
         return __value_;
     }

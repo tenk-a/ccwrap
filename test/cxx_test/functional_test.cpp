@@ -126,7 +126,7 @@ TEST_CASE(functional, not_fn) {
 }
 #endif
 
-#if TEST_TARGET_CXX >= 2017 && (!defined(_MSC_VER) || _MSC_VER >= 1600)
+#if TEST_TARGET_CXX >= 2017 && (!defined(_MSC_VER) || _MSC_VER >= 1600) &&     (defined(_MSC_VER) || _TST_HAS_DECLTYPE)
 static int add3(int a, int b, int c) { return a + b + c; }
 struct Obj { int v; int getv() const { return v; } };
 TEST_CASE(functional, invoke) {

@@ -19,6 +19,7 @@
 #include <iosfwd>      // basic_ostream, for the error_code inserter below
 #ifndef _CCW_SYSERR_MIN_DEFINED
 #define _CCW_SYSERR_MIN_DEFINED
+_CCW_VIS_HIDDEN_BEGIN
 namespace std {
 
 class error_condition;
@@ -348,6 +349,7 @@ inline bool operator> (const ::std::error_condition& __a, const ::std::error_con
 inline bool operator<=(const ::std::error_condition& __a, const ::std::error_condition& __b) { return !(__b < __a); }
 inline bool operator>=(const ::std::error_condition& __a, const ::std::error_condition& __b) { return !(__a < __b); }
 }
+_CCW_VIS_HIDDEN_END
 #endif
 
 #endif  // _CCW_DETAIL_SYSTEM_ERROR_HPP

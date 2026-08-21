@@ -9,6 +9,6 @@
 #if defined(_WIN32)
  #include <../../detail/cxx/win/mutex.hpp>
 #else
- #include_next <mutex>
+ #include <../../detail/cxx/posix/mutex.hpp>
 #endif
 #endif

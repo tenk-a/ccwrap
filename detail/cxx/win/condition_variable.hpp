@@ -14,6 +14,7 @@
 
 #include <ccwrap_common.h>
 #include <mutex>
+#include "../cv_status.hpp"
 #include "../../c/win/win32_fwd.h"
 #include <chrono>
 #include <exception>
@@ -85,8 +86,6 @@ inline int SleepConditionVariableCS(__ccw_pcondition_variable __p, __ccw_pcritic
 
 namespace std {
 
-enum cv_status { no_timeout, timeout };
-
 class condition_variable {
     void* cv_;   /* CONDITION_VARIABLE (pointer-sized) */
     condition_variable(const condition_variable&);
@@ -107,7 +106,7 @@ class condition_variable {
     cv_status __wait_ms(unique_lock<mutex>& lk, unsigned long ms) {
         int r = __ccw::SleepConditionVariableCS((__ccw_pcondition_variable)&cv_,
             (__ccw_pcritical_section)lk.mutex()->native_handle(), ms);
-        return r ? no_timeout : timeout;
+        return r ? cv_status::no_timeout : cv_status::timeout;
     }
 public:
     condition_variable() { __ccw::InitializeConditionVariable((__ccw_pcondition_variable)&cv_); }
@@ -136,13 +135,13 @@ public:
     cv_status wait_until(unique_lock<mutex>& lk, const chrono::time_point<Clock, Duration>& tp) {
         typename Clock::time_point now = Clock::now();
         if (tp <= now)
-            return timeout;
+            return cv_status::timeout;
         return __wait_ms(lk, __to_ms(tp - now));
     }
     template<class Clock, class Duration, class Pred>
     bool wait_until(unique_lock<mutex>& lk, const chrono::time_point<Clock, Duration>& tp, Pred pred) {
         while (!pred()) {
-            if (wait_until(lk, tp) == timeout)
+            if (wait_until(lk, tp) == cv_status::timeout)
                 return pred();
         }
         return true;
@@ -151,67 +150,8 @@ public:
     native_handle_type native_handle() { return &cv_; }
 };
 
-inline void __ccw_cv_wait(condition_variable& __cv, unique_lock<mutex>& __ilk) { __cv.wait(__ilk); }
-template <class _Clock, class _Duration>
-inline cv_status __ccw_cv_wait_until(condition_variable& __cv, unique_lock<mutex>& __ilk,
-                                     const chrono::time_point<_Clock, _Duration>& __tp) {
-    return __cv.wait_until(__ilk, __tp);
-}
-
-class condition_variable_any {
-    mutex              m_;
-    condition_variable cv_;
-    condition_variable_any(const condition_variable_any&);
-    condition_variable_any& operator=(const condition_variable_any&);
-
-public:
-    condition_variable_any() {}
-    ~condition_variable_any() {}
-
-    void notify_one() { { lock_guard<mutex> __g(m_); } cv_.notify_one(); }
-    void notify_all() { { lock_guard<mutex> __g(m_); } cv_.notify_all(); }
-
-    template <class _Lock>
-    void wait(_Lock& __ext) {
-        {
-            unique_lock<mutex> __ilk(m_);
-            __ext.unlock();
-            __ccw_cv_wait(cv_, __ilk);
-        }
-        __ext.lock();
-    }
-    template <class _Lock, class _Pred>
-    void wait(_Lock& __ext, _Pred __p) { while (!__p()) wait(__ext); }
-
-    template <class _Lock, class _Rep, class _Period>
-    cv_status wait_for(_Lock& __ext, const chrono::duration<_Rep, _Period>& __d) {
-        return wait_until(__ext, chrono::steady_clock::now() + __d);
-    }
-    template <class _Lock, class _Rep, class _Period, class _Pred>
-    bool wait_for(_Lock& __ext, const chrono::duration<_Rep, _Period>& __d, _Pred __p) {
-        return wait_until(__ext, chrono::steady_clock::now() + __d, __p);
-    }
-    template <class _Lock, class _Clock, class _Duration>
-    cv_status wait_until(_Lock& __ext, const chrono::time_point<_Clock, _Duration>& __tp) {
-        cv_status __s;
-        {
-            unique_lock<mutex> __ilk(m_);
-            __ext.unlock();
-            __s = __ccw_cv_wait_until(cv_, __ilk, __tp);
-        }
-        __ext.lock();
-        return __s;
-    }
-    template <class _Lock, class _Clock, class _Duration, class _Pred>
-    bool wait_until(_Lock& __ext, const chrono::time_point<_Clock, _Duration>& __tp, _Pred __p) {
-        while (!__p()) {
-            if (wait_until(__ext, __tp) == timeout)
-                return __p();
-        }
-        return true;
-    }
-};
-
 }   // namespace std
+
+#include "../condition_variable_any.hpp"
 
 #endif  // _CCW_DETAIL_WIN_CONDITION_VARIABLE_HPP

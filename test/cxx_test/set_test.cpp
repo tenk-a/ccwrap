@@ -14,6 +14,8 @@ long sig(const STD::set<int>& s) {
 }
 }
 
+namespace { struct SetIsEven { bool operator()(int x) const { return x % 2 == 0; } }; }
+
 TEST_CASE(set, construct) {
     STD::set<int> a;
     test_true( a.empty() );
@@ -121,8 +123,14 @@ TEST_CASE(set, erase_clear_swap) {
     test_pass("cxx03:set::erase (key)");
 
     STD::set<int>::iterator it = s.find(2);
+#if _TST_ERASE_RETURNS_VOID
+    s.erase(it);
+    TEST_NOTE("libstdc++ in C++03 returns void from erase(iterator)");
+    TEST_SKIP1();
+#else
     STD::set<int>::iterator nx = s.erase(it);
     test_eq( *nx, 4 );
+#endif
     test_eq( sig(s), 145L );
     test_pass("cxx03:set::erase (iterator)");
 
@@ -319,8 +327,7 @@ TEST_CASE(set, contains_erase_if) {
     test_skip("cxx20:set::contains");
 #endif
 
-    struct IsEven { bool operator()(int x) const { return x % 2 == 0; } };
-    STD::set<int>::size_type n = STD::erase_if(s, IsEven());
+    STD::set<int>::size_type n = STD::erase_if(s, SetIsEven());
     test_eq( (long)n, 3L );
     test_eq( sig(s), 135L );
     test_pass("cxx20:erase_if(set)");
@@ -372,12 +379,12 @@ TEST_CASE(set, ctors_ops) {
     STD::set<int> m1;
     m1.insert(4); m1.insert(5);
     STD::set<int> m2(STD::move(m1));
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native set has no move: the emulation cannot be added to it");
     test_true( m2.count(4) == 1 && m1.empty() );
     test_pass("cxx11:set::set(set&&)");
     STD::set<int> m3;
     m3 = STD::move(m2);
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native set has no move: the emulation cannot be added to it");
     test_true( m3.count(5) == 1 && m2.empty() );
     test_pass("cxx11:set::operator=(set&&)");
 
@@ -490,8 +497,7 @@ TEST_CASE(set, cxx20_cxx23) {
 #if TEST_TARGET_CXX >= 2020
     STD::multiset<int> me;
     me.insert(1); me.insert(2); me.insert(2); me.insert(3);
-    struct IsEven { bool operator()(int x) const { return x % 2 == 0; } };
-    STD::multiset<int>::size_type n = STD::erase_if(me, IsEven());
+    STD::multiset<int>::size_type n = STD::erase_if(me, SetIsEven());
     test_eq( (long)n, 2L );
     test_pass("cxx20:erase_if(multiset)");
 #else

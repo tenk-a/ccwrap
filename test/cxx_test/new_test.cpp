@@ -151,7 +151,8 @@ TEST_CASE(new_hdr, operators_and_bad_alloc) {
     test_pass("cxx03:bad_alloc::what");
 
 #if TEST_TARGET_CXX >= 2014 && !defined(__WATCOMC__) && \
-    (!defined(_MSC_VER) || _MSC_VER >= 1900)
+    (!defined(_MSC_VER) || _MSC_VER >= 1900) && \
+    (defined(_MSC_VER) || __cplusplus >= 201402L)
     void* ps = ::operator new(48);
     ::operator delete(ps, (STD::size_t)48);
     test_pass("cxx14:sized operator delete(void*,size_t)");

@@ -1,0 +1,10 @@
+// ccwrap <version>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <version>
+
+#if !defined(__GLIBCXX__) && !defined(_LIBCPP_VERSION)
+#include <../../detail/c/version_macros.h>
+#endif

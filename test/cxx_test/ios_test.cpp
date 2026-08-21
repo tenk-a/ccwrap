@@ -441,10 +441,12 @@ TEST_CASE(ios, member_types_cxx03) {
 TEST_CASE(ios, assignment_and_set_rdbuf_cxx03) {
 #if !defined(__WATCOMC__)
     TEST_SKIP_VC120("MSVC <= 12 reports an inaccessible/deleted copy assignment as assignable (vc bugs A26)");
+    TEST_SKIP_CXX03_ACCESS("the C++03 is_copy_assignable cannot see access control");
     test_true( !STD::is_copy_assignable<STD::basic_ios<char> >::value );
     test_pass("cxx03:basic_ios::operator=");
 
     TEST_SKIP_VC120("MSVC <= 12 reports an inaccessible/deleted copy assignment as assignable (vc bugs A26)");
+    TEST_SKIP_CXX03_ACCESS("the C++03 is_copy_assignable cannot see access control");
     test_true( !STD::is_copy_assignable<STD::ios_base>::value );
     test_pass("cxx03:ios_base::operator=");
 #else

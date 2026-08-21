@@ -1,0 +1,10 @@
+// ccwrap <set>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <set>
+
+#include <../../detail/cxx/iterator.hpp>
+
+#include <../../detail/cxx/erase_if_set.hpp>

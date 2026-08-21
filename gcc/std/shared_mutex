@@ -13,6 +13,6 @@
 #if defined(_WIN32)
  #include <../../detail/cxx/win/shared_mutex.hpp>
 #else
- #include_next <shared_mutex>
+ #include <../../detail/cxx/posix/shared_mutex.hpp>
 #endif
 #endif

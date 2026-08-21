@@ -11,6 +11,9 @@
 #include "__type_traits/common_type.h"
 #include <ratio>
 #include <ctime>
+#if defined(__unix__) || defined(__APPLE__)
+#include <time.h>
+#endif
 #include <limits>
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -337,7 +340,13 @@ public:
     static const bool is_steady = true;
 
     _CCW_LIBCPP_HIDE_FROM_ABI static time_point now() {
+#if defined(__unix__) || defined(__APPLE__)
+        ::timespec __ts;
+        ::clock_gettime(CLOCK_MONOTONIC, &__ts);
+        long long __ms = (long long)__ts.tv_sec * 1000 + (long long)__ts.tv_nsec / 1000000;
+#else
         long long __ms = (long long)_CCW_STD::clock() * 1000 / (long long)CLOCKS_PER_SEC;
+#endif
         return time_point(duration(__ms));
     }
 };

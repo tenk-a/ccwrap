@@ -290,7 +290,7 @@ TEST_CASE(utility, pair_ctors_assign) {
 
     STD::pair<STD::string, STD::string> pm("a", "b");
     STD::pair<STD::string, STD::string> pm2(STD::move(pm));
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native pair has no move: the emulation cannot be added to it");
     test_true( pm2.first == "a" && pm.first.empty() );
     test_pass("cxx11:pair::pair(pair&&) (move)");
 
@@ -306,7 +306,7 @@ TEST_CASE(utility, pair_ctors_assign) {
 
     STD::pair<STD::string, STD::string> am("x", "y"), am2;
     am2 = STD::move(am);
-    TEST_SKIP_VC090("no move on vc8/9: the type here is MSVC's own, and a move cannot be added to it");
+    TEST_SKIP_NATIVE_NO_MOVE("the native pair has no move: the emulation cannot be added to it");
     test_true( am2.first == "x" && am.first.empty() );
     test_pass("cxx11:pair::operator=(pair&&)");
 

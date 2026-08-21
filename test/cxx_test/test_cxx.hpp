@@ -118,7 +118,7 @@
 #  define _TST_ATOMIC_LIB_CXX20     _TST_HAS_CXX20_LIB_MEMBERS
 #endif
 
-#if TEST_TARGET_CXX < 2014 || (defined(_MSC_VER) && _MSC_VER < 1800)
+#if TEST_TARGET_CXX < 2014 || (defined(_MSC_VER) && _MSC_VER < 1800) ||     ((defined(__GLIBCXX__) || defined(_LIBCPP_VERSION)) && _tst_cplusplus < 201402L)
 #  define _TST_HAS_TRANSPARENT_CMP  0
 #else
 #  define _TST_HAS_TRANSPARENT_CMP  1
@@ -338,6 +338,12 @@
 #endif
 
 #include "../src/test.hpp"
+
+#if defined(__GLIBCXX__) && __cplusplus < 201103L
+#  define _TST_ERASE_RETURNS_VOID 1
+#else
+#  define _TST_ERASE_RETURNS_VOID 0
+#endif
 
 
 namespace _tst_ty {

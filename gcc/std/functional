@@ -6,3 +6,12 @@
 #include_next <functional>
 
 #include <../../detail/cxx/functional.hpp>
+
+#if __cplusplus < 201103L
+#include <../../detail/llibcxx03/include/__functional/function.h>
+#endif
+
+#if __cplusplus < 201703L
+#include <../../detail/llibcxx03/include/__functional/default_searcher.h>
+#include <../../detail/llibcxx03/include/__functional/boyer_moore_searcher.h>
+#endif

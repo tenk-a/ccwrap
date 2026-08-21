@@ -269,8 +269,21 @@ TEST_CASE(type_traits, type_identity_and_negation) {
 #endif
 }
 
+namespace {
+    struct CtPod { int x; };
+    struct CtHasCtor { CtHasCtor(int) {} };
+    struct CtNoCopy { CtNoCopy(); private: CtNoCopy(const CtNoCopy&); };
+    struct CtNoDflt { CtNoDflt(const CtNoDflt&); };
+    struct AsNoAssign { AsNoAssign(); private: AsNoAssign& operator=(const AsNoAssign&); };
+    struct DtOk { int x; };
+    struct DtHasDtor { ~DtHasDtor() {} };
+    struct DtNoDtor { private: ~DtNoDtor() {} };
+}
+
+namespace { struct MpS { int m; void f() {} int g(int) { return 0; } }; }
+
 TEST_CASE(type_traits, member_pointers_and_remove_cvref) {
-    struct S { int m; void f() {} int g(int) { return 0; } };
+    typedef MpS S;
 
     test_true(  STD::is_member_object_pointer<int S::*>::value );
     test_true( !STD::is_member_object_pointer<void (S::*)()>::value );
@@ -349,9 +362,9 @@ TEST_CASE(type_traits, conjunction_disjunction) {
 #endif
 
 TEST_CASE(type_traits, is_destructible) {
-    struct Ok { int x; };
-    struct HasDtor { ~HasDtor() {} };
-    struct NoDtor { private: ~NoDtor() {} };
+    typedef DtOk Ok;
+    typedef DtHasDtor HasDtor;
+    typedef DtNoDtor NoDtor;
 
     test_true(  STD::is_destructible<int>::value );
     test_true(  STD::is_destructible<double>::value );
@@ -378,10 +391,10 @@ TEST_CASE(type_traits, is_destructible) {
 }
 
 TEST_CASE(type_traits, is_constructible_family) {
-    struct Pod { int x; };
-    struct HasCtor { HasCtor(int) {} };
-    struct NoCopy { NoCopy(); private: NoCopy(const NoCopy&); };
-    struct NoDflt { NoDflt(const NoDflt&); };
+    typedef CtPod Pod;
+    typedef CtHasCtor HasCtor;
+    typedef CtNoCopy NoCopy;
+    typedef CtNoDflt NoDflt;
 
     test_true(  STD::is_default_constructible<int>::value );
     test_true(  STD::is_default_constructible<Pod>::value );
@@ -430,8 +443,8 @@ TEST_CASE(type_traits, is_constructible_family) {
 }
 
 TEST_CASE(type_traits, is_assignable_family) {
-    struct Pod { int x; };
-    struct NoAssign { NoAssign(); private: NoAssign& operator=(const NoAssign&); };
+    typedef CtPod Pod;
+    typedef AsNoAssign NoAssign;
 
     test_true((  STD::is_assignable<int&, int>::value ));
     test_true((  STD::is_assignable<Pod&, const Pod&>::value ));

@@ -1,0 +1,10 @@
+// ccwrap <map>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <map>
+
+#include <../../detail/cxx/iterator.hpp>
+
+#include <../../detail/cxx/erase_if_map.hpp>
