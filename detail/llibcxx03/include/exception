@@ -61,8 +61,10 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline void terminate() { terminate_handler __h = __cc
 _CCW_LIBCPP_HIDE_FROM_ABI inline unexpected_handler set_unexpected(unexpected_handler __f) _CCW_LIBCPP_NOEXCEPT {
     unexpected_handler __o = __ccw_unexpected_slot(); __ccw_unexpected_slot() = __f; return __o; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline unexpected_handler get_unexpected() _CCW_LIBCPP_NOEXCEPT { return __ccw_unexpected_slot(); }
-#if _CCW_TARGET_CXX < 2017
-_CCW_LIBCPP_HIDE_FROM_ABI inline void unexpected() { unexpected_handler __h = __ccw_unexpected_slot(); if (__h) __h(); _CCW_STD::terminate(); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_call_unexpected() {
+    unexpected_handler __h = __ccw_unexpected_slot(); if (__h) __h(); _CCW_STD::terminate(); }
+#if _CCW_TARGET_CXX < 2023
+_CCW_LIBCPP_HIDE_FROM_ABI inline void unexpected() { __ccw_call_unexpected(); }
 #endif
 
 class _CCW_LIBCPP_HIDE_FROM_ABI __exception_ptr_holder {
@@ -203,6 +205,12 @@ _CCW_LIBCPP_HIDE_FROM_ABI void rethrow_if_nested(const _Tp& __t) {
 }
 
 _CCW_LIBCPP_END_NAMESPACE_STD
+
+#if _CCW_TARGET_CXX >= 2023
+namespace _ccw {
+_CCW_LIBCPP_HIDE_FROM_ABI inline void unexpected() { ::_CCW_STD::__ccw_call_unexpected(); }
+}
+#endif
 
 _CCW_EH_ANCHOR(exc, exception, exception)
 _CCW_EH_ANCHOR(bexc, bad_exception, bad_exception)
