@@ -27,6 +27,7 @@
 #include <time.h>
 #include <wchar.h>
 #include <wctype.h>
+#include "vc_nodlg.h"
 
 #if defined(snprintf) || defined(vsnprintf)
 #error snprintf and vsnprintf must not be macros.
@@ -317,5 +318,6 @@ static int test_headers(void)
 
 int main(void)
 {
+    ccw_no_crash_dialogs();
     return test_headers();
 }

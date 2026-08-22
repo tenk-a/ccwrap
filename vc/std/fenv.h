@@ -67,6 +67,12 @@ static __inline int fesetexceptflag(const fexcept_t* flagp, int excepts) {
     if (__keep | __want) feraiseexcept((int)(__keep | __want));
     return 0;
 }
+#if defined(_M_IX86)
+#  define _CCW_FENV_CW_MASK (_MCW_DN | _MCW_EM | _MCW_RC | _MCW_PC | _MCW_IC)
+#else
+#  define _CCW_FENV_CW_MASK (_MCW_DN | _MCW_EM | _MCW_RC)
+#endif
+
 static __inline int fegetround(void) {
     unsigned int c;
     _controlfp_s(&c, 0, 0);
@@ -89,7 +95,7 @@ static __inline int fesetenv(const fenv_t* envp) {
     if (envp == FE_DFL_ENV || envp == 0) {
         _fpreset();
     } else {
-        _controlfp_s(&c, envp->_ctrl, _MCW_RC | _MCW_EM | _MCW_PC | _MCW_IC);
+        _controlfp_s(&c, envp->_ctrl, _CCW_FENV_CW_MASK);
         _clearfp();
         if (envp->_stat & FE_ALL_EXCEPT) feraiseexcept((int)(envp->_stat & FE_ALL_EXCEPT));
     }

@@ -3,13 +3,13 @@
 
 #include <ccwrap_common.h>
 
-#if _MSC_VER >= 1700
+#if _MSC_VER >= 1920
  #include _CCW_NATIVE_STL_HEADER_PATH(codecvt)
 #else
  #include <../../detail/llibcxx03/include/codecvt>
 #endif
 
-#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1900
+#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER >= 1900 && _MSC_VER < 1920
 #include <locale>
 __declspec(selectany) std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
 __declspec(selectany) std::locale::id std::codecvt<char32_t, char, _Mbstatet>::id;

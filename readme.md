@@ -11,7 +11,7 @@ ccwrap  は 古いc/c++コンパイラ用に、c11/c++11 以降の規格の一�
 llvm libc++ を元に、多くのものを追加。
 
 ※ Open Watcom C++ 公式の標準ライブラリは基本的なモノが結構欠けていて、
-その代用が目的の一つ。
+現状、その代用が主目的になっている。
 
 
 ## 対象 コンパイラ
@@ -65,8 +65,7 @@ c90 コンパイラに c99 ～ c23、c++03 コンパイラに c++11 ～ c++26 �
 watcom 以外は現状、ヘッダーオンリー。  
 （ただ、本来実体ファイルに置くべき関数もinlineで無理やり対応した状態）
 
-どのc/c++規格までのモノを利用可能にするか、を、以下のマクロで指定可能。
-(廃止規格関数利用等)
+どのc/c++規格までのモノを利用可能にするか、を、以下のマクロで指定可能、かもしれない。
 
 ```
 _CCW_TARGET_C   = 1999 ～ 2023
@@ -90,14 +89,16 @@ vc に関しては、vc付属の c/c++ 標準ライブラリに対する抜け�
 
 ccwrap を clone して手頃なフォルダに設置したとする。
 
+仮に環境変数 CCWRAP_ROOT に ccwrap ディレクトリ・フルパスが設定済みとして。
+
 ccwrap_header.h のみ利用の場合。
 ```batch
-cl -FI[CCWRAP]/vc/std/ccwrap_header.h hello.c
+cl -FI%CCWAP_ROOT%/vc/std/ccwrap_header.h hello.c
 ```
 
 c/c++標準ライブラリ追加を利用。
 ```batch
-cl -I[CCWRAP]/vc/std -FIccwrap_header.h hello.c
+cl -I%CCWAP_ROOT%/vc/std -FIccwrap_header.h hello.c
 ```
 
 
@@ -111,14 +112,16 @@ msys2(mingw) と wsl(ubuntu) でお試し。
 
 ### install / コンパイラ・コマンドライン指定
 
+仮に環境変数 CCWRAP_ROOT に ccwrap ディレクトリ・フルパスが設定済みとして。
+
 ccwrap_header.h のみ利用。
 ```batch
-gcc -include [CCWRAP]/vc/std/ccwrap_header.h hello.c
+gcc -include %CCWAP_ROOT%/vc/std/ccwrap_header.h hello.c
 ```
 
 c/c++標準ライブラリ追加を利用。
 ```batch
-gcc -I [CCWRAP]/vc/std -include ccwrap_header.h hello.c
+gcc -I %CCWAP_ROOT%/vc/std -include ccwrap_header.h hello.c
 ```
 
 ※ clang のときは gcc をclang に置き換え。
@@ -159,19 +162,21 @@ Watcom の C++ はコンパイラ側バグが結構あり、
 
 例外を使わないプログラムの場合は、-xd で例外無しで運用するほうがよいかもしれない。
 
-ccwrap では、例外を使わない設定の場合は、例外発生タイミングで abort することで、標準ライブラリを使えるようにしている。
+例外を使わない設定では、例外発生タイミングで abort/terminate することで、標準ライブラリを使えるようにしている。
 
 
 ### install / コンパイラ・コマンドライン指定
 
+仮に環境変数 CCWRAP_ROOT に ccwrap ディレクトリ・フルパスが設定済みとして。
+
 `・`ccwrap_header.h のみ利用。
 ```batch
-wcl386  -fi=[CCWRAP]/watcom/std/ccwrap_header.h  hello.c
+wcl386  -fi=%CCWAP_ROOT%/watcom/std/ccwrap_header.h  hello.c
 ```
 
 `・`c 標準ライブラリを利用。
 ```batch
-wcl386  -i=[CCWRAP]/watcom/std  -fi=[CCWRAP]/watcom/std/ccwrap_header.h  hello.c
+wcl386  -i=%CCWAP_ROOT%/watcom/std  -fi=%CCWAP_ROOT%/watcom/std/ccwrap_header.h  hello.c
 ```
 
 -fi=フルパス。  
@@ -182,37 +187,38 @@ wcl386  -i=[CCWRAP]/watcom/std  -fi=[CCWRAP]/watcom/std/ccwrap_header.h  hello.c
 
 `・`c++ の場合は予め  
 ```batch
- [CCWRAP]/watcom/lib/gen.bat
+ %CCWAP_ROOT%/watcom/lib/gen.bat
 ```
 を実行して ライブラリ .lib を生成しておく。
 
 `・`c++ 標準ライブラリ 例外&RTTI 有、で、とりあえずビルド
 ```batch
-wcl386 -bt=nt -l=nt -bm -xr -xst -i=[CCWRAP]/watcom/std hello.cpp [CCWRAP]/watcom/lib/nt/ccw-eh3r.lib
+wcl386 -bt=nt -l=nt -bm -xr -xst -i=%CCWAP_ROOT%/watcom/std hello.cpp %CCWAP_ROOT%/watcom/lib/nt/ccw-eh3r.lib
 ```
 win32（-bt=nt -l=nt）、multithread用（-bm）、RTTI有（-xr）、例外有（-xst）
 
 `・`最適化をして、未使用ルーチン削除等する指定は
 
 ```batch
-wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/nt option eliminate option vfremoval"
+wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG -i=%CCWAP_ROOT%/watcom/std hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/nt option eliminate option vfremoval"
 ```
 
 Releaseビルド（NDEBUG）、時間優先最適化（-ot）、未使用ルーチン削除されやすく（-xm -xv）、未使用ルーチン削除（-"option eliminate option vfremoval"）  
-ついでに ライブラリ指定を、ライブラリ検索パス指定（-"LIBPATH [CCWRAP]/watcom/lib/nt"） に変更。（ライブラリ名自体は ccwrap ヘッダ内で #pragma library で指定済）
+ついでに ライブラリ指定を、ライブラリ検索パス指定（-"LIBPATH %CCWAP_ROOT%/watcom/lib/nt"） に変更。（ライブラリ名自体は ccwrap ヘッダ内で #pragma library で指定済）
 
-※最適化オプションはお好みで -ot でなく -os とか -ox 追加とか。最適化は、必ずしもよくなるわけでもないので、アプリごとに合ったものを設定。
+※最適化オプションはお好みで -ot でなく -os にするなり -ox 追加するなり。
+最適化は、必ずよくなる、というわけでもないので、アプリごとに合ったものを選ぶことになる。
 
 `・`あるいは環境変数を用い
 ```batch
-set "INCLUDE=[CCWRAP]/watcom/std;%INCLUDE%"
-set "LIB=[CCWRAP]/watcom/lib/nt;%LIB%"
+set "INCLUDE=%CCWAP_ROOT%/watcom/std;%INCLUDE%"
+set "LIB=%CCWAP_ROOT%/watcom/lib/nt;%LIB%"
 wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG hello.cpp -"option eliminate option vfremoval"
 ```
 
 `・`c++ 標準ライブラリ 例外&RTTI 有 でのデバッグビルドは
 ```batch
-wcl386 -bt=nt -l=nt -bm -xr -xst -d2 -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/debug/nt"
+wcl386 -bt=nt -l=nt -bm -xr -xst -d2 -i=%CCWAP_ROOT%/watcom/std hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/debug/nt"
 ```
 
 オプション -d2 か -d1 を指定。-d2 は稀にビルド失敗するので、そういうときは諦めて -d1 を指定。
@@ -220,20 +226,20 @@ wcl386 -bt=nt -l=nt -bm -xr -xst -d2 -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH 
 
 `・`c++ 標準ライブラリ で 例外&RTTI 無にするには、
 ```batch
-wcl386 -bt=nt -l=nt -bm -xd -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/nt option eliminate option vfremoval"
+wcl386 -bt=nt -l=nt -bm -xd -ot -xm -xv -DNDEBUG -i=%CCWAP_ROOT%/watcom/std hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/nt option eliminate option vfremoval"
 ```
 オプション -xr -xst(-xs,-xss) を外して -xd に変更
 
 
 `・`dos4g で 例外&RTTI 無 は
 ```batch:dos4g
-wcl386 -bt=dos -l=dos4g -xd -ot -xm -xv -DNDEBUG -i=[CCWRAP]/watcom/std -fe=helloD32.exe hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/dos option eliminate option vfremoval"
+wcl386 -bt=dos -l=dos4g -xd -ot -xm -xv -DNDEBUG -i=%CCWAP_ROOT%/watcom/std -fe=helloD32.exe hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/dos option eliminate option vfremoval"
 ```
 オプション -bt -l を -bt=dos -l=dos4g に変更。（dos はシングルスレッド環境で -bm 無）
 
 `・`dos4g LFN(Long File Name)有 で 例外&RTTI 有
 ```batch:dos4g
-wcl386 -bt=dos -l=dos4g -xr -xst -ot -xm -xv -D__WATCOM_LFN__ -DNDEBUG -i=[CCWRAP]/watcom/std -fe=helloLFN.exe hello.cpp -"LIBPATH [CCWRAP]/watcom/lib/dos option eliminate option vfremoval"
+wcl386 -bt=dos -l=dos4g -xr -xst -ot -xm -xv -D__WATCOM_LFN__ -DNDEBUG -i=%CCWAP_ROOT%/watcom/std -fe=helloLFN.exe hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/dos option eliminate option vfremoval"
 ```
 
 マクロ `__WATCOM_LFN__` を定義してビルドすれば watcom の lfn用ライブラリがリンクされる。
@@ -244,7 +250,7 @@ wcl386 -bt=dos -l=dos4g -xr -xst -ot -xm -xv -D__WATCOM_LFN__ -DNDEBUG -i=[CCWRA
 
 ### watcom ライブラリ
 
-[CCWRAP]/watcom/lib/gen.bat
+%CCWAP_ROOT%/watcom/lib/gen.bat
 
 を実行して、ライブラリを生成する。
 
@@ -284,7 +290,7 @@ wcl386 のデフォルトは 3r なので、無指定時は 3r のものがリ�
 | `3r`    | WATCOM ABI 関数引数がレジスタ渡し ※ デフォルト.   |
 | `3s`    | 関数引数がスタック渡し                             |
 |         |                                                    |
-| 追加    | gen all 等で生成                                   |
+| 追加    | gen full 等で生成                                  |
 | `-fsc`  | Win32 で filesystem を char ベースで構築           |
 | `-xr`   | 例外無 RTTI 有効(-xr)                              |
 | `-xst`  | 例外有(-xst) RTTI無                                |

@@ -44,10 +44,3 @@ template <_CCW_STD::size_t _Ip> const in_place_index_t<_Ip> in_place_index = in_
 #  define _CCW_LIBCPP___UTILITY_IN_PLACE_INDEX_DEFINED
 # endif
 #endif
-
-#if defined(__cplusplus) && _MSC_VER < 1700
-namespace std {
-struct piecewise_construct_t {};
-_ccw_inline_const piecewise_construct_t piecewise_construct = piecewise_construct_t();
-}
-#endif

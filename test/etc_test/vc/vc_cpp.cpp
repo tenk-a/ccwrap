@@ -75,6 +75,7 @@
 #include <condition_variable>
 #include <shared_mutex>
 #include <syncstream>
+#include "vc_nodlg.h"
 #define _TST_TEST_HAS_MUTEX 1
 
 struct alignas(8) test_align {
@@ -112,8 +113,19 @@ static void thr_fn(int x) { g_thr_val = x; }
 
 static bool pred_true() { return true; }
 
+template <class S>
+static bool ccw_u8_equals(const S& s, const char* t) {
+    std::size_t i = 0;
+    for (; i < s.size(); ++i) {
+        if (t[i] == 0 || (char)s[i] != t[i])
+            return false;
+    }
+    return t[i] == 0;
+}
+
 int main()
 {
+    ccw_no_crash_dialogs();
     test_align v = { 1 };
     bool ok = true and not false;
     if (!ok || v.value != 1)
@@ -985,8 +997,7 @@ int main()
 
 #if __cplusplus < 202002L
         fs::path up = fs::u8path(std::string("dir/file.txt"));
-        std::string u8 = up.generic_u8string();
-        if (u8 != "dir/file.txt")
+        if (!ccw_u8_equals(up.generic_u8string(), "dir/file.txt"))
             return 235;
 #endif
     }
@@ -1308,6 +1319,7 @@ int main()
             return 305;
     }
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
     {
         std::array<int, 5> ra;
         ra[0] = 3; ra[1] = 1; ra[2] = 4; ra[3] = 1; ra[4] = 5;
@@ -1323,6 +1335,7 @@ int main()
         if (*std::ranges::max_element(ra) != 5 || *std::ranges::min_element(ra) != 1)
             return 273;
     }
+#endif
 
     {
         std::any a = 42;

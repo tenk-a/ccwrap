@@ -8,6 +8,10 @@
 
 #include _CCW_NATIVE_STL_HEADER_PATH(locale)
 
+#if defined(__cplusplus) && _MSC_VER < 1600
+#include <../../detail/llibcxx03/include/__locale_dir/wstring_convert.h>
+#endif
+
 #if defined(__cplusplus) && _MSC_VER < 1700
 namespace std {
 template <class _CharT>

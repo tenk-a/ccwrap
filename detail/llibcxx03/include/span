@@ -21,6 +21,7 @@ template <class _Tp, _CCW_STD::size_t _Extent = dynamic_extent> class span;
 
 template <class _Up> struct __ccw_not_span { typedef _Up type; };
 template <class _Up, _CCW_STD::size_t _Np> struct __ccw_not_span< span<_Up, _Np> > { };
+template <class _Up, _CCW_STD::size_t _Np> struct __ccw_not_span< _Up[_Np] > { };
 
 template <class _Tp, _CCW_STD::size_t _Extent>
 class span {
@@ -44,6 +45,10 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI explicit span(_Tp* __p) : __data_(__p) {}
     _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __p, size_type) : __data_(__p) {}
     _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __first, _Tp* __last) : __data_(__first) { (void)__last; }
+#if !defined(__WATCOMC__)
+    template <_CCW_STD::size_t _Np>
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp (&__arr)[_Np]) : __data_(__arr) {}
+#endif
     _CCW_LIBCPP_HIDE_FROM_ABI size_type size() const       { return _Extent; }
     _CCW_LIBCPP_HIDE_FROM_ABI size_type size_bytes() const { return _Extent * sizeof(_Tp); }
     _CCW_LIBCPP_HIDE_FROM_ABI bool      empty() const      { return _Extent == 0; }
@@ -92,6 +97,10 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI span() : __data_(0), __size_(0) {}
     _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __p, size_type __n) : __data_(__p), __size_(__n) {}
     _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp* __first, _Tp* __last) : __data_(__first), __size_(size_type(__last - __first)) {}
+#if !defined(__WATCOMC__)
+    template <_CCW_STD::size_t _Np>
+    _CCW_LIBCPP_HIDE_FROM_ABI span(_Tp (&__arr)[_Np]) : __data_(__arr), __size_(_Np) {}
+#endif
     template <class _Range>
     _CCW_LIBCPP_HIDE_FROM_ABI span(_Range& __r, typename __ccw_not_span<_Range>::type* = 0)
         : __data_(__r.empty() ? (pointer)0 : &__r[0]), __size_(__r.size()) {}

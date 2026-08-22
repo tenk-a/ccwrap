@@ -25,6 +25,59 @@
 
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::size_t __ccw_next_prime(_CCW_STD::size_t __n) {
+    static const unsigned __small[] = {
+        0,   2,   3,   5,   7,   11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,
+        53,  59,  61,  67,  71,  73,  79,  83,  89,  97,  101, 103, 107, 109, 113, 127,
+        131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211 };
+    static const unsigned __ind[] = {
+        1,   11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,  53,  59,  61,  67,
+        71,  73,  79,  83,  89,  97,  101, 103, 107, 109, 113, 121, 127, 131, 137, 139,
+        143, 149, 151, 157, 163, 167, 169, 173, 179, 181, 187, 191, 193, 197, 199, 209 };
+    static const unsigned char __inc[] = {
+        0, 10, 2, 4, 2, 4, 6, 2, 6, 4, 2, 4, 6, 6, 2, 6, 4, 2, 6, 4, 6, 8, 4, 2,
+        4, 2,  4, 8, 6, 4, 6, 2, 4, 6, 2, 6, 6, 4, 2, 4, 6, 2, 6, 4, 2, 4, 2, 10 };
+    const _CCW_STD::size_t __L = 210;
+    const _CCW_STD::size_t __N = sizeof(__small) / sizeof(__small[0]);
+    const _CCW_STD::size_t __M = sizeof(__ind) / sizeof(__ind[0]);
+    _CCW_STD::size_t       __k0, __ix, __j;
+
+    if (__n <= (_CCW_STD::size_t)__small[__N - 1]) {
+        for (__j = 0; __j < __N; ++__j) if ((_CCW_STD::size_t)__small[__j] >= __n) return (_CCW_STD::size_t)__small[__j];
+        return __n;
+    }
+    if (__n > (_CCW_STD::size_t)-1 - __L) return __n;   // no room to walk the wheel
+
+    __k0 = __n / __L;
+    for (__ix = 0; __ix < __M; ++__ix) if ((_CCW_STD::size_t)__ind[__ix] >= __n - __k0 * __L) break;
+    if (__ix == __M) { ++__k0; __ix = 0; }
+    __n = __L * __k0 + (_CCW_STD::size_t)__ind[__ix];
+    for (;;) {
+        for (__j = 5; __j < __N - 1; ++__j) {
+            _CCW_STD::size_t __pp = (_CCW_STD::size_t)__small[__j];
+            _CCW_STD::size_t __q  = __n / __pp;
+            if (__q < __pp) return __n;
+            if (__n == __q * __pp) goto __again;
+        }
+        {   _CCW_STD::size_t __i = 211;
+            for (;;) {
+                for (_CCW_STD::size_t __t = 0; __t < sizeof(__inc) / sizeof(__inc[0]); ++__t) {
+                    _CCW_STD::size_t __q;
+                    __i += (_CCW_STD::size_t)__inc[__t];
+                    __q = __n / __i;
+                    if (__q < __i) return __n;
+                    if (__n == __q * __i) goto __again;
+                }
+                __i += 2;
+            }
+        }
+    __again:
+        if (++__ix == __M) { ++__k0; __ix = 0; }
+        __n = __L * __k0 + (_CCW_STD::size_t)__ind[__ix];
+    }
+}
+
+
 template <class _Value>
 struct __hash_node {
     __hash_node* __next_;
@@ -184,7 +237,7 @@ private:
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __maybe_grow() {
         size_type __bc = __buckets_.size();
-        if ((float)(__nas_.__size_ + 1) > __max_load_ * (float)__bc) __rehash_to(__bc * 2);
+        if ((float)(__nas_.__size_ + 1) > __max_load_ * (float)__bc) __rehash_to(__ccw_next_prime(__bc * 2 + 1));
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __copy_from(const __hash_table& __o) {
         for (size_type __i = 0; __i < __o.__buckets_.size(); ++__i)
@@ -282,7 +335,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI float     load_factor() const { return (float)__nas_.__size_ / (float)__buckets_.size(); }
     _CCW_LIBCPP_HIDE_FROM_ABI float     max_load_factor() const { return __max_load_; }
     _CCW_LIBCPP_HIDE_FROM_ABI void      max_load_factor(float __z) { __max_load_ = __z; }
-    _CCW_LIBCPP_HIDE_FROM_ABI void      rehash(size_type __n) { if (__n > __buckets_.size()) __rehash_to(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void      rehash(size_type __n) {
+        size_type __need = (size_type)((float)__nas_.__size_ / __max_load_) + 1;
+        if (__n < __need) __n = __need;
+        if (__n > __buckets_.size()) __rehash_to(__ccw_next_prime(__n));
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI void      reserve(size_type __n) { rehash((size_type)((float)__n / __max_load_) + 1); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI void clear() {
