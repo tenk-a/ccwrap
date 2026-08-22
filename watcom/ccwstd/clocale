@@ -3,6 +3,6 @@
 #define _CCW_CCWSTD_CLOCALE_
 #include "../std/clocale"
 namespace _CCW_STD {
-using ::std::lconv; using ::std::setlocale; using ::std::localeconv;
+using ::lconv; using ::_ccw_setlocale; using ::_ccw_localeconv;
 }
 #endif

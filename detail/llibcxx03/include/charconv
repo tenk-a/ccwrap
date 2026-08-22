@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cerrno>
 #include <cmath>       // ldexp -- the hex float parse below builds its value with it
+#include <clocale>     // localeconv -- to_chars/from_chars must not follow LC_NUMERIC
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct chars_format {
@@ -79,6 +80,11 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline bool __fp_isnan(double __v) {
     return false;
 }
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline char __lc_point() {
+    const char* __p = _CCW_STD::localeconv()->decimal_point;
+    return (__p != 0 && __p[0] != 0 && __p[1] == 0) ? __p[0] : '.';
+}
+
 _CCW_LIBCPP_HIDE_FROM_ABI inline int __fp_digits(double __v, int __maxprec, bool __as_float,
                                                  char* __digits, int* __exp10) {
     char __tmp[512];
@@ -90,11 +96,12 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline int __fp_digits(double __v, int __maxprec, bool
     }
     if (__p > __maxprec) { __p = __maxprec; _CCW_STD::sprintf(__tmp, "%.*e", __p - 1, __v); }
 
-    const char* __s = __tmp;
+    const char  __dp = __lc_point();
+    const char* __s  = __tmp;
     if (*__s == '-' || *__s == '+') ++__s;
     int __n = 0;
     for (; *__s && *__s != 'e' && *__s != 'E'; ++__s)
-        if (*__s != '.') __digits[__n++] = *__s;
+        if (*__s != __dp) __digits[__n++] = *__s;
     int __e = 0, __es = 1;
     if (*__s == 'e' || *__s == 'E') {
         ++__s;
@@ -241,6 +248,10 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline to_chars_result __fp_fmt(char* __first, char* _
     char __f[16]; char __tmp[512];
     _CCW_STD::sprintf(__f, "%%.%d%c", __prec, __conv);
     int __n = _CCW_STD::sprintf(__tmp, __f, __v);
+    {   const char __dp = __lc_point();
+        if (__dp != '.')
+            for (int __i = 0; __i < __n; ++__i) if (__tmp[__i] == __dp) __tmp[__i] = '.';
+    }
     if (__n > 0) __n = __trim_exp_digits(__tmp, __n);
     to_chars_result __r;
     if (__n <= 0 || __n > (__last - __first)) { __r.ptr = __last; __r.ec = errc::value_too_large; return __r; }
@@ -333,7 +344,9 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline from_chars_result __parse_fp_fmt(const char* __
     }
 
     char __t[512]; _CCW_STD::size_t __k = 0;
-    for (const char* __q = __first; __q != __p && __k + 1 < sizeof(__t); ++__q) __t[__k++] = *__q;
+    const char __dp = __lc_point();
+    for (const char* __q = __first; __q != __p && __k + 1 < sizeof(__t); ++__q)
+        __t[__k++] = (*__q == '.') ? __dp : *__q;
     __t[__k] = 0;
 
     errno = 0;

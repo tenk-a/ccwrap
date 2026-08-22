@@ -16,7 +16,7 @@ typedef _CCW_STD::mbstate_t __ccw_mbstate_t;
 
 enum codecvt_mode { consume_header = 4, generate_header = 2, little_endian = 1 };
 
-#if _CCW_LIBCPP_NATIVE_STD && defined(_MSC_VER) && _MSC_VER < 1600
+#if _CCW_LIBCPP_NATIVE_STD && defined(_MSC_VER) && _MSC_VER < 1700
 #  define _CCW_CODECVT_LENGTH_STATE const state_type&
 #else
 #  define _CCW_CODECVT_LENGTH_STATE state_type&
@@ -97,7 +97,7 @@ inline char* __ccw_u16_put(char* __to, unsigned long __u, bool __little) {
     return __to;
 }
 
-template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+template <class _Elem, unsigned long _MaxCode = 0x10ffff, codecvt_mode _CvMode = (codecvt_mode)0>
 class codecvt_utf8 : public codecvt<_Elem, char, __ccw_mbstate_t> {
     typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
 public:
@@ -112,7 +112,7 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
                                                 char* __to, char* __to_end, char*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if (_Mode & generate_header) {
+        if (_CvMode & generate_header) {
             if (__to_end - __to_nxt < 3)
                 return codecvt_base::partial;
             *__to_nxt++ = (char)(unsigned char)0xEF;
@@ -121,7 +121,7 @@ protected:
         }
         for (; __frm_nxt < __frm_end; ++__frm_nxt) {
             unsigned long __wc = (unsigned long)(_Elem)*__frm_nxt;
-            if (__wc > _Maxcode)
+            if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (__to_end - __to_nxt < __ccw_u8_enclen(__wc))
                 return codecvt_base::partial;
@@ -132,7 +132,7 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
                                                _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if ((_Mode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
+        if ((_CvMode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
             __frm_nxt += 3;
         while (__frm_nxt < __frm_end) {
             if (__to_nxt >= __to_end)
@@ -141,7 +141,7 @@ protected:
             int __n = __ccw_u8_decode(__frm_nxt, __frm_end, __wc);
             if (__n == 0)  return codecvt_base::error;
             if (__n < 0)   return codecvt_base::partial;
-            if (__wc > _Maxcode)
+            if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (sizeof(_Elem) < 4 && __wc > 0xFFFF)
                 return codecvt_base::error;
@@ -153,12 +153,12 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
-        int __n = _Maxcode <= 0x7F ? 1 : _Maxcode <= 0x7FF ? 2 : _Maxcode <= 0xFFFF ? 3 : 4;
-        return (_Mode & consume_header) ? __n + 3 : __n;
+        int __n = _MaxCode <= 0x7F ? 1 : _MaxCode <= 0x7FF ? 2 : _MaxCode <= 0xFFFF ? 3 : 4;
+        return (_CvMode & consume_header) ? __n + 3 : __n;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
         const char* __p = __frm;
-        if ((_Mode & consume_header) && __ccw_u8_is_bom(__p, __end))
+        if ((_CvMode & consume_header) && __ccw_u8_is_bom(__p, __end))
             __p += 3;
         size_t __cnt = 0;
         while (__p < __end && __cnt < __mx) {
@@ -171,10 +171,10 @@ protected:
     }
 };
 
-template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+template <class _Elem, unsigned long _MaxCode = 0x10ffff, codecvt_mode _CvMode = (codecvt_mode)0>
 class codecvt_utf16 : public codecvt<_Elem, char, __ccw_mbstate_t> {
     typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
-    _CCW_LIBCPP_HIDE_FROM_ABI static bool __little() { return (_Mode & little_endian) != 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static bool __little() { return (_CvMode & little_endian) != 0; }
     _CCW_LIBCPP_HIDE_FROM_ABI static bool __is_bom(const char* __p, const char* __end) {
         return __end - __p >= 2 && __ccw_u16_get(__p, __little()) == 0xFEFFUL;
     }
@@ -187,14 +187,14 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
                                                 char* __to, char* __to_end, char*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if (_Mode & generate_header) {
+        if (_CvMode & generate_header) {
             if (__to_end - __to_nxt < 2)
                 return codecvt_base::partial;
             __to_nxt = __ccw_u16_put(__to_nxt, 0xFEFFUL, __little());
         }
         for (; __frm_nxt < __frm_end; ++__frm_nxt) {
             unsigned long __wc = (unsigned long)(_Elem)*__frm_nxt;
-            if (__wc > _Maxcode || __wc > 0x10FFFFUL)
+            if (__wc > _MaxCode || __wc > 0x10FFFFUL)
                 return codecvt_base::error;
             if (__wc <= 0xFFFF) {
                 if (__to_end - __to_nxt < 2)
@@ -213,7 +213,7 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
                                                _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if ((_Mode & consume_header) && __is_bom(__frm_nxt, __frm_end))
+        if ((_CvMode & consume_header) && __is_bom(__frm_nxt, __frm_end))
             __frm_nxt += 2;
         while (__frm_end - __frm_nxt >= 2) {
             if (__to_nxt >= __to_end)
@@ -235,7 +235,7 @@ protected:
                 __wc = __u;
                 __used = 2;
             }
-            if (__wc > _Maxcode)
+            if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (sizeof(_Elem) < 4 && __wc > 0xFFFF)
                 return codecvt_base::error;
@@ -247,11 +247,11 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
-        return (_Mode & consume_header) ? 6 : 4;
+        return (_CvMode & consume_header) ? 6 : 4;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
         const char* __p = __frm;
-        if ((_Mode & consume_header) && __is_bom(__p, __end))
+        if ((_CvMode & consume_header) && __is_bom(__p, __end))
             __p += 2;
         size_t __cnt = 0;
         while (__end - __p >= 2 && __cnt < __mx) {
@@ -268,7 +268,7 @@ protected:
     }
 };
 
-template <class _Elem, unsigned long _Maxcode = 0x10ffff, codecvt_mode _Mode = (codecvt_mode)0>
+template <class _Elem, unsigned long _MaxCode = 0x10ffff, codecvt_mode _CvMode = (codecvt_mode)0>
 class codecvt_utf8_utf16 : public codecvt<_Elem, char, __ccw_mbstate_t> {
     typedef codecvt<_Elem, char, __ccw_mbstate_t> _Base;
 public:
@@ -280,7 +280,7 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type&, const _Elem* __frm, const _Elem* __frm_end, const _Elem*& __frm_nxt,
                                                 char* __to, char* __to_end, char*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if (_Mode & generate_header) {
+        if (_CvMode & generate_header) {
             if (__to_end - __to_nxt < 3)
                 return codecvt_base::partial;
             *__to_nxt++ = (char)(unsigned char)0xEF;
@@ -305,7 +305,7 @@ protected:
                 __wc = __u;
                 __used = 1;
             }
-            if (__wc > _Maxcode)
+            if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (__to_end - __to_nxt < __ccw_u8_enclen(__wc))
                 return codecvt_base::partial;
@@ -317,14 +317,14 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type&, const char* __frm, const char* __frm_end, const char*& __frm_nxt,
                                                _Elem* __to, _Elem* __to_end, _Elem*& __to_nxt) const {
         __frm_nxt = __frm; __to_nxt = __to;
-        if ((_Mode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
+        if ((_CvMode & consume_header) && __ccw_u8_is_bom(__frm_nxt, __frm_end))
             __frm_nxt += 3;
         while (__frm_nxt < __frm_end) {
             unsigned long __wc;
             int __n = __ccw_u8_decode(__frm_nxt, __frm_end, __wc);
             if (__n == 0)  return codecvt_base::error;
             if (__n < 0)   return codecvt_base::partial;
-            if (__wc > _Maxcode)
+            if (__wc > _MaxCode)
                 return codecvt_base::error;
             int __need = __wc > 0xFFFF ? 2 : 1;
             if (__to_end - __to_nxt < __need)
@@ -343,11 +343,11 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_max_length() const _CCW_LIBCPP_NOEXCEPT {
-        return (_Mode & consume_header) ? 7 : 4;
+        return (_CvMode & consume_header) ? 7 : 4;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_length(_CCW_CODECVT_LENGTH_STATE, const char* __frm, const char* __end, size_t __mx) const {
         const char* __p = __frm;
-        if ((_Mode & consume_header) && __ccw_u8_is_bom(__p, __end))
+        if ((_CvMode & consume_header) && __ccw_u8_is_bom(__p, __end))
             __p += 3;
         size_t __cnt = 0;
         while (__p < __end && __cnt < __mx) {

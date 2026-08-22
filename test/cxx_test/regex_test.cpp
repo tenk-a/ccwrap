@@ -359,9 +359,11 @@ TEST_CASE(regex, traits) {
     STD::string one("q");
     test_true( t.lookup_collatename(one.begin(), one.end()) == STD::string("q") );
     STD::string many("comma");
-    TEST_SKIP_GCC();
-    TEST_SKIP_VC120("MSVC 12's regex_traits knows named collating elements too");
-    test_true( t.lookup_collatename(many.begin(), many.end()).empty() );
+    TEST_SKIP_VC120("MSVC regex_traits returns any name verbatim instead of validating it");
+    test_true( t.lookup_collatename(many.begin(), many.end()) == STD::string(",") );
+    STD::string nosuch("notaname");
+    TEST_SKIP_VC120("MSVC regex_traits returns any name verbatim instead of validating it");
+    test_true( t.lookup_collatename(nosuch.begin(), nosuch.end()).empty() );
     test_pass("cxx11:regex_traits::lookup_collatename");
 
     STD::string d("digit"), al("alpha"), sp("space"), up("upper"), xd("xdigit");

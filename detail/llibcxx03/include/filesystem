@@ -23,6 +23,8 @@
 #include <chrono>        // file_time_type is chrono::time_point<file_clock>
 #include <ctime>         // time_t crosses the TU boundary for last_write_time
 #include <iosfwd>        // path's stream inserter / extractor
+#include <cwchar>        // mbstate_t / mbrtowc / wcrtomb for the native encoding
+#include "../../c/utf8_impl.h"   // UTF-8 <-> code point, without going through the OS
 #include "__functional/hash.h"   // hash<path>
 #ifndef _CCW_FS_WCHAR
 #  if defined(_CCW_OS_DOS) || defined(__DOS__) || defined(MSDOS)
@@ -68,19 +70,33 @@ typedef char               __ccw_fs_char_t;
 typedef ::_CCW_STD::string __ccw_fs_string_t;
 #endif
 
-_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_widen(const ::_CCW_STD::string& __s) {
-    ::_CCW_STD::wstring __r;
-    for (::_CCW_STD::string::size_type __i = 0; __i < __s.size(); ++__i)
-        __r += static_cast<wchar_t>(static_cast<unsigned char>(__s[__i]));
-    return __r;
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string __ccw_fs_narrow(const ::_CCW_STD::wstring& __s) {
-    ::_CCW_STD::string __r;
-    for (::_CCW_STD::wstring::size_type __i = 0; __i < __s.size(); ++__i) {
-        unsigned long __c = (unsigned long)__s[__i];
-        __r += (__c <= 0xFFUL) ? static_cast<char>(static_cast<unsigned char>(__c)) : '?';
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_put_wide(::_CCW_STD::wstring& __d, unsigned long __cp) {
+    if (sizeof(wchar_t) < 4 && __cp >= 0x10000uL && __cp <= 0x10FFFFuL) {
+        unsigned long __v = __cp - 0x10000uL;
+        __d.push_back(static_cast<wchar_t>(0xD800uL + (__v >> 10)));
+        __d.push_back(static_cast<wchar_t>(0xDC00uL + (__v & 0x3FFuL)));
+    } else {
+        __d.push_back(static_cast<wchar_t>(__cp));
     }
-    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::size_t
+__ccw_fs_get_wide(const wchar_t* __p, ::_CCW_STD::size_t __n, unsigned long* __cp) {
+    unsigned long __c = (unsigned long)__p[0];
+    if (sizeof(wchar_t) < 4 && __c >= 0xD800uL && __c <= 0xDBFFuL && __n >= 2) {
+        unsigned long __lo = (unsigned long)__p[1];
+        if (__lo >= 0xDC00uL && __lo <= 0xDFFFuL) {
+            *__cp = 0x10000uL + ((__c - 0xD800uL) << 10) + (__lo - 0xDC00uL);
+            return 2;
+        }
+    }
+    *__cp = __c;
+    return 1;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_clear_mbstate(::_CCW_STD::mbstate_t& __st) {
+    char* __q = (char*)(void*)&__st;
+    for (::_CCW_STD::size_t __k = 0; __k < sizeof(::_CCW_STD::mbstate_t); ++__k) __q[__k] = 0;
 }
 
 _CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::string& __d, const char* __p, ::_CCW_STD::size_t __n) {
@@ -89,17 +105,104 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::string& __d, cons
 _CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::wstring& __d, const wchar_t* __p, ::_CCW_STD::size_t __n) {
     __d.assign(__p, __n);
 }
+
 _CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::wstring& __d, const char* __p, ::_CCW_STD::size_t __n) {
+    ::_CCW_STD::size_t __i = 0;
     __d.clear();
-    for (::_CCW_STD::size_t __i = 0; __i < __n; ++__i)
-        __d.push_back(static_cast<wchar_t>(static_cast<unsigned char>(__p[__i])));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::string& __d, const wchar_t* __p, ::_CCW_STD::size_t __n) {
-    __d.clear();
-    for (::_CCW_STD::size_t __i = 0; __i < __n; ++__i) {
-        unsigned long __c = (unsigned long)__p[__i];
-        __d.push_back((__c <= 0xFFUL) ? static_cast<char>(static_cast<unsigned char>(__c)) : '?');
+#if defined(_CCW_MB_HAS_CONV)
+    {
+        int __st = 0;
+        while (__i < __n) {
+            unsigned long      __cp = 0uL;
+            ::_CCW_STD::size_t __r  = __ccw_mb_next(&__cp, __p + __i, __n - __i, &__st);
+            if (__r == (::_CCW_STD::size_t)-1 || __r == (::_CCW_STD::size_t)-2) break;
+            __ccw_fs_put_wide(__d, __cp);
+            __i += __r ? __r : 1;
+        }
     }
+#else
+    {
+        ::_CCW_STD::mbstate_t __st;
+        __ccw_fs_clear_mbstate(__st);
+        while (__i < __n) {
+            wchar_t            __wc = 0;
+            ::_CCW_STD::size_t __r  = ::_CCW_STD::mbrtowc(&__wc, __p + __i, __n - __i, &__st);
+            if (__r == (::_CCW_STD::size_t)-1 || __r == (::_CCW_STD::size_t)-2) break;
+            __d.push_back(__wc);
+            __i += __r ? __r : 1;
+        }
+    }
+#endif
+    for (; __i < __n; ++__i) __d.push_back(static_cast<wchar_t>(static_cast<unsigned char>(__p[__i])));
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_set(::_CCW_STD::string& __d, const wchar_t* __p, ::_CCW_STD::size_t __n) {
+    ::_CCW_STD::size_t __i = 0;
+    char               __buf[8];
+    __d.clear();
+#if defined(_CCW_MB_HAS_CONV)
+    while (__i < __n) {
+        unsigned long      __cp = 0uL;
+        ::_CCW_STD::size_t __k  = __ccw_fs_get_wide(__p + __i, __n - __i, &__cp);
+        int                __len = __ccw_mb_put(__buf, __cp);
+        if (__len > 0) __d.append(__buf, (::_CCW_STD::size_t)__len);
+        else           __d.push_back('?');
+        __i += __k;
+    }
+#else
+    {
+        ::_CCW_STD::mbstate_t __st;
+        __ccw_fs_clear_mbstate(__st);
+        while (__i < __n) {
+            ::_CCW_STD::size_t __r = ::_CCW_STD::wcrtomb(__buf, __p[__i], &__st);
+            if (__r == (::_CCW_STD::size_t)-1) { __d.push_back('?'); __ccw_fs_clear_mbstate(__st); }
+            else                               __d.append(__buf, __r);
+            ++__i;
+        }
+    }
+#endif
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_widen(const ::_CCW_STD::string& __s) {
+    ::_CCW_STD::wstring __r;
+    __ccw_fs_set(__r, __s.data(), __s.size());
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string __ccw_fs_narrow(const ::_CCW_STD::wstring& __s) {
+    ::_CCW_STD::string __r;
+    __ccw_fs_set(__r, __s.data(), __s.size());
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string __ccw_fs_u8_from_wide(const ::_CCW_STD::wstring& __w) {
+    ::_CCW_STD::string __r;
+    ::_CCW_STD::size_t __i = 0;
+    char               __buf[4];
+    while (__i < __w.size()) {
+        unsigned long      __cp = 0uL;
+        ::_CCW_STD::size_t __k  = __ccw_fs_get_wide(__w.data() + __i, __w.size() - __i, &__cp);
+        int                __len = __ccw_u8_encode(__cp, __buf);
+        if (__len > 0) __r.append(__buf, (::_CCW_STD::size_t)__len);
+        __i += __k;
+    }
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_wide_from_u8(const ::_CCW_STD::string& __s) {
+    ::_CCW_STD::wstring __r;
+    ::_CCW_STD::size_t  __i = 0;
+    while (__i < __s.size()) {
+        unsigned long __cp  = 0uL;
+        int           __len = __ccw_u8_decode(__s.data() + __i, __s.size() - __i, &__cp);
+        if (__len <= 0) {
+            __r.push_back(static_cast<wchar_t>(static_cast<unsigned char>(__s[__i])));
+            ++__i;
+            continue;
+        }
+        __ccw_fs_put_wide(__r, __cp);
+        __i += (::_CCW_STD::size_t)__len;
+    }
+    return __r;
 }
 
 #if _CCW_FS_WCHAR
@@ -107,11 +210,15 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_narrow(const 
 _CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_wide  (const ::_CCW_STD::wstring& __s) { return __s; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_narrow  (const __ccw_fs_string_t&   __s) { return __ccw_fs_narrow(__s); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_to_wide    (const __ccw_fs_string_t&   __s) { return __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_u8      (const __ccw_fs_string_t&   __s) { return __ccw_fs_u8_from_wide(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_u8    (const ::_CCW_STD::string&  __s) { return __ccw_fs_wide_from_u8(__s); }
 #else
 _CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_narrow(const ::_CCW_STD::string&  __s) { return __s; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_wide  (const ::_CCW_STD::wstring& __s) { return __ccw_fs_narrow(__s); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_narrow  (const __ccw_fs_string_t&   __s) { return __s; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::wstring __ccw_fs_to_wide    (const __ccw_fs_string_t&   __s) { return __ccw_fs_widen(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::string  __ccw_fs_to_u8      (const __ccw_fs_string_t&   __s) { return __ccw_fs_u8_from_wide(__ccw_fs_widen(__s)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline __ccw_fs_string_t   __ccw_fs_from_u8    (const ::_CCW_STD::string&  __s) { return __ccw_fs_narrow(__ccw_fs_wide_from_u8(__s)); }
 #endif
 
 class path {
@@ -144,18 +251,21 @@ private:
     }
 public:
 
+    struct __ccw_native_tag {};
+
     _CCW_LIBCPP_HIDE_FROM_ABI path() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI path(__ccw_native_tag, const string_type& __s) : __s_(__s) {}
     _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::string& __s)  { __ccw_fs_set(__s_, __s.data(), __s.size()); }
     _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::wstring& __s) { __ccw_fs_set(__s_, __s.data(), __s.size()); }
     _CCW_LIBCPP_HIDE_FROM_ABI path(const char* __s)    { __ccw_fs_set(__s_, __s, ::_CCW_STD::char_traits<char>::length(__s)); }
     _CCW_LIBCPP_HIDE_FROM_ABI path(const wchar_t* __s) { __ccw_fs_set(__s_, __s, ::_CCW_STD::char_traits<wchar_t>::length(__s)); }
 #if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
     _CCW_LIBCPP_HIDE_FROM_ABI path(const ::_CCW_STD::u8string& __s)
-        : __s_(__ccw_fs_from_narrow(::_CCW_STD::string(__s.begin(), __s.end()))) {}
+        : __s_(__ccw_fs_from_u8(::_CCW_STD::string(__s.begin(), __s.end()))) {}
     _CCW_LIBCPP_HIDE_FROM_ABI path(const char8_t* __s) {
         ::_CCW_STD::string __t;
         for (const char8_t* __p = __s; *__p; ++__p) __t += (char)*__p;
-        __s_ = __ccw_fs_from_narrow(__t);
+        __s_ = __ccw_fs_from_u8(__t);
     }
 #endif
 #if !_CCW_HAS_REAL_RVALUE_REF
@@ -359,16 +469,16 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI operator string_type() const { return __s_; }
 #if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
     _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::u8string u8string() const {
-        const ::_CCW_STD::string __n = string();
+        const ::_CCW_STD::string __n = __ccw_fs_to_u8(__s_);
         return ::_CCW_STD::u8string(__n.begin(), __n.end());
     }
     _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::u8string generic_u8string() const {
-        const ::_CCW_STD::string __g = generic_string();
+        const ::_CCW_STD::string __g = __ccw_fs_to_u8(__generic_native());
         return ::_CCW_STD::u8string(__g.begin(), __g.end());
     }
 #else
-    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string u8string() const { return string(); }
-    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string generic_u8string() const { return generic_string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string u8string() const { return __ccw_fs_to_u8(__s_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::string generic_u8string() const { return __ccw_fs_to_u8(__generic_native()); }
 #endif
     _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char16_t> u16string() const { return __widen16(__s_); }
     _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::basic_string<char32_t> u32string() const { return __widen32(__s_); }
@@ -392,15 +502,22 @@ public:
 
 private:
     _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::basic_string<char16_t> __widen16(const string_type& __t) {
+        const ::_CCW_STD::wstring          __w = __ccw_fs_to_wide(__t);
         ::_CCW_STD::basic_string<char16_t> __r;
-        for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i)
-            __r.push_back((char16_t)(unsigned long)__t[__i]);
+        for (::_CCW_STD::size_t __i = 0; __i < __w.size(); ++__i)
+            __r.push_back((char16_t)(unsigned long)__w[__i]);
         return __r;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI static ::_CCW_STD::basic_string<char32_t> __widen32(const string_type& __t) {
+        const ::_CCW_STD::wstring          __w = __ccw_fs_to_wide(__t);
         ::_CCW_STD::basic_string<char32_t> __r;
-        for (::_CCW_STD::size_t __i = 0; __i < __t.size(); ++__i)
-            __r.push_back((char32_t)(unsigned long)__t[__i]);
+        ::_CCW_STD::size_t                 __i = 0;
+        while (__i < __w.size()) {
+            unsigned long      __cp = 0uL;
+            ::_CCW_STD::size_t __k  = __ccw_fs_get_wide(__w.data() + __i, __w.size() - __i, &__cp);
+            __r.push_back((char32_t)__cp);
+            __i += __k;
+        }
         return __r;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI ::_CCW_STD::vector<string_type> __split_elems() const {
@@ -431,8 +548,12 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline ::_CCW_STD::size_t hash_value(const path& __p) 
     return __h;
 }
 
-_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const ::_CCW_STD::string& __s) { return path(__s); }
-_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const char* __s) { return path(__s); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const ::_CCW_STD::string& __s) {
+    return path(path::__ccw_native_tag(), __ccw_fs_from_u8(__s));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const char* __s) {
+    return u8path(::_CCW_STD::string(__s));
+}
 #if (_CCW_TARGET_CXX) >= 2020 && (defined(__cpp_char8_t) || defined(__CCW_HAS_CHAR8_T))
 _CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const ::_CCW_STD::u8string& __s) { return path(__s); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline path u8path(const char8_t* __s) { return path(__s); }
@@ -441,7 +562,7 @@ template <class _InputIt>
 _CCW_LIBCPP_HIDE_FROM_ABI path u8path(_InputIt __f, _InputIt __l) {
     ::_CCW_STD::string __t;
     for (; __f != __l; ++__f) __t.push_back((char)*__f);
-    return path(__t);
+    return u8path(__t);
 }
 
 struct file_type {

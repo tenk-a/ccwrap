@@ -156,7 +156,7 @@ TEST_CASE(locale, setlocale_forms) {
 }
 
 TEST_CASE(locale, lconv_international) {
-#if !defined(__WATCOMC__) && !defined(_MSC_VER) && TEST_TARGET_C >= 1999
+#if TEST_TARGET_C >= 1999 && (defined(_CCW_LCONV_HAS_INT_MEMBERS) || (!defined(__WATCOMC__) && !defined(_MSC_VER)))
     struct lconv* lc;
     setlocale(LC_ALL, "C");
     lc = localeconv();

@@ -15,7 +15,7 @@ inline basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>
 }   // namespace std
 #endif
 
-#if !defined(__cpp_lib_syncbuf)
+#if !defined(__cpp_lib_syncbuf) && !defined(__glibcxx_syncbuf)
 namespace _CCW_STD20 {
 template <class _CharT, class _Traits>
 inline std::basic_ostream<_CharT, _Traits>& emit_on_flush(std::basic_ostream<_CharT, _Traits>& __os)   { return __os; }

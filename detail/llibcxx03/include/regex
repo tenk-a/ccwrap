@@ -15,6 +15,7 @@
 #ifndef _CCW_LIBCPP_REGEX
 #define _CCW_LIBCPP_REGEX
 #include "__config"
+#include "__regex/collation_names.h"
 #include "__iterator/access.h"   // [iterator.range]: begin/end/size/... are also available here
 #include <string>
 #include <vector>
@@ -131,8 +132,18 @@ public:
     }
     template <class _FwdIt>
     _CCW_LIBCPP_HIDE_FROM_ABI string_type lookup_collatename(_FwdIt __f, _FwdIt __l) const {
-        string_type __s(__f, __l);
-        return __s.size() == 1 ? __s : string_type();   // only [.x.] with one character
+        string_type      __s(__f, __l);
+        _CCW_STD::string __n;
+        if (__s.empty()) return string_type();
+        for (size_type __i = 0; __i < __s.size(); ++__i) {
+            unsigned long __u = (unsigned long)__s[__i];
+            if (__u >= 128uL) return __s.size() == 1 ? __s : string_type();
+            __n.push_back((char)__u);
+        }
+        {   int __c = __ccw_re_collation_char(__n.c_str());
+            if (__c >= 0) return string_type(1, (char_type)(unsigned char)__c);
+        }
+        return __s.size() == 1 ? __s : string_type();
     }
     template <class _FwdIt>
     _CCW_LIBCPP_HIDE_FROM_ABI char_class_type lookup_classname(_FwdIt __f, _FwdIt __l, bool __icase = false) const {
@@ -197,6 +208,8 @@ private:
         if (__name_is(__s, "upper"))  return __upper;
         if (__name_is(__s, "xdigit")) return __xdigit;
         if (__name_is(__s, "w"))      return __w;
+        if (__name_is(__s, "d"))      return __digit;
+        if (__name_is(__s, "s"))      return __space;
         return 0;
     }
 };

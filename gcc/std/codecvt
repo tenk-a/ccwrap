@@ -6,5 +6,6 @@
 #if __cplusplus >= 201103L
  #include_next <codecvt>
 #else
+ #include <../../detail/cxx/codecvt_glibcxx_primary.hpp>
  #include <../../detail/llibcxx03/include/codecvt>
 #endif

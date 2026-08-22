@@ -31,10 +31,32 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline basic_istream<char>& __ccw_cin()  {
     return __o;
 }
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<wchar_t>& __ccw_wcout() { static basic_filebuf<wchar_t> __b(stdout); static basic_ostream<wchar_t> __o(&__b); return __o; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<wchar_t>& __ccw_wcerr() {
+    static basic_filebuf<wchar_t> __b(stderr);
+    static basic_ostream<wchar_t> __o(&__b);
+    static bool __unit = false;
+    if (!__unit) { __unit = true; __o.setf(ios_base::unitbuf); }
+    return __o;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_ostream<wchar_t>& __ccw_wclog() { static basic_filebuf<wchar_t> __b(stderr); static basic_ostream<wchar_t> __o(&__b); return __o; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline basic_istream<wchar_t>& __ccw_wcin()  {
+    static basic_filebuf<wchar_t> __b(stdin);
+    static basic_istream<wchar_t> __o(&__b);
+    static bool __tied = false;
+    if (!__tied) { __tied = true; __o.tie(&__ccw_wcout()); }
+    return __o;
+}
+
 static basic_ostream<char>& cout = __ccw_cout();
 static basic_ostream<char>& cerr = __ccw_cerr();
 static basic_ostream<char>& clog = __ccw_clog();
 static basic_istream<char>& cin  = __ccw_cin();
+
+static basic_ostream<wchar_t>& wcout = __ccw_wcout();
+static basic_ostream<wchar_t>& wcerr = __ccw_wcerr();
+static basic_ostream<wchar_t>& wclog = __ccw_wclog();
+static basic_istream<wchar_t>& wcin  = __ccw_wcin();
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif // _CCW_LIBCPP_IOSTREAM

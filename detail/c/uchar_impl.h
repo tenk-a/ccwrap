@@ -17,135 +17,108 @@
 #include <errno.h>      /* EILSEQ */
 #include <wchar.h>      /* mbstate_t */
 
-static inline int __ccw_u8_seqlen(unsigned char __lead)
+#include "utf8_impl.h"
+
+#define __CCW_UC_SURR16         (1u << 28)
+#define __CCW_UC_PEND8          (1u << 29)
+#define __CCW_UC_ACC(st)        ((unsigned long)((st) & 0x1FFFFFu))
+#define __CCW_UC_NEED(st)       (((st) >> 21) & 7u)
+#define __CCW_UC_TOTAL(st)      (((st) >> 24) & 7u)
+
+static inline unsigned *__ccw_uc_state(mbstate_t *__ps, mbstate_t *__fallback)
 {
-    if (__lead < 0x80u)             return 1;    /* ASCII (including 0) */
-    if ((__lead & 0xE0u) == 0xC0u)  return 2;
-    if ((__lead & 0xF0u) == 0xE0u)  return 3;
-    if ((__lead & 0xF8u) == 0xF0u)  return 4;
-    return 0;                                    /* 0x80..0xBF (continuation) / 0xF8.. (invalid) */
+    return (unsigned *)(void *)(__ps ? __ps : __fallback);
 }
 
-#ifndef __CCW_UCHAR_IMPL_C8_ONLY
-
-static inline int __ccw_u8_decode(const char *__s, size_t __n, unsigned long *__cp)
+static inline size_t __ccw_uc_next(unsigned long *__pcp, const char *__s, size_t __n, unsigned *__st)
 {
-    unsigned char __lead;
-    int           __len, __i;
-    unsigned long __c;
-
-    if (__n == 0) return -2;
-    __lead = (unsigned char)__s[0];
-    __len  = __ccw_u8_seqlen(__lead);
-    if (__len == 0)          return -1;
-    if ((size_t)__len > __n) return -2;
-    for (__i = 1; __i < __len; ++__i)
-        if (((unsigned char)__s[__i] & 0xC0u) != 0x80u) return -1;
-
-    if      (__len == 1) __c = __lead;
-    else if (__len == 2) __c = ((unsigned long)(__lead & 0x1Fu) << 6)
-                             |  ((unsigned char)__s[1] & 0x3Fu);
-    else if (__len == 3) __c = ((unsigned long)(__lead & 0x0Fu) << 12)
-                             | (((unsigned long)((unsigned char)__s[1] & 0x3Fu)) << 6)
-                             |  ((unsigned char)__s[2] & 0x3Fu);
-    else                 __c = ((unsigned long)(__lead & 0x07u) << 18)
-                             | (((unsigned long)((unsigned char)__s[1] & 0x3Fu)) << 12)
-                             | (((unsigned long)((unsigned char)__s[2] & 0x3Fu)) << 6)
-                             |  ((unsigned char)__s[3] & 0x3Fu);
-    *__cp = __c;
-    return __len;
+#if defined(_CCW_MB_HAS_CONV)
+    return __ccw_mb_next(__pcp, __s, __n, (int *)(void *)__st);
+#else
+    int __len;
+    (void)__st;
+    __len = __ccw_u8_decode(__s, __n, __pcp);
+    if (__len == -1) { errno = EILSEQ; return (size_t)-1; }
+    if (__len == -2) return (size_t)-2;
+    return (size_t)__len;
+#endif
 }
 
-static inline int __ccw_u8_encode(unsigned long __c, char *__buf)
+static inline int __ccw_uc_put(char *__buf, unsigned long __cp)
 {
-    if (__c < 0x80u) {
-        __buf[0] = (char)__c; return 1;
-    }
-    if (__c < 0x800u) {
-        __buf[0] = (char)(0xC0u | (__c >> 6));
-        __buf[1] = (char)(0x80u | (__c & 0x3Fu));
-        return 2;
-    }
-    if (__c < 0x10000u) {
-        __buf[0] = (char)(0xE0u | (__c >> 12));
-        __buf[1] = (char)(0x80u | ((__c >> 6) & 0x3Fu));
-        __buf[2] = (char)(0x80u | (__c & 0x3Fu));
-        return 3;
-    }
-    if (__c < 0x110000u) {
-        __buf[0] = (char)(0xF0u | (__c >> 18));
-        __buf[1] = (char)(0x80u | ((__c >> 12) & 0x3Fu));
-        __buf[2] = (char)(0x80u | ((__c >> 6) & 0x3Fu));
-        __buf[3] = (char)(0x80u | (__c & 0x3Fu));
-        return 4;
-    }
-    return 0;
+#if defined(_CCW_MB_HAS_CONV)
+    return __ccw_mb_put(__buf, __cp);
+#else
+    return __ccw_u8_encode(__cp, __buf);
+#endif
 }
-
-#endif  /* !__CCW_UCHAR_IMPL_C8_ONLY */
 
 static inline size_t mbrtoc8(_ccw_char8 *__pc8, const char *__s, size_t __n, mbstate_t *__ps)
 {
-    static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
-                                      struct on glibc, so `= 0` would be an invalid
-                                      initializer; scalar on Watcom -- zero-init covers both) */
-    unsigned char   *__st;
-    unsigned char    __lead;
-    int              __len, __i, __rem;
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned long  __cp = 0uL;
+    char           __buf[4];
+    unsigned       __left;
+    int            __len;
+    size_t         __r;
 
-    __st = (unsigned char *)(__ps ? (void *)__ps : (void *)&__internal);
-    if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 0; }
-    if (__st[0] != 0) {                          /* pending output code unit */
-        if (__pc8) *__pc8 = (_ccw_char8)__st[1];
-        __st[1] = __st[2]; __st[2] = __st[3]; __st[3] = 0; --__st[0];
+    if (__s == 0) { *__st = 0u; return 0; }
+    if (*__st & __CCW_UC_PEND8) {
+        __cp   = __CCW_UC_ACC(*__st);
+        __left = __CCW_UC_NEED(*__st);
+        __len  = __ccw_u8_encode(__cp, __buf);
+        if (__pc8) *__pc8 = (_ccw_char8)(unsigned char)__buf[__len - (int)__left];
+        --__left;
+        *__st = __left ? (__CCW_UC_PEND8 | (unsigned)__cp | (__left << 21)) : 0u;
         return (size_t)-3;
     }
-    if (__n == 0) return (size_t)-2;
-    __lead = (unsigned char)__s[0];
-    __len  = __ccw_u8_seqlen(__lead);
-    if (__len == 0)          { errno = EILSEQ; return (size_t)-1; }
-    if ((size_t)__len > __n) return (size_t)-2;
-    for (__i = 1; __i < __len; ++__i)
-        if (((unsigned char)__s[__i] & 0xC0u) != 0x80u) { errno = EILSEQ; return (size_t)-1; }
-    if (__lead == 0) { if (__pc8) *__pc8 = 0; return 0; }
-    if (__pc8) *__pc8 = (_ccw_char8)__lead;
-    __rem = __len - 1;
-    for (__i = 0; __i < __rem; ++__i) __st[1 + __i] = (unsigned char)__s[1 + __i];
-    __st[0] = (unsigned char)__rem;
-    return (size_t)__len;
+    __r = __ccw_uc_next(&__cp, __s, __n, __st);
+    if (__r == (size_t)-1 || __r == (size_t)-2) return __r;
+    if (__cp == 0uL) { if (__pc8) *__pc8 = 0; return 0; }
+    __len = __ccw_u8_encode(__cp, __buf);
+    if (__len <= 0) { *__st = 0u; errno = EILSEQ; return (size_t)-1; }
+    if (__pc8) *__pc8 = (_ccw_char8)(unsigned char)__buf[0];
+    if (__len > 1)
+        *__st = __CCW_UC_PEND8 | (unsigned)__cp | ((unsigned)(__len - 1) << 21);
+    return __r;
 }
 
 static inline size_t c8rtomb(char *__s, _ccw_char8 __c8, mbstate_t *__ps)
 {
-    static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
-                                      struct on glibc, so `= 0` would be an invalid
-                                      initializer; scalar on Watcom -- zero-init covers both) */
-    unsigned char   *__st;
-    unsigned char    __b, __lead;
-    int              __len, __i, __cnt;
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned char  __b  = (unsigned char)__c8;
+    unsigned long  __acc;
+    unsigned       __need, __total;
+    int            __len, __seq;
 
-    __st = (unsigned char *)(__ps ? (void *)__ps : (void *)&__internal);
-    if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 1; }
-    __b = (unsigned char)__c8;
-    __cnt = (int)__st[0];
-    if (__cnt == 0) {
-        __len = __ccw_u8_seqlen(__b);
-        if (__len == 0) { errno = EILSEQ; return (size_t)-1; }
-        if (__len == 1) { __s[0] = (char)__b; return 1; }
-        __st[1] = __b; __st[0] = 1;
+    if (__s == 0) { *__st = 0u; return 1; }
+    __acc   = __CCW_UC_ACC(*__st);
+    __need  = __CCW_UC_NEED(*__st);
+    __total = __CCW_UC_TOTAL(*__st);
+    if (__need == 0u) {
+        __seq = __ccw_u8_seqlen(__b);
+        if (__seq == 0) { *__st = 0u; errno = EILSEQ; return (size_t)-1; }
+        if (__seq == 1) {
+            __len = __ccw_uc_put(__s, (unsigned long)__b);
+            if (__len <= 0) { errno = EILSEQ; return (size_t)-1; }
+            return (size_t)__len;
+        }
+        __acc = (unsigned long)(__b & (unsigned char)(0x7Fu >> __seq));
+        *__st = (unsigned)__acc | ((unsigned)(__seq - 1) << 21) | ((unsigned)__seq << 24);
         return 0;
     }
-    if ((__b & 0xC0u) != 0x80u) { errno = EILSEQ; return (size_t)-1; }
-    __lead = __st[1];
-    __len  = __ccw_u8_seqlen(__lead);
-    if (__cnt + 1 == __len) {
-        for (__i = 0; __i < __cnt; ++__i) __s[__i] = (char)__st[1 + __i];
-        __s[__cnt] = (char)__b;
-        __st[0] = __st[1] = __st[2] = __st[3] = 0;
+    if ((__b & 0xC0u) != 0x80u) { *__st = 0u; errno = EILSEQ; return (size_t)-1; }
+    __acc = (__acc << 6) | (unsigned long)(__b & 0x3Fu);
+    if (--__need == 0u) {
+        *__st = 0u;
+        if (!__ccw_u8_valid(__acc, __total)) { errno = EILSEQ; return (size_t)-1; }
+        __len = __ccw_uc_put(__s, __acc);
+        if (__len <= 0) { errno = EILSEQ; return (size_t)-1; }
         return (size_t)__len;
     }
-    __st[1 + __cnt] = __b;
-    __st[0] = (unsigned char)(__cnt + 1);
+    *__st = (unsigned)__acc | (__need << 21) | (__total << 24);
     return 0;
 }
 
@@ -153,93 +126,83 @@ static inline size_t c8rtomb(char *__s, _ccw_char8 __c8, mbstate_t *__ps)
 
 static inline size_t mbrtoc32(_ccw_char32 *__pc32, const char *__s, size_t __n, mbstate_t *__ps)
 {
-    unsigned long __cp;
-    int           __len;
-    (void)__ps;                                  /* partial input state is not kept (simplified) */
-    if (__s == 0) return 0;                       /* same as mbrtoc32(NULL,"",1,ps) */
-    __len = __ccw_u8_decode(__s, __n, &__cp);
-    if (__len == -1) { errno = EILSEQ; return (size_t)-1; }
-    if (__len == -2) return (size_t)-2;
-    if (__cp == 0) { if (__pc32) *__pc32 = 0; return 0; }
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned long  __cp = 0uL;
+    size_t         __r;
+
+    if (__s == 0) { *__st = 0u; return 0; }
+    __r = __ccw_uc_next(&__cp, __s, __n, __st);
+    if (__r == (size_t)-1 || __r == (size_t)-2) return __r;
     if (__pc32) *__pc32 = (_ccw_char32)__cp;
-    return (size_t)__len;
+    return __cp == 0uL ? (size_t)0 : __r;
 }
 
 static inline size_t c32rtomb(char *__s, _ccw_char32 __c32, mbstate_t *__ps)
 {
-    unsigned long __c;
-    int           __len;
-    (void)__ps;
-    if (__s == 0) return 1;                       /* no shift state */
-    __c = (unsigned long)__c32;
-    if (__c >= 0xD800u && __c <= 0xDFFFu) { errno = EILSEQ; return (size_t)-1; }  /* surrogate */
-    __len = __ccw_u8_encode(__c, __s);
-    if (__len == 0) { errno = EILSEQ; return (size_t)-1; }
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned long  __cp = (unsigned long)__c32;
+    int            __len;
+
+    if (__s == 0) { *__st = 0u; return 1; }
+    if (__cp >= 0xD800uL && __cp <= 0xDFFFuL) { errno = EILSEQ; return (size_t)-1; }
+    __len = __ccw_uc_put(__s, __cp);
+    if (__len <= 0) { errno = EILSEQ; return (size_t)-1; }
     return (size_t)__len;
 }
 
 static inline size_t mbrtoc16(_ccw_char16 *__pc16, const char *__s, size_t __n, mbstate_t *__ps)
 {
-    static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
-                                      struct on glibc, so `= 0` would be an invalid
-                                      initializer; scalar on Watcom -- zero-init covers both) */
-    unsigned char   *__st;
-    unsigned long    __cp;
-    int              __len;
-    unsigned         __hi, __lo;
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned long  __cp = 0uL;
+    size_t         __r;
 
-    __st = (unsigned char *)(__ps ? (void *)__ps : (void *)&__internal);
-    if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 0; }
-    if (__st[0] != 0) {                           /* pending low surrogate */
-        __lo = (unsigned)__st[1] | ((unsigned)__st[2] << 8);
+    if (__s == 0) { *__st = 0u; return 0; }
+    if (*__st & __CCW_UC_SURR16) {
+        unsigned __lo = (unsigned)(*__st & 0xFFFFu);
+        *__st = 0u;
         if (__pc16) *__pc16 = (_ccw_char16)__lo;
-        __st[0] = __st[1] = __st[2] = __st[3] = 0;
         return (size_t)-3;
     }
-    __len = __ccw_u8_decode(__s, __n, &__cp);
-    if (__len == -1) { errno = EILSEQ; return (size_t)-1; }
-    if (__len == -2) return (size_t)-2;
-    if (__cp == 0) { if (__pc16) *__pc16 = 0; return 0; }
-    if (__cp <= 0xFFFFu) { if (__pc16) *__pc16 = (_ccw_char16)__cp; return (size_t)__len; }
-    __cp -= 0x10000u;                             /* split into a surrogate pair */
-    __hi = 0xD800u | (unsigned)(__cp >> 10);
-    __lo = 0xDC00u | (unsigned)(__cp & 0x3FFu);
-    if (__pc16) *__pc16 = (_ccw_char16)__hi;
-    __st[1] = (unsigned char)(__lo & 0xFFu);
-    __st[2] = (unsigned char)((__lo >> 8) & 0xFFu);
-    __st[0] = 1;
-    return (size_t)__len;
+    __r = __ccw_uc_next(&__cp, __s, __n, __st);
+    if (__r == (size_t)-1 || __r == (size_t)-2) return __r;
+    if (__cp == 0uL) { if (__pc16) *__pc16 = 0; return 0; }
+    if (__cp <= 0xFFFFuL) { if (__pc16) *__pc16 = (_ccw_char16)__cp; return __r; }
+    {
+        unsigned long __v = __cp - 0x10000uL;
+        if (__pc16) *__pc16 = (_ccw_char16)(0xD800uL + (__v >> 10));
+        *__st = (unsigned)(0xDC00uL + (__v & 0x3FFuL)) | __CCW_UC_SURR16;
+    }
+    return __r;
 }
 
 static inline size_t c16rtomb(char *__s, _ccw_char16 __c16, mbstate_t *__ps)
 {
-    static mbstate_t __internal;   /* static storage => zero-initialized (mbstate_t is a
-                                      struct on glibc, so `= 0` would be an invalid
-                                      initializer; scalar on Watcom -- zero-init covers both) */
-    unsigned char   *__st;
-    unsigned         __u, __hi;
-    unsigned long    __cp;
-    int              __len;
+    static mbstate_t __internal;
+    unsigned      *__st = __ccw_uc_state(__ps, &__internal);
+    unsigned       __u  = (unsigned)__c16;
+    unsigned long  __cp;
+    int            __len;
 
-    __st = (unsigned char *)(__ps ? (void *)__ps : (void *)&__internal);
-    if (__s == 0) { __st[0] = __st[1] = __st[2] = __st[3] = 0; return 1; }
-    __u = (unsigned)__c16;
-    if (__st[0] != 0) {                           /* expecting the low surrogate */
-        __hi = (unsigned)__st[1] | ((unsigned)__st[2] << 8);
-        __st[0] = __st[1] = __st[2] = __st[3] = 0;
+    if (__s == 0) { *__st = 0u; return 1; }
+    if (*__st & __CCW_UC_SURR16) {
+        unsigned __hi = (unsigned)(*__st & 0xFFFFu);
+        *__st = 0u;
         if (__u < 0xDC00u || __u > 0xDFFFu) { errno = EILSEQ; return (size_t)-1; }
-        __cp = 0x10000u + (((unsigned long)(__hi - 0xD800u)) << 10) + (__u - 0xDC00u);
-        __len = __ccw_u8_encode(__cp, __s);
-        return (size_t)__len;
-    }
-    if (__u >= 0xD800u && __u <= 0xDBFFu) {        /* high surrogate: keep in the state */
-        __st[1] = (unsigned char)(__u & 0xFFu);
-        __st[2] = (unsigned char)((__u >> 8) & 0xFFu);
-        __st[0] = 1;
+        __cp = 0x10000uL + ((unsigned long)(__hi - 0xD800u) << 10) + (unsigned long)(__u - 0xDC00u);
+    } else if (__u >= 0xD800u && __u <= 0xDBFFu) {
+        *__st = __u | __CCW_UC_SURR16;
         return 0;
+    } else if (__u >= 0xDC00u && __u <= 0xDFFFu) {
+        errno = EILSEQ;
+        return (size_t)-1;
+    } else {
+        __cp = (unsigned long)__u;
     }
-    if (__u >= 0xDC00u && __u <= 0xDFFFu) { errno = EILSEQ; return (size_t)-1; }  /* unpaired low surrogate */
-    __len = __ccw_u8_encode((unsigned long)__u, __s);
+    __len = __ccw_uc_put(__s, __cp);
+    if (__len <= 0) { errno = EILSEQ; return (size_t)-1; }
     return (size_t)__len;
 }
 

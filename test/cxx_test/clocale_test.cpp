@@ -213,7 +213,7 @@ TEST_CASE(clocale, lconv_members_cxx03) {
 }
 
 TEST_CASE(clocale, lconv_international_members_cxx11) {
-#if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__MINGW32__)
+#if !defined(_CCW_LCONV_HAS_INT_MEMBERS) && (defined(_MSC_VER) || defined(__WATCOMC__) || defined(__MINGW32__))
     TEST_NOTE("this struct lconv has no C99 int_* members (MSVC / mingw UCRT / Open Watcom)");
     TEST_SKIP_N(7);
     test_skip("cxx11:lconv::int_p_cs_precedes");

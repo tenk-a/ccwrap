@@ -6,6 +6,7 @@
 #include <iterator>
 #include <ctime>
 #include <cstring>
+#include <cstdio>
 
 TEST_CASE(locale, classic) {
     STD::locale loc = STD::locale::classic();
@@ -385,7 +386,7 @@ TEST_CASE(locale, messages_facet) {
     test_pass("cxx03:has_facet<messages>");
     const STD::messages<char>& ms = STD::use_facet<STD::messages<char> >(loc);
 
-    STD::messages<char>::catalog cat = ms.open(STD::string("cat"), loc);
+    STD::messages<char>::catalog cat = ms.open(STD::string("ccw-no-such-catalog"), loc);
     TEST_SKIP_GCC();
     test_true( cat == (STD::messages<char>::catalog)-1 );
     test_pass("cxx03:messages::open");
@@ -395,6 +396,26 @@ TEST_CASE(locale, messages_facet) {
     ms.close(cat);
     test_true( true );
     test_pass("cxx03:messages::close");
+
+    {
+        const char* mp = "ccw_msgtest.msg";
+        STD::FILE*  fp = STD::fopen(mp, "wb");
+        if (fp) {
+            STD::fputs("$set 1\n1 Hello\n2 Two\\nlines\n$set 5\n1 five-one\n", fp);
+            STD::fclose(fp);
+            STD::messages<char>::catalog c2 = ms.open(STD::string(mp), loc);
+            if (c2 >= 0) {
+                test_eq( ms.get(c2, 1, 1, def), STD::string("Hello") );
+                test_eq( ms.get(c2, 1, 2, def), STD::string("Two\nlines") );
+                test_eq( ms.get(c2, 5, 1, def), STD::string("five-one") );
+                test_eq( ms.get(c2, 9, 9, def), def );
+                ms.close(c2);
+            } else {
+                TEST_NOTE("messages::open does not read a gencat source catalog here");
+            }
+            STD::remove(mp);
+        }
+    }
 }
 
 typedef STD::moneypunct_byname<char, false> ccw_mpf_byname;
@@ -430,6 +451,60 @@ TEST_CASE(locale, byname_facets) {
     tp->put(STD::ostreambuf_iterator<char>(os), os, os.fill(), &t, 'Y');
     test_eq( os.str(), STD::string("2021") );
     test_pass("cxx03:time_put_byname");
+
+#if TEST_HAS_EH
+    {
+        static const char* const cand[] = {
+            "en-US", "en_US.UTF-8", "en_US.utf8", "English_United States.1252", "en_US", 0
+        };
+        bool got = false;
+        for (int i = 0; cand[i] != 0 && !got; ++i) {
+            try {
+                STD::locale l(cand[i]);
+                const STD::numpunct<char>&        n  = STD::use_facet<STD::numpunct<char> >(l);
+                const STD::moneypunct<char, false>& m  = STD::use_facet<STD::moneypunct<char, false> >(l);
+                const STD::moneypunct<char, true>&  mi = STD::use_facet<STD::moneypunct<char, true> >(l);
+                got = true;
+                test_true( !l.name().empty() );
+                test_eq( n.decimal_point(), '.' );
+                test_eq( n.thousands_sep(), ',' );
+                test_true( !m.curr_symbol().empty() );
+                test_eq( m.frac_digits(), 2 );
+                test_true( !mi.curr_symbol().empty() );
+
+                STD::tm lt; STD::memset(&lt, 0, sizeof lt);
+                lt.tm_wday = 2; lt.tm_mon = 6; lt.tm_mday = 13; lt.tm_year = 121;
+                STD::ostringstream lo; lo.imbue(l);
+                const STD::time_put<char>& ltp = STD::use_facet<STD::time_put<char> >(l);
+                const char lf[] = "%A";
+                ltp.put(STD::ostreambuf_iterator<char>(lo), lo, ' ', &lt, lf, lf + 2);
+                STD::string lday = lo.str();
+                test_true( !lday.empty() );
+
+                STD::istringstream li(lday); li.imbue(l);
+                STD::tm lt2; STD::memset(&lt2, 0, sizeof lt2);
+                STD::ios_base::iostate lerr = STD::ios_base::goodbit;
+                STD::use_facet<STD::time_get<char> >(l).get_weekday(
+                    STD::istreambuf_iterator<char>(li), STD::istreambuf_iterator<char>(),
+                    li, lerr, &lt2);
+                test_eq( lt2.tm_wday, 2 );
+
+                const STD::collate<char>& lco = STD::use_facet<STD::collate<char> >(l);
+                const char* ca = "apple"; const char* cb = "Banana";
+                int cr = lco.compare(ca, ca + 5, cb, cb + 6);
+                test_true( cr != 0 );
+                test_eq( lco.transform(ca, ca + 5) < lco.transform(cb, cb + 6), cr < 0 );
+
+                const STD::ctype<char>& lct = STD::use_facet<STD::ctype<char> >(l);
+                test_eq( lct.toupper('a'), 'A' );
+                test_true( lct.is(STD::ctype_base::alpha, 'x') );
+            } catch (...) {
+            }
+        }
+        if (!got)
+            TEST_NOTE("no en-US locale is installed here; the byname facets were only checked against \"C\"");
+    }
+#endif
 }
 
 TEST_CASE(locale, locale_object_operations) {

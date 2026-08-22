@@ -22,3 +22,22 @@ using std::lldiv_t; using std::llabs; using std::lldiv;
 #endif
 
 #endif  /* __cplusplus */
+
+#include "../../detail/c/mbconv_impl.h"
+
+#if defined(_CCW_MB_HAS_CONV) && !defined(_CCW_MB_STDLIB_TAKEOVER)
+#define _CCW_MB_STDLIB_TAKEOVER
+#ifdef __cplusplus
+namespace std {
+using ::_ccw_mb_cur_max; using ::_ccw_mblen;    using ::_ccw_mbtowc;
+using ::_ccw_wctomb;     using ::_ccw_mbstowcs; using ::_ccw_wcstombs;
+}
+#endif
+#undef  MB_CUR_MAX
+#define MB_CUR_MAX  ((size_t)_ccw_mb_cur_max())
+#define mblen       _ccw_mblen
+#define mbtowc      _ccw_mbtowc
+#define wctomb      _ccw_wctomb
+#define mbstowcs    _ccw_mbstowcs
+#define wcstombs    _ccw_wcstombs
+#endif

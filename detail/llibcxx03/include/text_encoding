@@ -14,6 +14,7 @@
 #include <string_view>
 #include <cstring>
 #include <cctype>
+#include <cstdlib>    // the ccwrap locale layer: _ccw_locale_codepage / _CCW_MB_HAS_CONV
 #include "__functional/hash.h"
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -108,7 +109,28 @@ public:
         return aliases_view(__aliasptr_, __aliasptr_ + (__name_[0] ? 1 : 0));
     }
 
-    _CCW_LIBCPP_HIDE_FROM_ABI static text_encoding environment() { return text_encoding(); }   // not determinable on Watcom
+    _CCW_LIBCPP_HIDE_FROM_ABI static text_encoding environment() {
+#if defined(_CCW_MB_HAS_CONV)
+        switch (::_ccw_locale_codepage()) {
+        case 65001u: return text_encoding(UTF8);
+        case 20127u: return text_encoding(ASCII);
+        case 28591u: return text_encoding(ISOLatin1);
+        case 28592u: return text_encoding(ISOLatin2);
+        case 932u:   return text_encoding(ShiftJIS);
+        case 20932u:
+        case 51932u: return text_encoding(EUCPkdFmtJapanese);
+        case 936u:   return text_encoding(GB2312);
+        case 950u:   return text_encoding(Big5);
+        case 1200u:  return text_encoding(UTF16LE);
+        case 1201u:  return text_encoding(UTF16BE);
+        case 12000u: return text_encoding(UTF32LE);
+        case 12001u: return text_encoding(UTF32BE);
+        case 1252u:  return text_encoding(windows1252);
+        default:     break;
+        }
+#endif
+        return text_encoding();
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI static text_encoding literal() { return text_encoding(ASCII); }
     template <id _Id> _CCW_LIBCPP_HIDE_FROM_ABI static bool environment_is() { return environment().mib() == _Id; }
 

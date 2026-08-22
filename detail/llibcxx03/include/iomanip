@@ -8,6 +8,8 @@
 #ifndef _CCW_LIBCPP_IOMANIP
 #define _CCW_LIBCPP_IOMANIP
 #include "__config"
+#include <locale>
+#include "__iterator/streambuf_iterators.h"
 #include <ios>
 #include <string>
 #include <string_view>
@@ -68,6 +70,16 @@ struct __iom_put_time { const tm* __t; const char* __fmt; };
 _CCW_LIBCPP_HIDE_FROM_ABI inline __iom_put_time put_time(const tm* __t, const char* __fmt) { __iom_put_time __m; __m.__t = __t; __m.__fmt = __fmt; return __m; }
 template <class _CharT, class _Traits>
 _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_put_time __m) {
+    {   typedef ostreambuf_iterator<_CharT, _Traits> _Iter;
+        typedef time_put<_CharT, _Iter>              _Fp;
+        if (__os.rdbuf() && has_facet<_Fp>(__os.getloc())) {
+            basic_string<_CharT> __f;
+            for (const char* __p = __m.__fmt; *__p; ++__p) __f.push_back((_CharT)*__p);
+            use_facet<_Fp>(__os.getloc()).put(_Iter(__os), __os, __os.fill(), __m.__t,
+                                              __f.data(), __f.data() + __f.size());
+            return __os;
+        }
+    }
     char __buf[256];
     size_t __k = _CCW_STD::strftime(__buf, sizeof(__buf), __m.__fmt, __m.__t);
     __buf[__k] = '\0';
@@ -130,6 +142,18 @@ _CCW_LIBCPP_HIDE_FROM_ABI bool __iom_get_name(basic_istream<_CharT, _Traits>& __
 
 template <class _CharT, class _Traits>
 _CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_get_time __m) {
+    {   typedef istreambuf_iterator<_CharT, _Traits> _Iter;
+        typedef time_get<_CharT, _Iter>              _Fp;
+        if (__is.rdbuf() && has_facet<_Fp>(__is.getloc())) {
+            basic_string<_CharT> __f;
+            for (const char* __p = __m.__fmt; *__p; ++__p) __f.push_back((_CharT)*__p);
+            int __err = ios_base::goodbit;
+            use_facet<_Fp>(__is.getloc()).get(_Iter(__is), _Iter(), __is, __err, __m.__t,
+                                              __f.data(), __f.data() + __f.size());
+            if (__err != ios_base::goodbit) __is.setstate((ios_base::iostate)__err);
+            return __is;
+        }
+    }
     static const char* const __wd[7] = { "Sunday", "Monday", "Tuesday", "Wednesday",
                                          "Thursday", "Friday", "Saturday" };
     static const char* const __mo[12] = { "January", "February", "March", "April", "May",
@@ -211,6 +235,13 @@ _CCW_LIBCPP_HIDE_FROM_ABI __iom_get_money get_money(_Mt& __v, bool __intl = fals
 }
 template <class _CharT, class _Traits>
 _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os, __iom_put_money __m) {
+    {   typedef ostreambuf_iterator<_CharT, _Traits> _Iter;
+        typedef money_put<_CharT, _Iter>             _Fp;
+        if (__os.rdbuf() && has_facet<_Fp>(__os.getloc())) {
+            use_facet<_Fp>(__os.getloc()).put(_Iter(__os), __m.__intl, __os, __os.fill(), __m.__v);
+            return __os;
+        }
+    }
     char __buf[64];
     long double __v = __m.__v;
     bool __neg = __v < 0;
@@ -228,6 +259,17 @@ _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>& operator<<(basic_ostre
 }
 template <class _CharT, class _Traits>
 _CCW_LIBCPP_HIDE_FROM_ABI basic_istream<_CharT, _Traits>& operator>>(basic_istream<_CharT, _Traits>& __is, __iom_get_money __m) {
+    {   typedef istreambuf_iterator<_CharT, _Traits> _Iter;
+        typedef money_get<_CharT, _Iter>             _Fp;
+        if (__is.rdbuf() && has_facet<_Fp>(__is.getloc())) {
+            int         __err = ios_base::goodbit;
+            long double __u   = 0;
+            use_facet<_Fp>(__is.getloc()).get(_Iter(__is), _Iter(), __m.__intl, __is, __err, __u);
+            if (__err != ios_base::goodbit) __is.setstate((ios_base::iostate)__err);
+            else                            *__m.__v = __u;
+            return __is;
+        }
+    }
     typename _Traits::int_type __c;
     if (__is.flags() & ios_base::skipws) {
         while (!_Traits::eq_int_type(__c = __is.rdbuf()->sgetc(), _Traits::eof())) {

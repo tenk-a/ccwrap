@@ -20,11 +20,7 @@ static bool ccw_set_utf8_locale() {
 
 TEST_CASE(cuchar, mbrtoc8_c8rtomb) {
     STD::string saved(STD::setlocale(LC_ALL, NULL));
-#if defined(__CCW_HAS_MBRTOC8)
-    const bool utf8 = true;
-#else
     const bool utf8 = ccw_set_utf8_locale();
-#endif
     STD_NS mbstate_t st;
     STD_NS size_t r;
 

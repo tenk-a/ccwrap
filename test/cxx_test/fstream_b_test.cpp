@@ -119,6 +119,21 @@ TEST_CASE(fstream, member_types_cxx03) {
 #endif
 
     test_true(( STD::is_same<STD::wifstream, STD::basic_ifstream<wchar_t> >::value ));
+    {   const char* fn = "ccw_wfs_b.txt";
+        wchar_t src[4];
+        src[0] = (wchar_t)'a'; src[1] = (wchar_t)'B'; src[2] = (wchar_t)'9'; src[3] = (wchar_t)'~';
+        {   STD::wofstream os(fn);
+            test_true( os.is_open() );
+            os.write(src, 4);
+            test_true( os.good() ); }
+        {   STD::wifstream is(fn);
+            test_true( is.is_open() );
+            wchar_t got[8];
+            is.read(got, 4);
+            test_eq( (long)is.gcount(), 4L );
+            test_true( got[0] == src[0] && got[1] == src[1] && got[2] == src[2] && got[3] == src[3] ); }
+        STD::remove(fn);
+    }
     test_pass("cxx03:wifstream");
     test_true(( STD::is_same<STD::wofstream, STD::basic_ofstream<wchar_t> >::value ));
     test_pass("cxx03:wofstream");

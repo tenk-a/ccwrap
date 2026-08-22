@@ -430,12 +430,30 @@ TEST_CASE(filesystem, lexically_relative_and_proximate) {
     test_pass("cxx17:path::lexically_proximate");
 }
 
+template <class _S>
+static STD::string ccw_fs_bytes(const _S& __s) {
+    STD::string __r;
+    for (typename _S::size_type __i = 0; __i < __s.size(); ++__i) __r += (char)__s[__i];
+    return __r;
+}
+
 TEST_CASE(filesystem, path_string_forms_and_hash) {
     fs::path p("dir/sub/file.txt");
 
     test_eq( p.u8string().size(), p.string().size() );
     test_eq( p.generic_u8string().size(), p.generic_string().size() );
     test_true( (char)p.u8string()[0] == p.string()[0] );
+    {   STD::string src;
+        src += (char)0xE3; src += (char)0x81; src += (char)0x82;
+        src += (char)0xF0; src += (char)0x9F; src += (char)0x98; src += (char)0x80;
+        if (sizeof(fs::path::value_type) > 1) {
+            fs::path q = fs::u8path(src);
+            test_true( ccw_fs_bytes(q.u8string()) == src );
+            test_eq( q.native().size(), (STD::size_t)3 );
+        } else {
+            TEST_SKIP_N(2);
+        }
+    }
     test_pass("cxx17:path::u8string");
 
     STD::basic_string<char16_t> u16 = p.u16string();

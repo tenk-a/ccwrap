@@ -60,12 +60,6 @@ TEST_CASE(codecvt, utf8_out_and_in) {
 typedef STD::codecvt<char16_t, char, STD::mbstate_t> cvt16_base;
 typedef STD::codecvt<char32_t, char, STD::mbstate_t> cvt32_base;
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1900
-#  define _TST_CODECVT_LENGTH_COUNTS_CHARS 1
-#else
-#  define _TST_CODECVT_LENGTH_COUNTS_CHARS 0
-#endif
-
 TEST_CASE(codecvt, codecvt_mode_enum) {
 
     test_eq( (int)STD::little_endian,   1 );
@@ -186,14 +180,8 @@ TEST_CASE(codecvt, codecvt_utf8_properties) {
 
     STD::mbstate_t st = STD::mbstate_t();
     const char ext[] = "\x41\xC3\xA9\xE6\x97\xA5";
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( cvt.length(st, ext, ext + 6, 3), 6 );
     STD::mbstate_t st2 = STD::mbstate_t();
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( cvt.length(st2, ext, ext + 6, 2), 3 );
     STD::mbstate_t st3 = STD::mbstate_t();
     test_eq( cvt.length(st3, ext, ext + 6, 1), 1 );
@@ -304,14 +292,8 @@ TEST_CASE(codecvt, codecvt_utf16_in_out) {
     test_pass("cxx11:codecvt_utf16 conversion properties");
 
     STD::mbstate_t st4 = STD::mbstate_t();
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( be.length(st4, ext, ext + 8, 3), 8 );
     STD::mbstate_t st5 = STD::mbstate_t();
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( be.length(st5, ext, ext + 8, 1), 2 );
     test_pass("cxx03:codecvt_utf16::length");
 
@@ -374,14 +356,8 @@ TEST_CASE(codecvt, codecvt_utf8_utf16) {
     test_pass("cxx11:codecvt_utf8_utf16::in truncated -> partial");
 
     STD::mbstate_t st3 = STD::mbstate_t();
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( cvt.length(st3, ext, ext + 8, 4), 8 );
     STD::mbstate_t st4 = STD::mbstate_t();
-#if _TST_CODECVT_LENGTH_COUNTS_CHARS
-    TEST_SKIP_VC("native codecvt length() counts characters, not external chars");
-#endif
     test_eq( cvt.length(st4, ext, ext + 8, 2), 4 );
     test_pass("cxx03:codecvt_utf8_utf16::length");
 

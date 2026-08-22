@@ -11,7 +11,9 @@
 #include "__config"
 #include "__utility/move.h"   // _CCW_RV_REF / _CCW_STD::move
 #include "__fwd/ostream.h"
+#include "__iterator/streambuf_iterators.h"   // <locale> (pulled by <ios>) names ostreambuf_iterator
 #include <ios>
+#include <locale>                                    // num_put / num_get drive the numeric operators
 #include <streambuf>
 #include <string>
 #include <cstdio>
@@ -85,7 +87,16 @@ public:
     }
 
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(bool __v) {
-        if (this->flags() & ios_base::boolalpha) return __put_raw(__v ? "true" : "false", __v ? 4 : 5);
+        if (__put_facet(__v)) return *this;
+        if (this->flags() & ios_base::boolalpha) {
+            const numpunct<char_type>* __np = __ccw_stream_punct<char_type>(*this);
+            if (__np) {
+                _CCW_STD::basic_string<char_type> __t = __v ? __np->truename() : __np->falsename();
+                return __put_raw(__t.data(), (_CCW_STD::streamsize)__t.size());
+            }
+            const char* __lit = __v ? "true" : "false";
+            return __put_narrow(__lit, __v ? 4 : 5, false);
+        }
         return __put_signed((long)(__v ? 1 : 0), false);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(short __v)          { return __put_int((long)__v, true); }
@@ -99,7 +110,10 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(float __v)          { return __put_double((double)__v); }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(double __v)         { return __put_double(__v); }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(long double __v)    { return __put_double((double)__v); }
-    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(const void* __v)    { char __b[32]; int __n = _CCW_STD::sprintf(__b, "%p", __v); return __put_raw(__b, __n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(const void* __v) {
+        if (__put_facet(__v)) return *this;
+        char __b[32]; int __n = _CCW_STD::sprintf(__b, "%p", __v); return __put_narrow(__b, __n, false);
+    }
 #if !defined(__WATCOMC__)
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& operator<<(const volatile void* __v)
         { return operator<<(const_cast<const void*>(__v)); }
@@ -154,7 +168,35 @@ private:
         this->width(0);
         return *this;
     }
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __ccw_widen_into(char* __d, const char* __s, _CCW_STD::size_t __n) {
+        for (_CCW_STD::size_t __i = 0; __i < __n; ++__i) __d[__i] = __s[__i];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI static void __ccw_widen_into(wchar_t* __d, const char* __s, _CCW_STD::size_t __n) {
+        for (_CCW_STD::size_t __i = 0; __i < __n; ++__i) __d[__i] = (wchar_t)(unsigned char)__s[__i];
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_narrow(const char* __s, _CCW_STD::streamsize __n, bool __numeric) {
+        if (__n <= 0) return *this;
+        _CCW_STD::basic_string<char_type> __w((_CCW_STD::size_t)__n, char_type());
+        __ccw_widen_into(&__w[0], __s, (_CCW_STD::size_t)__n);
+        return __put_raw(__w.data(), __n, __numeric);
+    }
+    template <class _Tp>
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __put_facet(_Tp __v) {
+        typedef ostreambuf_iterator<char_type, _Traits> _Iter;
+        typedef num_put<char_type, _Iter>               _Fp;
+        if (!this->good() || !this->rdbuf() || !has_facet<_Fp>(this->getloc())) return false;
+        const _Fp& __f = use_facet<_Fp>(this->getloc());
+        if (__f.put(_Iter(*this), *this, this->fill(), __v).failed())
+            this->setstate(ios_base::badbit);
+        this->width(0);
+        return true;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_punct(const char* __b, int __n) {
+        _CCW_STD::basic_string<char_type> __t = __ccw_num_punctuate<char_type>(*this, __b, __n);
+        return __put_raw(__t.data(), (_CCW_STD::streamsize)__t.size(), true);
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_int(long __v, bool) {
+        if (__put_facet(__v)) return *this;
         int __bf = this->flags() & ios_base::basefield;
         if (__bf == ios_base::oct || __bf == ios_base::hex) return __put_unsigned((unsigned long)__v);
         return __put_signed(__v, true);
@@ -164,9 +206,10 @@ private:
         if (this->flags() & ios_base::showpos) __fmt[__i++] = '+';
         __fmt[__i++] = 'l'; __fmt[__i++] = 'd'; __fmt[__i] = 0;
         char __b[64]; int __n = _CCW_STD::sprintf(__b, __fmt, __v);
-        return __put_raw(__b, __n, true);
+        return __put_punct(__b, __n);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_ll(long long __v) {
+        if (__put_facet(__v)) return *this;
         int __bf = this->flags() & ios_base::basefield;
         char __fmt[10]; int __i = 0; __fmt[__i++] = '%';
         if (__bf != ios_base::oct && __bf != ios_base::hex && (this->flags() & ios_base::showpos)) __fmt[__i++] = '+';
@@ -175,9 +218,10 @@ private:
         __fmt[__i++] = __bf == ios_base::oct ? 'o' : (__bf == ios_base::hex ? ((this->flags() & ios_base::uppercase) ? 'X' : 'x') : 'd');
         __fmt[__i] = 0;
         char __b[64]; int __n = _CCW_STD::sprintf(__b, __fmt, __v);
-        return __put_raw(__b, __n, true);
+        return __put_punct(__b, __n);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_ull(unsigned long long __v) {
+        if (__put_facet(__v)) return *this;
         int __bf = this->flags() & ios_base::basefield;
         char __fmt[10]; int __i = 0; __fmt[__i++] = '%';
         if ((this->flags() & ios_base::showbase) && __bf != ios_base::dec) __fmt[__i++] = '#';
@@ -185,9 +229,10 @@ private:
         __fmt[__i++] = __bf == ios_base::oct ? 'o' : (__bf == ios_base::hex ? ((this->flags() & ios_base::uppercase) ? 'X' : 'x') : 'u');
         __fmt[__i] = 0;
         char __b[64]; int __n = _CCW_STD::sprintf(__b, __fmt, __v);
-        return __put_raw(__b, __n, true);
+        return __put_punct(__b, __n);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_unsigned(unsigned long __v) {
+        if (__put_facet(__v)) return *this;
         int __bf = this->flags() & ios_base::basefield;
         char __fmt[8]; int __i = 0; __fmt[__i++] = '%';
         if ((this->flags() & ios_base::showbase) && __bf != ios_base::dec) __fmt[__i++] = '#';
@@ -195,9 +240,10 @@ private:
         char __c = __bf == ios_base::oct ? 'o' : (__bf == ios_base::hex ? ((this->flags() & ios_base::uppercase) ? 'X' : 'x') : 'u');
         __fmt[__i++] = __c; __fmt[__i] = 0;
         char __b[64]; int __n = _CCW_STD::sprintf(__b, __fmt, __v);
-        return __put_raw(__b, __n, true);
+        return __put_punct(__b, __n);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_ostream& __put_double(double __v) {
+        if (__put_facet(__v)) return *this;
         int __ff = this->flags() & ios_base::floatfield;
         char __conv = __ff == ios_base::fixed ? 'f' : (__ff == ios_base::scientific ? 'e' : 'g');
         if (this->flags() & ios_base::uppercase) __conv = (char)(__conv - 'a' + 'A');
@@ -207,7 +253,7 @@ private:
         __fmt[__i++] = '.'; __i += _CCW_STD::sprintf(__fmt + __i, "%d", (int)this->precision());
         __fmt[__i++] = __conv; __fmt[__i] = 0;
         char __b[512]; int __n = _CCW_STD::sprintf(__b, __fmt, __v);
-        return __put_raw(__b, __n, true);
+        return __put_punct(__b, __n);
     }
 };
 

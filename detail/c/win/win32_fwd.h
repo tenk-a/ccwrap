@@ -17,6 +17,7 @@ struct _RTL_SRWLOCK;
 struct _SECURITY_ATTRIBUTES;
 struct _FILETIME;
 struct HINSTANCE__;
+struct _cpinfo;
 
 typedef struct _RTL_CRITICAL_SECTION*   __ccw_pcritical_section;
 typedef struct _RTL_CONDITION_VARIABLE* __ccw_pcondition_variable;
@@ -24,6 +25,7 @@ typedef struct _RTL_SRWLOCK*            __ccw_psrwlock;
 typedef struct _SECURITY_ATTRIBUTES*    __ccw_psecurity_attributes;
 typedef struct _FILETIME*               __ccw_pfiletime;
 typedef struct HINSTANCE__*             __ccw_hmodule;
+typedef struct _cpinfo*                 __ccw_pcpinfo;
 
 #if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_ARM64)
 typedef _ccw_llong (_ccw_stdcall* __ccw_farproc_t)();

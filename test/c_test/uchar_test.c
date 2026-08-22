@@ -3,6 +3,15 @@
 #include <uchar.h>
 #include <string.h>
 #include <wchar.h>
+#include <locale.h>
+
+static int ccw_uchar_utf8_locale(void) {
+    static const char* names[] = { ".UTF-8", ".utf8", "C.UTF-8", "en_US.UTF-8", ".65001", 0 };
+    int i;
+    for (i = 0; names[i] != 0; ++i)
+        if (setlocale(LC_CTYPE, names[i]) != 0) return 1;
+    return 0;
+}
 
 TEST_CASE(uchar, types_and_macros) {
     mbstate_t st;
@@ -35,6 +44,7 @@ TEST_CASE(uchar, mbrtoc8_c8rtomb) {
     char buf[8];
     int c;
 
+    ccw_uchar_utf8_locale();
     memset(&st, 0, sizeof st);
     c8 = 0;
     r = mbrtoc8(&c8, "A", 1, &st);
@@ -132,6 +142,7 @@ TEST_CASE(uchar, mbrtoc32_c32rtomb) {
     char buf[8];
     int utf8;
 
+    ccw_uchar_utf8_locale();
     {
         char probe[3];
         probe[0]=(char)0xE2; probe[1]=(char)0x82; probe[2]=(char)0xAC;
@@ -219,6 +230,7 @@ TEST_CASE(uchar, mbrtoc16_c16rtomb) {
     char buf[8];
     int utf8;
 
+    ccw_uchar_utf8_locale();
     {
         char probe[3];
         probe[0]=(char)0xE2; probe[1]=(char)0x82; probe[2]=(char)0xAC;
@@ -293,6 +305,7 @@ TEST_CASE(uchar, mbrtoc16_partial_results) {
     size_t r;
     static const char emoji[] = "\xF0\x9F\x98\x80";
 
+    ccw_uchar_utf8_locale();
     memset(&st, 0, sizeof st);
     r = mbrtoc16(&c16, emoji, 4, &st);
     if (r == (size_t)-1) {

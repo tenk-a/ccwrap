@@ -20,6 +20,10 @@
 #include <cstdlib>      // strtol / strtod for num_get
 #include <cwchar>       // _CCW_STD::mbstate_t
 #include <ctime>        // _CCW_STD::tm / strftime for time_get / time_put
+#include "__locale/message_catalog.h"
+#if defined(_CCW_OS_WIN)
+#  include "../../c/win/localeinfo.h"   // GetLocaleInfoEx for the *_byname facets
+#endif
 
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -87,6 +91,7 @@ private:
     __imp* __imp_;
     _CCW_LIBCPP_HIDE_FROM_ABI locale(__imp* __p, int) _CCW_LIBCPP_NOEXCEPT;
     _CCW_LIBCPP_HIDE_FROM_ABI static __imp* __classic_imp();
+    _CCW_LIBCPP_HIDE_FROM_ABI static __imp* __named_imp(const char*);
     _CCW_LIBCPP_HIDE_FROM_ABI static __imp*& __global() { static __imp* __g = __classic_imp(); return __g; }
 };
 
@@ -102,13 +107,33 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void __release()  { if (--__refs_ < 0) delete this; }
 };
 
+#define _CCW_FACET_SLOT_MAX     64
+#define _CCW_FACET_SLOT_CTYPE      1
+#define _CCW_FACET_SLOT_NUMPUNCT   4
+#define _CCW_FACET_SLOT_COLLATE    8
+#define _CCW_FACET_SLOT_CODECVT   12
+#define _CCW_FACET_SLOT_NUM_PUT   16
+#define _CCW_FACET_SLOT_NUM_GET   20
+#define _CCW_FACET_SLOT_TIME_PUT  24
+#define _CCW_FACET_SLOT_TIME_GET  28
+#define _CCW_FACET_SLOT_MONEYPUNCT 32
+#define _CCW_FACET_SLOT_MONEY_PUT 40
+#define _CCW_FACET_SLOT_MONEY_GET 44
+#define _CCW_FACET_SLOT_MESSAGES  48
+#define _CCW_FACET_SLOT(base, cs) ((cs) ? ((base) + (cs)) : 0)
+
 class _CCW_LIBCPP_TEMPLATE_VIS locale::id {
     long __id_;   // 0 => not yet assigned; otherwise (index + 1)
 public:
     _CCW_LIBCPP_HIDE_FROM_ABI id() : __id_(0) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit id(long __slot) : __id_(__slot) {}
     _CCW_LIBCPP_HIDE_FROM_ABI long __index() { if (__id_ == 0) __id_ = ++__counter(); return __id_ - 1; }
-    _CCW_LIBCPP_HIDE_FROM_ABI static long& __counter() { static long __n = 0; return __n; }
+    _CCW_LIBCPP_HIDE_FROM_ABI static long& __counter() { static long __n = _CCW_FACET_SLOT_MAX; return __n; }
 };
+
+template <class _CharT> struct __ccw_cslot            { enum { value = 0 }; };
+template <>             struct __ccw_cslot<char>      { enum { value = 1 }; };
+template <>             struct __ccw_cslot<wchar_t>   { enum { value = 2 }; };
 
 struct locale::__imp {
     long __refs_;
@@ -136,8 +161,16 @@ struct locale::__imp {
 
 inline locale::locale() _CCW_LIBCPP_NOEXCEPT : __imp_(__global()) { __imp_->__add(); }
 inline locale::locale(const locale& __o) _CCW_LIBCPP_NOEXCEPT : __imp_(__o.__imp_) { __imp_->__add(); }
-inline locale::locale(const char*) : __imp_(__classic_imp()) { __imp_->__add(); }
-inline locale::locale(const _CCW_STD::string&) : __imp_(__classic_imp()) { __imp_->__add(); }
+inline bool __ccw_locale_name_ok(const char* __n) {
+    if (__n == 0) return false;
+    if (__n[0] == 0) return true;
+    if (__n[0] == 'C' && __n[1] == 0) return true;
+    static const char __px[] = "POSIX";
+    for (int __i = 0; __i < 5; ++__i) if (__n[__i] != __px[__i]) return false;
+    return __n[5] == 0;
+}
+
+
 inline locale::locale(__imp* __p, int) _CCW_LIBCPP_NOEXCEPT : __imp_(__p) { __imp_->__add(); }
 inline locale& locale::operator=(const locale& __o) _CCW_LIBCPP_NOEXCEPT {
     __o.__imp_->__add(); __imp_->__release(); __imp_ = __o.__imp_; return *this;
@@ -210,17 +243,16 @@ public:
         static mask __t[table_size]; static bool __init = false;
         if (!__init) {
             for (int __i = 0; __i < (int)table_size; ++__i) {
-                unsigned char __u = (unsigned char)__i; mask __r = 0;
-                if (_CCW_STD::isspace(__u))  __r |= space;
-                if (_CCW_STD::isprint(__u))  __r |= print;
-                if (_CCW_STD::iscntrl(__u))  __r |= cntrl;
-                if (_CCW_STD::isupper(__u))  __r |= upper;
-                if (_CCW_STD::islower(__u))  __r |= lower;
-                if (_CCW_STD::isalpha(__u))  __r |= alpha;
-                if (_CCW_STD::isdigit(__u))  __r |= digit;
-                if (_CCW_STD::ispunct(__u))  __r |= punct;
-                if (_CCW_STD::isxdigit(__u)) __r |= xdigit;
-                if (__i == ' ' || __i == '\t') __r |= blank;
+                mask __r = 0;
+                if (__i == ' ' || (__i >= 9 && __i <= 13))       __r |= space;
+                if (__i == ' ' || __i == 9)                      __r |= blank;
+                if (__i >= 0x20 && __i <= 0x7E)                  __r |= print;
+                if (__i < 0x20 || __i == 0x7F)                   __r |= cntrl;
+                if (__i >= 'A' && __i <= 'Z')                    __r |= upper | alpha;
+                if (__i >= 'a' && __i <= 'z')                    __r |= lower | alpha;
+                if (__i >= '0' && __i <= '9')                    __r |= digit | xdigit;
+                if ((__i >= 'A' && __i <= 'F') || (__i >= 'a' && __i <= 'f')) __r |= xdigit;
+                if ((__r & print) && !(__r & (alpha | digit)) && __i != ' ')  __r |= punct;
                 __t[__i] = __r;
             }
             __init = true;
@@ -229,9 +261,9 @@ public:
     }
 protected:
     virtual ~ctype() { if (__del_) delete[] __tab_; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_toupper(char __c) const { return (char)_CCW_STD::toupper((unsigned char)__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_toupper(char __c) const { return (__c >= 'a' && __c <= 'z') ? (char)(__c - 'a' + 'A') : __c; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* do_toupper(char* __b, const char* __e) const { for (; __b != __e; ++__b) *__b = do_toupper(*__b); return __e; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_tolower(char __c) const { return (char)_CCW_STD::tolower((unsigned char)__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_tolower(char __c) const { return (__c >= 'A' && __c <= 'Z') ? (char)(__c - 'A' + 'a') : __c; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* do_tolower(char* __b, const char* __e) const { for (; __b != __e; ++__b) *__b = do_tolower(*__b); return __e; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_widen(char __c) const { return __c; }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* do_widen(const char* __b, const char* __e, char* __d) const { for (; __b != __e; ++__b, ++__d) *__d = *__b; return __e; }
@@ -318,6 +350,164 @@ protected:
     }
 };
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::string __ccw_lc_narrow_str(const _CCW_STD::wstring& __w) {
+    _CCW_STD::string    __r;
+    _CCW_STD::mbstate_t __st;
+    char                __b[8];
+    _CCW_STD::memset(&__st, 0, sizeof(__st));
+    for (_CCW_STD::size_t __i = 0; __i < __w.size(); ++__i) {
+        _CCW_STD::size_t __k = ::wcrtomb(__b, __w[__i], &__st);
+        if (__k == (_CCW_STD::size_t)-1) { __r.push_back('?'); _CCW_STD::memset(&__st, 0, sizeof(__st)); continue; }
+        for (_CCW_STD::size_t __j = 0; __j < __k; ++__j) __r.push_back(__b[__j]);
+    }
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::wstring __ccw_lc_widen_str(const char* __b, const char* __e) {
+    _CCW_STD::wstring   __r;
+    _CCW_STD::mbstate_t __st;
+    _CCW_STD::memset(&__st, 0, sizeof(__st));
+    while (__b != __e) {
+        wchar_t          __wc = 0;
+        _CCW_STD::size_t __k  = ::mbrtowc(&__wc, __b, (_CCW_STD::size_t)(__e - __b), &__st);
+        if (__k == (_CCW_STD::size_t)-1 || __k == (_CCW_STD::size_t)-2) {
+            __r.push_back((wchar_t)(unsigned char)*__b); ++__b;
+            _CCW_STD::memset(&__st, 0, sizeof(__st));
+            continue;
+        }
+        if (__k == 0) __k = 1;
+        __r.push_back(__wc);
+        __b += __k;
+    }
+    return __r;
+}
+
+#if defined(_CCW_OS_WIN)
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool __ccw_lc_query(const char* __n, unsigned long __lct, _CCW_STD::wstring& __out_) {
+    wchar_t __b[128];
+    int     __k = __ccw_win_locale_info(__n, __lct, __b, 128);
+    if (__k <= 0) return false;
+    __out_.assign(__b, __b + (__k > 0 ? __k - 1 : 0));
+    return true;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline wchar_t __ccw_lc_wchar(const char* __n, unsigned long __lct, wchar_t __dflt) {
+    _CCW_STD::wstring __w;
+    return (__ccw_lc_query(__n, __lct, __w) && !__w.empty()) ? __w[0] : __dflt;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline int __ccw_lc_int(const char* __n, unsigned long __lct, int __dflt) {
+    _CCW_STD::wstring __w;
+    int __v = 0;
+    if (!__ccw_lc_query(__n, __lct, __w) || __w.empty()) return __dflt;
+    for (_CCW_STD::size_t __i = 0; __i < __w.size(); ++__i) {
+        if (__w[__i] < L'0' || __w[__i] > L'9') return __dflt;
+        __v = __v * 10 + (int)(__w[__i] - L'0');
+    }
+    return __v;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::string __ccw_lc_grouping(const char* __n, unsigned long __lct) {
+    _CCW_STD::wstring __w;
+    _CCW_STD::string  __g;
+    if (!__ccw_lc_query(__n, __lct, __w)) return __g;
+    int __v = 0; bool __any = false;
+    for (_CCW_STD::size_t __i = 0; __i <= __w.size(); ++__i) {
+        if (__i < __w.size() && __w[__i] >= L'0' && __w[__i] <= L'9') { __v = __v * 10 + (int)(__w[__i] - L'0'); __any = true; continue; }
+        if (__any) { __g.push_back(__v == 0 ? (char)0x7F : (char)__v); __v = 0; __any = false; }
+    }
+    while (!__g.empty() && __g[__g.size() - 1] == (char)0x7F) __g.erase(__g.size() - 1);
+    return __g;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline char __ccw_lc_narrow(wchar_t __w, char __dflt) {
+    return ((unsigned long)__w < 128uL && __w != 0) ? (char)(unsigned long)__w : __dflt;
+}
+
+struct __ccw_mp_raw {
+    _CCW_STD::wstring __dp_;
+    _CCW_STD::wstring __ts_;
+    _CCW_STD::wstring __sym_;
+    _CCW_STD::wstring __pos_;
+    _CCW_STD::wstring __neg_;
+    _CCW_STD::string  __grp_;
+    int               __frac_;
+    char              __pf_[4];
+    char              __nf_[4];
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_mp_pattern(int __mode, bool __neg, char* __f, bool& __paren) {
+    static const char __pt[4][4]  = { {3,2,0,4}, {3,4,0,2}, {3,2,1,4}, {3,4,1,2} };
+    static const char __nt[16][4] = { {3,2,0,4}, {3,2,0,4}, {2,3,0,4}, {2,4,0,3},
+                                      {3,4,0,2}, {3,4,0,2}, {4,3,0,2}, {4,2,0,3},
+                                      {3,4,1,2}, {3,2,1,4}, {4,1,2,3}, {2,1,4,3},
+                                      {2,1,3,4}, {4,3,1,2}, {3,2,1,4}, {3,4,1,2} };
+    const char* __src;
+    __paren = false;
+    if (__neg) {
+        if (__mode < 0 || __mode > 15) __mode = 1;
+        __src   = __nt[__mode];
+        __paren = (__mode == 0 || __mode == 4 || __mode == 14 || __mode == 15);
+    } else {
+        if (__mode < 0 || __mode > 3) __mode = 0;
+        __src = __pt[__mode];
+    }
+    for (int __i = 0; __i < 4; ++__i) __f[__i] = __src[__i];
+}
+
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::string __ccw_lc_sortkey(const char* __n, const _CCW_STD::wstring& __w) {
+    _CCW_STD::string __r;
+    int              __need = __ccw_win_sort_key(__n, __w.data(), (int)__w.size(), (void*)0, 0);
+    if (__need <= 0) return __r;
+    __r.resize((_CCW_STD::size_t)__need);
+    __need = __ccw_win_sort_key(__n, __w.data(), (int)__w.size(), (void*)&__r[0], __need);
+    if (__need <= 0) __r.clear(); else __r.resize((_CCW_STD::size_t)__need);
+    return __r;
+}
+
+struct __ccw_tm_raw {
+    _CCW_STD::wstring __wd_[7];
+    _CCW_STD::wstring __awd_[7];
+    _CCW_STD::wstring __mo_[12];
+    _CCW_STD::wstring __amo_[12];
+    _CCW_STD::wstring __am_;
+    _CCW_STD::wstring __pm_;
+    bool              __ok_;
+};
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_tm_load(const char* __n, __ccw_tm_raw& __r) {
+    __r.__ok_ = false;
+    for (int __i = 0; __i < 7; ++__i) {
+        unsigned long __d = (unsigned long)((__i + 6) % 7);
+        __ccw_lc_query(__n, _CCW_LI_SDAYNAME1       + __d, __r.__wd_[__i]);
+        __ccw_lc_query(__n, _CCW_LI_SABBREVDAYNAME1 + __d, __r.__awd_[__i]);
+    }
+    for (int __i = 0; __i < 12; ++__i) {
+        __ccw_lc_query(__n, _CCW_LI_SMONTHNAME1       + (unsigned long)__i, __r.__mo_[__i]);
+        __ccw_lc_query(__n, _CCW_LI_SABBREVMONTHNAME1 + (unsigned long)__i, __r.__amo_[__i]);
+    }
+    __ccw_lc_query(__n, _CCW_LI_S1159, __r.__am_);
+    __ccw_lc_query(__n, _CCW_LI_S2359, __r.__pm_);
+    __r.__ok_ = !__r.__wd_[0].empty() && !__r.__mo_[0].empty();
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_mp_load(const char* __n, bool __intl, __ccw_mp_raw& __r) {
+    bool __paren = false;
+    __ccw_lc_query(__n, _CCW_LI_SMONDECIMALSEP,  __r.__dp_);
+    __ccw_lc_query(__n, _CCW_LI_SMONTHOUSANDSEP, __r.__ts_);
+    __ccw_lc_query(__n, __intl ? _CCW_LI_SINTLSYMBOL : _CCW_LI_SCURRENCY, __r.__sym_);
+    __ccw_lc_query(__n, _CCW_LI_SPOSITIVESIGN,   __r.__pos_);
+    __ccw_lc_query(__n, _CCW_LI_SNEGATIVESIGN,   __r.__neg_);
+    __r.__grp_  = __ccw_lc_grouping(__n, _CCW_LI_SMONGROUPING);
+    __r.__frac_ = __ccw_lc_int(__n, __intl ? _CCW_LI_IINTLCURRDIGITS : _CCW_LI_ICURRDIGITS, 0);
+    if (__intl && __r.__sym_.size() == 3) __r.__sym_.push_back(L' ');
+    __ccw_mp_pattern(__ccw_lc_int(__n, _CCW_LI_ICURRENCY, 0), false, __r.__pf_, __paren);
+    __ccw_mp_pattern(__ccw_lc_int(__n, _CCW_LI_INEGCURR,  1), true,  __r.__nf_, __paren);
+    if (__paren) { __r.__neg_.assign(1, L'('); __r.__neg_.push_back(L')'); }
+    else if (__r.__neg_.empty()) __r.__neg_.assign(1, L'-');
+}
+#endif  // _CCW_OS_WIN
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline char    __ccw_tm_fold(char __c)    { return (__c >= 'A'  && __c <= 'Z')  ? (char)(__c - 'A' + 'a')     : __c; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline wchar_t __ccw_tm_fold(wchar_t __c) { return (__c >= L'A' && __c <= L'Z') ? (wchar_t)(__c - L'A' + L'a') : __c; }
+
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS numpunct;
 
 template <>
@@ -340,6 +530,77 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping()      const { return _CCW_STD::string(); }   // "C": no grouping
     _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_truename()      const { return _CCW_STD::string("true"); }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_falsename()     const { return _CCW_STD::string("false"); }
+};
+
+template <class _CharT>
+_CCW_LIBCPP_HIDE_FROM_ABI const numpunct<_CharT>* __ccw_stream_punct(ios_base& __iob) {
+    return has_facet<numpunct<_CharT> >(__iob.getloc()) ? &use_facet<numpunct<_CharT> >(__iob.getloc()) : 0;
+}
+
+template <class _CharT>
+_CCW_LIBCPP_HIDE_FROM_ABI char __ccw_stream_decimal_point(ios_base& __iob) {
+    const numpunct<_CharT>* __np = __ccw_stream_punct<_CharT>(__iob);
+    if (!__np) return '.';
+    unsigned long __d = (unsigned long)__np->decimal_point();
+    return __d < 128uL ? (char)__d : '.';
+}
+
+template <class _CharT>
+_CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::basic_string<_CharT> __ccw_num_punctuate(ios_base& __iob, const char* __buf, int __n) {
+    typedef _CCW_STD::basic_string<_CharT> __rstring;
+    const numpunct<_CharT>* __np = __ccw_stream_punct<_CharT>(__iob);
+    if (!__np) {
+        __rstring __plain;
+        for (int __i = 0; __i < __n; ++__i) __plain.push_back((_CharT)(unsigned char)__buf[__i]);
+        return __plain;
+    }
+    _CharT                __dp  = __np->decimal_point();
+    _CharT                __ts  = __np->thousands_sep();
+    _CCW_STD::string      __grp = __np->grouping();
+
+    int __i = 0;
+    __rstring __pref;
+    if (__n > 0 && (__buf[0] == '+' || __buf[0] == '-')) { __pref.push_back((_CharT)__buf[0]); __i = 1; }
+    if (__n - __i >= 2 && __buf[__i] == '0' && (__buf[__i+1] == 'x' || __buf[__i+1] == 'X')) { __pref.push_back((_CharT)__buf[__i]); __pref.push_back((_CharT)__buf[__i+1]); __i += 2; }
+    int __digend = __i;
+    while (__digend < __n && __buf[__digend] != '.' && __buf[__digend] != 'e' && __buf[__digend] != 'E') ++__digend;
+    __rstring __digits;
+    for (int __k = __i; __k < __digend; ++__k) __digits.push_back((_CharT)__buf[__k]);
+    __rstring __rest;
+    for (int __k = __digend; __k < __n; ++__k) __rest.push_back(__buf[__k] == '.' ? __dp : (_CharT)__buf[__k]);
+    __rstring __gdig;
+    if (!__grp.empty() && __ts) {
+        int __gi = 0; int __cnt = 0; int __gsz = (int)__grp[0]; if (__gsz <= 0) __gsz = 0x7fffffff;
+        for (int __k = (int)__digits.size() - 1; __k >= 0; --__k) {
+            __gdig.push_back(__digits[(_CCW_STD::size_t)__k]);
+            if (++__cnt == __gsz && __k > 0) { __gdig.push_back(__ts); __cnt = 0;
+                if (__gi + 1 < (int)__grp.size()) { ++__gi; __gsz = (int)__grp[(_CCW_STD::size_t)__gi]; if (__gsz <= 0) __gsz = 0x7fffffff; } }
+        }
+        for (_CCW_STD::size_t __a = 0, __z = __gdig.size(); __a + 1 < __z; ++__a, --__z) { _CharT __t = __gdig[__a]; __gdig[__a] = __gdig[__z-1]; __gdig[__z-1] = __t; }
+    } else __gdig = __digits;
+    return __pref + __gdig + __rest;
+}
+
+template <>
+class _CCW_LIBCPP_TEMPLATE_VIS numpunct<wchar_t> : public locale::facet {
+public:
+    typedef wchar_t           char_type;
+    typedef _CCW_STD::wstring string_type;
+    static locale::id id;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct(_CCW_STD::size_t __refs = 0) : locale::facet(__refs) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI wchar_t     decimal_point() const { return do_decimal_point(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI wchar_t     thousands_sep() const { return do_thousands_sep(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::string grouping() const { return do_grouping(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type truename()      const { return do_truename(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type falsename()     const { return do_falsename(); }
+protected:
+    virtual ~numpunct() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t     do_decimal_point() const { return L'.'; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t     do_thousands_sep() const { return L','; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping() const { return _CCW_STD::string(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_truename()      const { return string_type(L"true"); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_falsename()     const { return string_type(L"false"); }
 };
 
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS collate;
@@ -371,6 +632,33 @@ protected:
     virtual ~collate() {}
 };
 
+template <>
+class _CCW_LIBCPP_TEMPLATE_VIS collate<wchar_t> : public locale::facet {
+public:
+    typedef wchar_t           char_type;
+    typedef _CCW_STD::wstring string_type;
+    static locale::id id;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate(_CCW_STD::size_t __refs = 0) : locale::facet(__refs) {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI int compare(const wchar_t* __b1, const wchar_t* __e1, const wchar_t* __b2, const wchar_t* __e2) const { return do_compare(__b1, __e1, __b2, __e2); }
+    _CCW_LIBCPP_HIDE_FROM_ABI string_type transform(const wchar_t* __b, const wchar_t* __e) const { return do_transform(__b, __e); }
+    _CCW_LIBCPP_HIDE_FROM_ABI long hash(const wchar_t* __b, const wchar_t* __e) const { return do_hash(__b, __e); }
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_compare(const wchar_t* __b1, const wchar_t* __e1, const wchar_t* __b2, const wchar_t* __e2) const {
+        for (; __b1 != __e1 && __b2 != __e2; ++__b1, ++__b2) {
+            if ((unsigned long)*__b1 < (unsigned long)*__b2) return -1;
+            if ((unsigned long)*__b2 < (unsigned long)*__b1) return 1;
+        }
+        if (__b1 == __e1 && __b2 == __e2) return 0;
+        return __b1 == __e1 ? -1 : 1;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_transform(const wchar_t* __b, const wchar_t* __e) const { return string_type(__b, __e); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual long do_hash(const wchar_t* __b, const wchar_t* __e) const {
+        long __h = 0; for (; __b != __e; ++__b) __h = __h * 31 + (long)(unsigned long)*__b; return __h;
+    }
+    virtual ~collate() {}
+};
+
 template <class _CharT, class _OutputIterator = ostreambuf_iterator<_CharT, char_traits<_CharT> > >
 class _CCW_LIBCPP_TEMPLATE_VIS num_put : public locale::facet {
 public:
@@ -393,34 +681,14 @@ protected:
 
     _CCW_LIBCPP_HIDE_FROM_ABI iter_type __fmt_write(iter_type __s, ios_base& __iob, char_type __fill,
                                                 const char* __buf, int __n, bool __is_float) const {
-        const numpunct<char>& __np = use_facet<numpunct<char> >(__iob.getloc());
-        char __dp = __np.decimal_point();
-        char __ts = __np.thousands_sep();
-        _CCW_STD::string __grp = __np.grouping();
-
-        _CCW_STD::string __out_;
-        int __i = 0;
-        _CCW_STD::string __pref;
-        if (__n > 0 && (__buf[0] == '+' || __buf[0] == '-')) { __pref.push_back(__buf[0]); __i = 1; }
-        if (__n - __i >= 2 && __buf[__i] == '0' && (__buf[__i+1] == 'x' || __buf[__i+1] == 'X')) { __pref.push_back(__buf[__i]); __pref.push_back(__buf[__i+1]); __i += 2; }
-        int __digend = __i;
-        while (__digend < __n && __buf[__digend] != '.' && __buf[__digend] != 'e' && __buf[__digend] != 'E') ++__digend;
-        _CCW_STD::string __digits(__buf + __i, __buf + __digend);
-        _CCW_STD::string __rest(__buf + __digend, __buf + __n);
-        _CCW_STD::string __gdig;
-        if (!__grp.empty() && __ts) {
-            int __gi = 0; int __cnt = 0; int __gsz = (int)__grp[0]; if (__gsz <= 0) __gsz = 0x7fffffff;
-            for (int __k = (int)__digits.size() - 1; __k >= 0; --__k) {
-                __gdig.push_back(__digits[(_CCW_STD::size_t)__k]);
-                if (++__cnt == __gsz && __k > 0) { __gdig.push_back(__ts); __cnt = 0;
-                    if (__gi + 1 < (int)__grp.size()) { ++__gi; __gsz = (int)__grp[(_CCW_STD::size_t)__gi]; if (__gsz <= 0) __gsz = 0x7fffffff; } }
-            }
-            for (_CCW_STD::size_t __a = 0, __z = __gdig.size(); __a + 1 < __z; ++__a, --__z) { char __t = __gdig[__a]; __gdig[__a] = __gdig[__z-1]; __gdig[__z-1] = __t; }
-        } else __gdig = __digits;
-        for (_CCW_STD::size_t __k = 0; __k < __rest.size(); ++__k) if (__rest[__k] == '.') __rest[__k] = __dp;
         (void)__is_float;
-
-        _CCW_STD::string __body = __pref + __gdig + __rest;
+        _CCW_STD::basic_string<char_type> __pref;
+        int __pi = 0;
+        if (__n > 0 && (__buf[0] == '+' || __buf[0] == '-')) { __pref.push_back((char_type)__buf[0]); __pi = 1; }
+        if (__n - __pi >= 2 && __buf[__pi] == '0' && (__buf[__pi+1] == 'x' || __buf[__pi+1] == 'X')) {
+            __pref.push_back((char_type)__buf[__pi]); __pref.push_back((char_type)__buf[__pi+1]);
+        }
+        _CCW_STD::basic_string<char_type> __body = __ccw_num_punctuate<char_type>(__iob, __buf, __n);
 
         _CCW_STD::streamsize __w = __iob.width(); __iob.width(0);
         int __pad = (int)__w - (int)__body.size();
@@ -471,9 +739,19 @@ protected:
 
     _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_put(iter_type __s, ios_base& __iob, char_type __fill, bool __v) const {
         if (__iob.flags() & ios_base::boolalpha) {
-            const numpunct<char>& __np = use_facet<numpunct<char> >(__iob.getloc());
-            _CCW_STD::string __t = __v ? __np.truename() : __np.falsename();
-            return __fmt_write(__s, __iob, __fill, __t.data(), (int)__t.size(), false);
+            const numpunct<char_type>* __np = __ccw_stream_punct<char_type>(__iob);
+            _CCW_STD::basic_string<char_type> __t;
+            if (__np) __t = __v ? __np->truename() : __np->falsename();
+            else { const char* __l = __v ? "true" : "false"; for (; *__l; ++__l) __t.push_back((char_type)*__l); }
+            _CCW_STD::streamsize __w = __iob.width(); __iob.width(0);
+            int __pad = (int)__w - (int)__t.size();
+            unsigned long __adj = __iob.flags() & ios_base::adjustfield;
+            if (__pad > 0 && __adj != ios_base::left)
+                for (int __k = 0; __k < __pad; ++__k) { *__s = __fill; ++__s; }
+            for (_CCW_STD::size_t __k = 0; __k < __t.size(); ++__k) { *__s = __t[__k]; ++__s; }
+            if (__pad > 0 && __adj == ios_base::left)
+                for (int __k = 0; __k < __pad; ++__k) { *__s = __fill; ++__s; }
+            return __s;
         }
         return do_put(__s, __iob, __fill, (long)(__v ? 1 : 0));
     }
@@ -531,14 +809,21 @@ protected:
     virtual ~num_get() {}
 
     _CCW_LIBCPP_HIDE_FROM_ABI iter_type __gather(iter_type __b, iter_type __e, ios_base& __iob, _CCW_STD::string& __s, bool __flt) const {
-        unsigned long __bf = __iob.flags() & ios_base::basefield;
+        unsigned long              __bf = __iob.flags() & ios_base::basefield;
+        const numpunct<char_type>* __np  = __ccw_stream_punct<char_type>(__iob);
+        const char_type            __dp  = __np ? __np->decimal_point() : (char_type)'.';
+        const _CCW_STD::string     __grp = __np ? __np->grouping() : _CCW_STD::string();
+        const char_type            __ts  = (__np && !__grp.empty()) ? __np->thousands_sep() : (char_type)0;
         for (; __b != __e; ++__b) {
-            char __c = *__b;
-            bool __ok = false;
+            char_type __wc = *__b;
+            bool      __ok = false;
+            if (__ts && __wc == __ts && !__s.empty()) continue;
+            if (__flt && __wc == __dp) { __s.push_back('.'); continue; }
+            char __c = (unsigned long)__wc < 128uL ? (char)(unsigned long)__wc : (char)0;
             if (__c == '+' || __c == '-') __ok = __s.empty() || (__flt && (__s[__s.size()-1] == 'e' || __s[__s.size()-1] == 'E'));
             else if (__c >= '0' && __c <= '9') __ok = true;
             else if (__bf == ios_base::hex && ((__c>='a'&&__c<='f')||(__c>='A'&&__c<='F')||__c=='x'||__c=='X')) __ok = true;
-            else if (__flt && (__c=='.'||__c=='e'||__c=='E')) __ok = true;
+            else if (__flt && (__c=='e'||__c=='E')) __ok = true;
             else if (__flt && (__c=='x'||__c=='X'||(__c>='a'&&__c<='f')||(__c>='A'&&__c<='F')||__c=='p'||__c=='P')) __ok = true;
             if (!__ok) break;
             __s.push_back(__c);
@@ -555,8 +840,14 @@ protected:
 
     _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_get(iter_type __b, iter_type __e, ios_base& __iob, int& __err, bool& __v) const {
         if (__iob.flags() & ios_base::boolalpha) {
-            const numpunct<char>& __np = use_facet<numpunct<char> >(__iob.getloc());
-            _CCW_STD::string __t = __np.truename(), __f = __np.falsename(), __g;
+            const numpunct<char_type>* __npp = __ccw_stream_punct<char_type>(__iob);
+            _CCW_STD::basic_string<char_type> __t, __f;
+            if (__npp) { __t = __npp->truename(); __f = __npp->falsename(); }
+            else {
+                const char* __lt = "true";  for (; *__lt; ++__lt) __t.push_back((char_type)*__lt);
+                const char* __lf = "false"; for (; *__lf; ++__lf) __f.push_back((char_type)*__lf);
+            }
+            _CCW_STD::basic_string<char_type> __g;
             for (; __b != __e; ++__b) { __g.push_back(*__b); if (__g == __t) { __v = true; ++__b; return __b; } if (__g == __f) { __v = false; ++__b; return __b; }
                 if (__g.size() >= __t.size() && __g.size() >= __f.size()) break; }
             __err |= 2 /*failbit*/; __v = false; return __b;
@@ -621,8 +912,8 @@ protected:
     }
 };
 
-template <class _CharT, class _OutputIterator> locale::id num_put<_CharT, _OutputIterator>::id;
-template <class _CharT, class _InputIterator>  locale::id num_get<_CharT, _InputIterator>::id;
+template <class _CharT, class _OutputIterator> locale::id num_put<_CharT, _OutputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_NUM_PUT, __ccw_cslot<_CharT>::value));
+template <class _CharT, class _InputIterator>  locale::id num_get<_CharT, _InputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_NUM_GET, __ccw_cslot<_CharT>::value));
 
 struct _CCW_LIBCPP_TEMPLATE_VIS time_base {
     enum dateorder { no_order, dmy, mdy, ymd, ydm };
@@ -757,8 +1048,8 @@ protected:
     }
 };
 
-template <class _CharT, class _OutputIterator> locale::id time_put<_CharT, _OutputIterator>::id;
-template <class _CharT, class _InputIterator>  locale::id time_get<_CharT, _InputIterator>::id;
+template <class _CharT, class _OutputIterator> locale::id time_put<_CharT, _OutputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_TIME_PUT, __ccw_cslot<_CharT>::value));
+template <class _CharT, class _InputIterator>  locale::id time_get<_CharT, _InputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_TIME_GET, __ccw_cslot<_CharT>::value));
 
 struct _CCW_LIBCPP_TEMPLATE_VIS money_base {
     enum part { none, space, symbol, sign, value };
@@ -797,7 +1088,7 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual pattern     do_neg_format()    const { pattern __p; __p.field[0]=(char)symbol; __p.field[1]=(char)sign; __p.field[2]=(char)none; __p.field[3]=(char)value; return __p; }
 };
 template <class _CharT, bool _Intl> const bool moneypunct<_CharT, _Intl>::intl;
-template <class _CharT, bool _Intl> locale::id moneypunct<_CharT, _Intl>::id;
+template <class _CharT, bool _Intl> locale::id moneypunct<_CharT, _Intl>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_MONEYPUNCT + (_Intl ? 4 : 0), __ccw_cslot<_CharT>::value));
 
 template <class _CharT, class _OutputIterator = ostreambuf_iterator<_CharT, char_traits<_CharT> > >
 class _CCW_LIBCPP_TEMPLATE_VIS money_put : public locale::facet {
@@ -814,11 +1105,11 @@ protected:
     virtual ~money_put() {}
 
     _CCW_LIBCPP_HIDE_FROM_ABI string_type __assemble(bool __intl, ios_base& __iob, const _CCW_STD::string& __rawdigits, bool __neg) const {
-        int __frac; char __dp; char __ts; _CCW_STD::string __grp; string_type __sym; string_type __psign; string_type __nsign; money_base::pattern __pat;
-        if (__intl) { const moneypunct<char, true>& __mp = use_facet<moneypunct<char, true> >(__iob.getloc());
+        int __frac; char_type __dp; char_type __ts; _CCW_STD::string __grp; string_type __sym; string_type __psign; string_type __nsign; money_base::pattern __pat;
+        if (__intl) { const moneypunct<char_type, true>& __mp = use_facet<moneypunct<char_type, true> >(__iob.getloc());
             __frac = __mp.frac_digits(); __dp = __mp.decimal_point(); __ts = __mp.thousands_sep(); __grp = __mp.grouping();
             __sym = __mp.curr_symbol(); __psign = __mp.positive_sign(); __nsign = __mp.negative_sign(); __pat = __neg ? __mp.neg_format() : __mp.pos_format(); }
-        else { const moneypunct<char, false>& __mp = use_facet<moneypunct<char, false> >(__iob.getloc());
+        else { const moneypunct<char_type, false>& __mp = use_facet<moneypunct<char_type, false> >(__iob.getloc());
             __frac = __mp.frac_digits(); __dp = __mp.decimal_point(); __ts = __mp.thousands_sep(); __grp = __mp.grouping();
             __sym = __mp.curr_symbol(); __psign = __mp.positive_sign(); __nsign = __mp.negative_sign(); __pat = __neg ? __mp.neg_format() : __mp.pos_format(); }
 
@@ -826,15 +1117,15 @@ protected:
         while ((int)__digs.size() <= __frac) __digs = _CCW_STD::string("0") + __digs;
         _CCW_STD::string __ip = __digs.substr(0, __digs.size() - (_CCW_STD::size_t)__frac);
         _CCW_STD::string __fp = (__frac > 0) ? __digs.substr(__digs.size() - (_CCW_STD::size_t)__frac) : _CCW_STD::string();
-        _CCW_STD::string __gip;
+        string_type __gip;
         if (!__grp.empty() && __ts) { int __gi = 0, __cnt = 0, __gsz = (int)__grp[0]; if (__gsz <= 0) __gsz = 0x7fffffff;
-            for (int __k = (int)__ip.size() - 1; __k >= 0; --__k) { __gip.push_back(__ip[(_CCW_STD::size_t)__k]);
+            for (int __k = (int)__ip.size() - 1; __k >= 0; --__k) { __gip.push_back((char_type)__ip[(_CCW_STD::size_t)__k]);
                 if (++__cnt == __gsz && __k > 0) { __gip.push_back(__ts); __cnt = 0; if (__gi + 1 < (int)__grp.size()) { ++__gi; __gsz = (int)__grp[(_CCW_STD::size_t)__gi]; if (__gsz <= 0) __gsz = 0x7fffffff; } } }
-            for (_CCW_STD::size_t __a = 0, __z = __gip.size(); __a + 1 < __z; ++__a, --__z) { char __t = __gip[__a]; __gip[__a] = __gip[__z-1]; __gip[__z-1] = __t; }
-        } else __gip = __ip;
+            for (_CCW_STD::size_t __a = 0, __z = __gip.size(); __a + 1 < __z; ++__a, --__z) { char_type __t = __gip[__a]; __gip[__a] = __gip[__z-1]; __gip[__z-1] = __t; }
+        } else { for (_CCW_STD::size_t __k = 0; __k < __ip.size(); ++__k) __gip.push_back((char_type)__ip[__k]); }
 
-        string_type __val(__gip.begin(), __gip.end());
-        if (__frac > 0) { __val.push_back((char_type)__dp); for (_CCW_STD::size_t __k = 0; __k < __fp.size(); ++__k) __val.push_back((char_type)__fp[__k]); }
+        string_type __val(__gip);
+        if (__frac > 0) { __val.push_back(__dp); for (_CCW_STD::size_t __k = 0; __k < __fp.size(); ++__k) __val.push_back((char_type)__fp[__k]); }
         string_type __sgn = __neg ? __nsign : __psign;
 
         string_type __out_;
@@ -886,16 +1177,20 @@ protected:
     virtual ~money_get() {}
 
     _CCW_LIBCPP_HIDE_FROM_ABI iter_type __scan(iter_type __b, iter_type __e, bool __intl, ios_base& __iob, int& __err, _CCW_STD::string& __digs, bool& __neg) const {
-        char __ts; char __dp; int __frac;
-        if (__intl) { const moneypunct<char, true>& __mp = use_facet<moneypunct<char, true> >(__iob.getloc()); __ts = __mp.thousands_sep(); __dp = __mp.decimal_point(); __frac = __mp.frac_digits(); }
-        else { const moneypunct<char, false>& __mp = use_facet<moneypunct<char, false> >(__iob.getloc()); __ts = __mp.thousands_sep(); __dp = __mp.decimal_point(); __frac = __mp.frac_digits(); }
-        __neg = false; bool __any = false; _CCW_STD::string __frac_seen;
-        for (; __b != __e; ++__b) { char __c = (char)*__b;
+        char_type __ts; char_type __dp; int __frac; string_type __sym; string_type __nsign;
+        if (__intl) { const moneypunct<char_type, true>& __mp = use_facet<moneypunct<char_type, true> >(__iob.getloc()); __ts = __mp.thousands_sep(); __dp = __mp.decimal_point(); __frac = __mp.frac_digits(); __sym = __mp.curr_symbol(); __nsign = __mp.negative_sign(); }
+        else { const moneypunct<char_type, false>& __mp = use_facet<moneypunct<char_type, false> >(__iob.getloc()); __ts = __mp.thousands_sep(); __dp = __mp.decimal_point(); __frac = __mp.frac_digits(); __sym = __mp.curr_symbol(); __nsign = __mp.negative_sign(); }
+        __neg = false; bool __any = false;
+        for (; __b != __e; ++__b) { char_type __w = *__b;
+            char __c = (unsigned long)__w < 128uL ? (char)(unsigned long)__w : (char)0;
             if (__c == '-') { __neg = true; }
+            else if (!__nsign.empty() && __w == __nsign[0]) { __neg = true; }
+            else if (__nsign.size() > 1 && __nsign.find(__w, 1) != string_type::npos) { /* trailing part of the negative sign */ }
             else if (__c >= '0' && __c <= '9') { __digs.push_back(__c); __any = true; }
-            else if (__c == __ts) { /* skip grouping */ }
-            else if (__c == __dp && __frac > 0) { /* fractional part follows; keep collecting digits */ }
-            else if (__c == ' ' || __c == '+' || __c == '$') { /* skip symbol/space/leading + */ }
+            else if (__ts && __w == __ts) { /* skip grouping */ }
+            else if (__w == __dp && __frac > 0) { /* fractional part follows; keep collecting digits */ }
+            else if (__c == ' ' || __c == '+') { /* skip space / leading + */ }
+            else if (!__sym.empty() && __sym.find(__w) != string_type::npos) { /* skip currency symbol */ }
             else break;
         }
         if (!__any) __err |= 2;
@@ -913,8 +1208,8 @@ protected:
     }
 };
 
-template <class _CharT, class _OutputIterator> locale::id money_put<_CharT, _OutputIterator>::id;
-template <class _CharT, class _InputIterator>  locale::id money_get<_CharT, _InputIterator>::id;
+template <class _CharT, class _OutputIterator> locale::id money_put<_CharT, _OutputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_MONEY_PUT, __ccw_cslot<_CharT>::value));
+template <class _CharT, class _InputIterator>  locale::id money_get<_CharT, _InputIterator>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_MONEY_GET, __ccw_cslot<_CharT>::value));
 
 #ifndef _CCW_CODECVT_BASE_DEFINED
 #define _CCW_CODECVT_BASE_DEFINED
@@ -990,7 +1285,131 @@ protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int  do_max_length() const _CCW_LIBCPP_NOEXCEPT { return 1; }
 };
 
+template <>
+class _CCW_LIBCPP_TEMPLATE_VIS codecvt<wchar_t, char, _CCW_STD::mbstate_t> : public locale::facet, public codecvt_base {
+public:
+    typedef wchar_t             intern_type;
+    typedef char                extern_type;
+    typedef _CCW_STD::mbstate_t state_type;
+    static locale::id id;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt(_CCW_STD::size_t __refs = 0) : locale::facet(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~codecvt() {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI result out(state_type& __st, const wchar_t* __frm, const wchar_t* __fe, const wchar_t*& __fn,
+                                         char* __to, char* __te, char*& __tn) const { return do_out(__st, __frm, __fe, __fn, __to, __te, __tn); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result in(state_type& __st, const char* __frm, const char* __fe, const char*& __fn,
+                                        wchar_t* __to, wchar_t* __te, wchar_t*& __tn) const { return do_in(__st, __frm, __fe, __fn, __to, __te, __tn); }
+    _CCW_LIBCPP_HIDE_FROM_ABI result unshift(state_type& __st, char* __to, char* __te, char*& __tn) const { return do_unshift(__st, __to, __te, __tn); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int  encoding() const _CCW_LIBCPP_NOEXCEPT { return do_encoding(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool always_noconv() const _CCW_LIBCPP_NOEXCEPT { return do_always_noconv(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int  length(state_type& __st, const char* __frm, const char* __end, _CCW_STD::size_t __mx) const { return do_length(__st, __frm, __end, __mx); }
+    _CCW_LIBCPP_HIDE_FROM_ABI int  max_length() const _CCW_LIBCPP_NOEXCEPT { return do_max_length(); }
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_out(state_type& __st, const wchar_t* __frm, const wchar_t* __fe, const wchar_t*& __fn,
+                                                    char* __to, char* __te, char*& __tn) const {
+        __fn = __frm; __tn = __to;
+        (void)__st;
+#if defined(_CCW_MB_HAS_CONV)
+        while (__fn != __fe) {
+            unsigned long __cp   = (unsigned long)*__fn;
+            int           __step = 1;
+            if (__cp >= 0xD800uL && __cp <= 0xDBFFuL) {
+                if (__fn + 1 == __fe) return partial;
+                unsigned long __lo = (unsigned long)__fn[1];
+                if (__lo < 0xDC00uL || __lo > 0xDFFFuL) return error;
+                __cp   = 0x10000uL + ((__cp - 0xD800uL) << 10) + (__lo - 0xDC00uL);
+                __step = 2;
+            } else if (__cp >= 0xDC00uL && __cp <= 0xDFFFuL) {
+                return error;
+            }
+            char __buf[8];
+            int  __n = ::__ccw_mb_put(__buf, __cp);
+            if (__n <= 0) return error;
+            if (__tn + __n > __te) return partial;
+            for (int __i = 0; __i < __n; ++__i) *__tn++ = __buf[__i];
+            __fn += __step;
+        }
+        return ok;
+#else
+        (void)__te;
+        return error;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_in(state_type& __st, const char* __frm, const char* __fe, const char*& __fn,
+                                                   wchar_t* __to, wchar_t* __te, wchar_t*& __tn) const {
+        __fn = __frm; __tn = __to;
+#if defined(_CCW_MB_HAS_CONV)
+        int __ms = (int)__st;
+        while (__fn != __fe) {
+            unsigned long    __cp    = 0uL;
+            int              __probe = __ms;
+            _CCW_STD::size_t __r     = ::__ccw_mb_next(&__cp, __fn, (_CCW_STD::size_t)(__fe - __fn), &__probe);
+            if (__r == (_CCW_STD::size_t)-1) { __st = (state_type)__ms; return error; }
+            if (__r == (_CCW_STD::size_t)-2) { __st = (state_type)__probe; __fn = __fe; return partial; }
+            int __need = (__cp >= 0x10000uL) ? 2 : 1;
+            if (__tn + __need > __te) { __st = (state_type)__ms; return partial; }
+            __ms = __probe;
+            if (__need == 2) {
+                unsigned long __v = __cp - 0x10000uL;
+                *__tn++ = (wchar_t)(0xD800uL + (__v >> 10));
+                *__tn++ = (wchar_t)(0xDC00uL + (__v & 0x3FFuL));
+            } else {
+                *__tn++ = (wchar_t)__cp;
+            }
+            __fn += __r ? __r : 1;
+        }
+        __st = (state_type)__ms;
+        return ok;
+#else
+        (void)__st; (void)__te;
+        return error;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual result do_unshift(state_type&, char* __to, char*, char*& __tn) const { __tn = __to; return noconv; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int  do_encoding() const _CCW_LIBCPP_NOEXCEPT { return 0; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_always_noconv() const _CCW_LIBCPP_NOEXCEPT { return false; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int  do_length(state_type& __st, const char* __frm, const char* __end, _CCW_STD::size_t __mx) const {
+#if defined(_CCW_MB_HAS_CONV)
+        const char*      __p  = __frm;
+        _CCW_STD::size_t __k  = 0;
+        int              __ms = (int)__st;
+        while (__p != __end) {
+            unsigned long    __cp    = 0uL;
+            int              __probe = __ms;
+            _CCW_STD::size_t __r     = ::__ccw_mb_next(&__cp, __p, (_CCW_STD::size_t)(__end - __p), &__probe);
+            if (__r == (_CCW_STD::size_t)-1 || __r == (_CCW_STD::size_t)-2) break;
+            _CCW_STD::size_t __need = (__cp >= 0x10000uL) ? 2u : 1u;
+            if (__k + __need > __mx) break;
+            __ms = __probe;
+            __p += __r ? __r : 1;
+            __k += __need;
+        }
+        __st = (state_type)__ms;
+        return (int)(__p - __frm);
+#else
+        (void)__st; (void)__mx;
+        return (int)(__end - __frm);
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int  do_max_length() const _CCW_LIBCPP_NOEXCEPT {
+#if defined(_CCW_MB_HAS_CONV)
+        return ::_ccw_mb_cur_max();
+#else
+        return 1;
+#endif
+    }
+};
+
 template <class _InternT, class _ExternT, class _StateT> class _CCW_LIBCPP_TEMPLATE_VIS codecvt_byname;
+template <>
+class _CCW_LIBCPP_TEMPLATE_VIS codecvt_byname<wchar_t, char, _CCW_STD::mbstate_t> : public codecvt<wchar_t, char, _CCW_STD::mbstate_t> {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt_byname(const char*, _CCW_STD::size_t __refs = 0) : codecvt<wchar_t, char, _CCW_STD::mbstate_t>(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit codecvt_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : codecvt<wchar_t, char, _CCW_STD::mbstate_t>(__refs) {}
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual ~codecvt_byname() {}
+};
+
 template <>
 class _CCW_LIBCPP_TEMPLATE_VIS codecvt_byname<char, char, _CCW_STD::mbstate_t> : public codecvt<char, char, _CCW_STD::mbstate_t> {
 public:
@@ -999,6 +1418,11 @@ public:
 protected:
     virtual ~codecvt_byname() {}
 };
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_msg_to(const _CCW_STD::string& __s, _CCW_STD::string& __o) { __o = __s; }
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_msg_to(const _CCW_STD::string& __s, _CCW_STD::wstring& __o) {
+    __o = __ccw_lc_widen_str(__s.data(), __s.data() + __s.size());
+}
 
 struct _CCW_LIBCPP_TEMPLATE_VIS messages_base {
     typedef long catalog;
@@ -1017,35 +1441,275 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void close(catalog __c) const { do_close(__c); }
 protected:
     virtual ~messages() {}
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual catalog do_open(const _CCW_STD::basic_string<char>&, const locale&) const { return (catalog)-1; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_get(catalog, int, int, const string_type& __dflt) const { return __dflt; }
-    _CCW_LIBCPP_HIDE_FROM_ABI virtual void do_close(catalog) const {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual catalog do_open(const _CCW_STD::basic_string<char>& __name, const locale& __loc) const {
+        return (catalog)__ccw_msg_open(__name, __loc.name());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_get(catalog __c, int __set, int __id, const string_type& __dflt) const {
+        const _CCW_STD::string* __p = __ccw_msg_get((long)__c, __set, __id);
+        string_type             __r;
+        if (!__p) return __dflt;
+        __ccw_msg_to(*__p, __r);
+        return __r;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual void do_close(catalog __c) const { __ccw_msg_close((long)__c); }
 };
-template <class _CharT> locale::id messages<_CharT>::id;
+template <class _CharT> locale::id messages<_CharT>::id(_CCW_FACET_SLOT(_CCW_FACET_SLOT_MESSAGES, __ccw_cslot<_CharT>::value));
 
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS ctype_byname;
+
 template <> class _CCW_LIBCPP_TEMPLATE_VIS ctype_byname<char> : public ctype<char> {
+    _CCW_STD::string __n_;
+    bool             __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI static mask* __mk_table(const char* __n) {
+        mask*       __t = new mask[ctype<char>::table_size];
+        const mask* __c = ctype<char>::classic_table();
+        for (_CCW_STD::size_t __i = 0; __i < ctype<char>::table_size; ++__i) __t[__i] = __c[__i];
+#if defined(_CCW_OS_WIN)
+        {   unsigned __cp = __n ? __ccw_win_ansi_cp(__n) : 0u;
+            if (__cp != 0u) {
+                for (int __i = 0; __i < (int)ctype<char>::table_size; ++__i) {
+                    char           __b = (char)(unsigned char)__i;
+                    wchar_t        __w = 0;
+                    unsigned short __ty = 0;
+                    mask           __r = 0;
+                    if (__ccw_win_byte_to_wide(__cp, &__b, 1, &__w, 1) != 1) continue;
+                    if (__ccw_win_str_type(&__w, 1, &__ty) == 0) continue;
+                    if (__ty & _CCW_LI_C1_UPPER)  __r |= upper;
+                    if (__ty & _CCW_LI_C1_LOWER)  __r |= lower;
+                    if (__ty & _CCW_LI_C1_ALPHA)  __r |= alpha;
+                    if (__ty & _CCW_LI_C1_DIGIT)  __r |= digit;
+                    if (__ty & _CCW_LI_C1_SPACE)  __r |= space;
+                    if (__ty & _CCW_LI_C1_BLANK)  __r |= blank;
+                    if (__ty & _CCW_LI_C1_PUNCT)  __r |= punct;
+                    if (__ty & _CCW_LI_C1_CNTRL)  __r |= cntrl;
+                    if (__ty & _CCW_LI_C1_XDIGIT) __r |= xdigit;
+                    if (!(__r & cntrl)) __r |= print;
+                    __t[__i] = __r;
+                }
+            }
+        }
+#else
+        (void)__n;
+#endif
+        return __t;
+    }
+    unsigned char __up_[256];
+    unsigned char __lo_[256];
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __n_ = __n ? __n : "";
+        __ok_ = false;
+        for (int __i = 0; __i < 256; ++__i) { __up_[__i] = (unsigned char)__i; __lo_[__i] = (unsigned char)__i; }
+#if defined(_CCW_OS_WIN)
+        if (!__ccw_win_locale_valid(__n_.c_str())) return;
+        {   unsigned __cp = __ccw_win_ansi_cp(__n_.c_str());
+            if (__cp == 0u) return;
+            for (int __i = 0; __i < 256; ++__i) {
+                char    __b = (char)(unsigned char)__i;
+                wchar_t __w = 0;
+                if (__ccw_win_byte_to_wide(__cp, &__b, 1, &__w, 1) != 1) continue;
+                for (int __k = 0; __k < 2; ++__k) {
+                    wchar_t __o = 0;
+                    char    __r = 0;
+                    if (__ccw_win_map_case(__n_.c_str(), &__w, 1, &__o, 1, __k) != 1) continue;
+                    if (__o == __w) continue;
+                    if (__ccw_win_wide_to_byte(__cp, &__o, 1, &__r, 1) != 1) continue;
+                    if (__k) __up_[__i] = (unsigned char)__r; else __lo_[__i] = (unsigned char)__r;
+                }
+            }
+        }
+        __ok_ = true;
+#endif
+    }
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const char*, _CCW_STD::size_t __refs = 0) : ctype<char>((const mask*)0, false, __refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : ctype<char>((const mask*)0, false, __refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const char* __n, _CCW_STD::size_t __refs = 0)
+        : ctype<char>(__mk_table(__n), true, __refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0)
+        : ctype<char>(__mk_table(__n.c_str()), true, __refs) { __init(__n.c_str()); }
 protected:
     virtual ~ctype_byname() {}
+#if defined(_CCW_OS_WIN)
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_toupper(char __c) const { return __ok_ ? (char)__up_[(unsigned char)__c] : ctype<char>::do_toupper(__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* do_toupper(char* __b, const char* __e) const { for (; __b != __e; ++__b) *__b = do_toupper(*__b); return __e; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_tolower(char __c) const { return __ok_ ? (char)__lo_[(unsigned char)__c] : ctype<char>::do_tolower(__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const char* do_tolower(char* __b, const char* __e) const { for (; __b != __e; ++__b) *__b = do_tolower(*__b); return __e; }
+#endif
+};
+
+template <> class _CCW_LIBCPP_TEMPLATE_VIS ctype_byname<wchar_t> : public ctype<wchar_t> {
+    _CCW_STD::string __n_;
+    bool             __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __n_ = __n ? __n : "";
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ok_ = __ccw_win_locale_valid(__n_.c_str()) != 0;
+#endif
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const char* __n, _CCW_STD::size_t __refs = 0) : ctype<wchar_t>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit ctype_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : ctype<wchar_t>(__refs) { __init(__n.c_str()); }
+protected:
+    virtual ~ctype_byname() {}
+#if defined(_CCW_OS_WIN)
+    _CCW_LIBCPP_HIDE_FROM_ABI wchar_t __map1(wchar_t __c, int __up) const {
+        wchar_t __o = 0;
+        if (__ccw_win_map_case(__n_.c_str(), &__c, 1, &__o, 1, __up) != 1) return __c;
+        return __o;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual bool do_is(mask __m, wchar_t __c) const {
+        unsigned short __ty = 0;
+        mask           __r  = 0;
+        if (!__ok_ || __ccw_win_str_type(&__c, 1, &__ty) == 0) return ctype<wchar_t>::do_is(__m, __c);
+        if (__ty & _CCW_LI_C1_UPPER)  __r |= upper;
+        if (__ty & _CCW_LI_C1_LOWER)  __r |= lower;
+        if (__ty & _CCW_LI_C1_ALPHA)  __r |= alpha;
+        if (__ty & _CCW_LI_C1_DIGIT)  __r |= digit;
+        if (__ty & _CCW_LI_C1_SPACE)  __r |= space;
+        if (__ty & _CCW_LI_C1_BLANK)  __r |= blank;
+        if (__ty & _CCW_LI_C1_PUNCT)  __r |= punct;
+        if (__ty & _CCW_LI_C1_CNTRL)  __r |= cntrl;
+        if (__ty & _CCW_LI_C1_XDIGIT) __r |= xdigit;
+        if (!(__r & cntrl)) __r |= print;
+        return (__r & __m) != 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t do_toupper(wchar_t __c) const { return __ok_ ? __map1(__c, 1) : ctype<wchar_t>::do_toupper(__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const wchar_t* do_toupper(wchar_t* __b, const wchar_t* __e) const { for (; __b != __e; ++__b) *__b = do_toupper(*__b); return __e; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t do_tolower(wchar_t __c) const { return __ok_ ? __map1(__c, 0) : ctype<wchar_t>::do_tolower(__c); }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual const wchar_t* do_tolower(wchar_t* __b, const wchar_t* __e) const { for (; __b != __e; ++__b) *__b = do_tolower(*__b); return __e; }
+#endif
 };
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS numpunct_byname;
 template <> class _CCW_LIBCPP_TEMPLATE_VIS numpunct_byname<char> : public numpunct<char> {
+    char             __dp_;
+    char             __ts_;
+    _CCW_STD::string __grp_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __dp_ = '.'; __ts_ = ','; __grp_.clear();
+#if defined(_CCW_OS_WIN)
+        __dp_  = __ccw_lc_narrow(__ccw_lc_wchar(__n, _CCW_LI_SDECIMAL,  L'.'), '.');
+        __ts_  = __ccw_lc_narrow(__ccw_lc_wchar(__n, _CCW_LI_STHOUSAND, L','), ',');
+        __grp_ = __ccw_lc_grouping(__n, _CCW_LI_SGROUPING);
+#else
+        (void)__n;
+#endif
+    }
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const char*, _CCW_STD::size_t __refs = 0) : numpunct<char>(__refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : numpunct<char>(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const char* __n, _CCW_STD::size_t __refs = 0) : numpunct<char>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : numpunct<char>(__refs) { __init(__n.c_str()); }
 protected:
     virtual ~numpunct_byname() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_decimal_point() const { return __dp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char do_thousands_sep() const { return __ts_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping() const { return __grp_; }
+};
+
+template <> class _CCW_LIBCPP_TEMPLATE_VIS numpunct_byname<wchar_t> : public numpunct<wchar_t> {
+    wchar_t          __dp_;
+    wchar_t          __ts_;
+    _CCW_STD::string __grp_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __dp_ = L'.'; __ts_ = L','; __grp_.clear();
+#if defined(_CCW_OS_WIN)
+        __dp_  = __ccw_lc_wchar(__n, _CCW_LI_SDECIMAL,  L'.');
+        __ts_  = __ccw_lc_wchar(__n, _CCW_LI_STHOUSAND, L',');
+        __grp_ = __ccw_lc_grouping(__n, _CCW_LI_SGROUPING);
+#else
+        (void)__n;
+#endif
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const char* __n, _CCW_STD::size_t __refs = 0) : numpunct<wchar_t>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit numpunct_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : numpunct<wchar_t>(__refs) { __init(__n.c_str()); }
+protected:
+    virtual ~numpunct_byname() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t do_decimal_point() const { return __dp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t do_thousands_sep() const { return __ts_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping() const { return __grp_; }
 };
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS collate_byname;
+
 template <> class _CCW_LIBCPP_TEMPLATE_VIS collate_byname<char> : public collate<char> {
+    _CCW_STD::string __n_;
+    bool             __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __n_ = __n ? __n : "";
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ok_ = __ccw_win_locale_valid(__n_.c_str()) != 0;
+#endif
+    }
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const char*, _CCW_STD::size_t __refs = 0) : collate<char>(__refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : collate<char>(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const char* __n, _CCW_STD::size_t __refs = 0) : collate<char>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : collate<char>(__refs) { __init(__n.c_str()); }
 protected:
     virtual ~collate_byname() {}
+#if defined(_CCW_OS_WIN)
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_compare(const char* __b1, const char* __e1, const char* __b2, const char* __e2) const {
+        if (__ok_) {
+            _CCW_STD::wstring __w1 = __ccw_lc_widen_str(__b1, __e1);
+            _CCW_STD::wstring __w2 = __ccw_lc_widen_str(__b2, __e2);
+            int __r = __ccw_win_compare_str(__n_.c_str(), __w1.data(), (int)__w1.size(), __w2.data(), (int)__w2.size());
+            if (__r != -2) return __r;
+        }
+        return collate<char>::do_compare(__b1, __e1, __b2, __e2);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_transform(const char* __b, const char* __e) const {
+        if (__ok_) {
+            _CCW_STD::string __k = __ccw_lc_sortkey(__n_.c_str(), __ccw_lc_widen_str(__b, __e));
+            if (!__k.empty()) return __k;
+        }
+        return collate<char>::do_transform(__b, __e);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual long do_hash(const char* __b, const char* __e) const {
+        string_type __k = do_transform(__b, __e);
+        long        __h = 0;
+        for (_CCW_STD::size_t __i = 0; __i < __k.size(); ++__i) __h = __h * 31 + (unsigned char)__k[__i];
+        return __h;
+    }
+#endif
+};
+
+template <> class _CCW_LIBCPP_TEMPLATE_VIS collate_byname<wchar_t> : public collate<wchar_t> {
+    _CCW_STD::string __n_;
+    bool             __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __n_ = __n ? __n : "";
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ok_ = __ccw_win_locale_valid(__n_.c_str()) != 0;
+#endif
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const char* __n, _CCW_STD::size_t __refs = 0) : collate<wchar_t>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit collate_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : collate<wchar_t>(__refs) { __init(__n.c_str()); }
+protected:
+    virtual ~collate_byname() {}
+#if defined(_CCW_OS_WIN)
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int do_compare(const wchar_t* __b1, const wchar_t* __e1, const wchar_t* __b2, const wchar_t* __e2) const {
+        if (__ok_) {
+            int __r = __ccw_win_compare_str(__n_.c_str(), __b1, (int)(__e1 - __b1), __b2, (int)(__e2 - __b2));
+            if (__r != -2) return __r;
+        }
+        return collate<wchar_t>::do_compare(__b1, __e1, __b2, __e2);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type do_transform(const wchar_t* __b, const wchar_t* __e) const {
+        if (__ok_) {
+            _CCW_STD::string __k = __ccw_lc_sortkey(__n_.c_str(), _CCW_STD::wstring(__b, __e));
+            if (!__k.empty()) {
+                string_type __r;
+                for (_CCW_STD::size_t __i = 0; __i < __k.size(); ++__i) __r.push_back((wchar_t)(unsigned char)__k[__i]);
+                return __r;
+            }
+        }
+        return collate<wchar_t>::do_transform(__b, __e);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual long do_hash(const wchar_t* __b, const wchar_t* __e) const {
+        string_type __k = do_transform(__b, __e);
+        long        __h = 0;
+        for (_CCW_STD::size_t __i = 0; __i < __k.size(); ++__i) __h = __h * 31 + (long)(unsigned long)__k[__i];
+        return __h;
+    }
+#endif
 };
 template <class _CharT> class _CCW_LIBCPP_TEMPLATE_VIS messages_byname;
 template <> class _CCW_LIBCPP_TEMPLATE_VIS messages_byname<char> : public messages<char> {
@@ -1055,28 +1719,350 @@ public:
 protected:
     virtual ~messages_byname() {}
 };
+template <> class _CCW_LIBCPP_TEMPLATE_VIS messages_byname<wchar_t> : public messages<wchar_t> {
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit messages_byname(const char*, _CCW_STD::size_t __refs = 0) : messages<wchar_t>(__refs) {}
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit messages_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : messages<wchar_t>(__refs) {}
+protected:
+    virtual ~messages_byname() {}
+};
 template <class _CharT, bool _Intl = false> class _CCW_LIBCPP_TEMPLATE_VIS moneypunct_byname;
+
 template <bool _Intl> class _CCW_LIBCPP_TEMPLATE_VIS moneypunct_byname<char, _Intl> : public moneypunct<char, _Intl> {
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const char*, _CCW_STD::size_t __refs = 0) : moneypunct<char, _Intl>(__refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : moneypunct<char, _Intl>(__refs) {}
+    typedef _CCW_STD::basic_string<char> string_type;
+    typedef money_base::pattern          pattern;
+private:
+    char             __dp_;
+    char             __ts_;
+    _CCW_STD::string __grp_;
+    string_type      __sym_;
+    string_type      __pos_;
+    string_type      __neg_;
+    int              __frac_;
+    pattern          __pf_;
+    pattern          __nf_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __dp_ = '.'; __ts_ = ','; __frac_ = 0;
+        __neg_.assign(1, '-');
+        for (int __i = 0; __i < 4; ++__i) { __pf_.field[__i] = (char)money_base::none; __nf_.field[__i] = (char)money_base::none; }
+#if defined(_CCW_OS_WIN)
+        __ccw_mp_raw __r;
+        __ccw_mp_load(__n, _Intl, __r);
+        if (!__r.__dp_.empty()) __dp_ = __ccw_lc_narrow(__r.__dp_[0], '.');
+        if (!__r.__ts_.empty()) __ts_ = __ccw_lc_narrow(__r.__ts_[0], ',');
+        __grp_  = __r.__grp_;
+        __sym_  = __ccw_lc_narrow_str(__r.__sym_);
+        __pos_  = __ccw_lc_narrow_str(__r.__pos_);
+        __neg_  = __ccw_lc_narrow_str(__r.__neg_);
+        __frac_ = __r.__frac_;
+        for (int __i = 0; __i < 4; ++__i) { __pf_.field[__i] = __r.__pf_[__i]; __nf_.field[__i] = __r.__nf_[__i]; }
+#else
+        (void)__n;
+#endif
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const char* __n, _CCW_STD::size_t __refs = 0) : moneypunct<char, _Intl>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : moneypunct<char, _Intl>(__refs) { __init(__n.c_str()); }
 protected:
     virtual ~moneypunct_byname() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char             do_decimal_point() const { return __dp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual char             do_thousands_sep() const { return __ts_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping()      const { return __grp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_curr_symbol()   const { return __sym_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_positive_sign() const { return __pos_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_negative_sign() const { return __neg_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int              do_frac_digits()   const { return __frac_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pattern          do_pos_format()    const { return __pf_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pattern          do_neg_format()    const { return __nf_; }
+};
+
+template <bool _Intl> class _CCW_LIBCPP_TEMPLATE_VIS moneypunct_byname<wchar_t, _Intl> : public moneypunct<wchar_t, _Intl> {
+public:
+    typedef _CCW_STD::basic_string<wchar_t> string_type;
+    typedef money_base::pattern             pattern;
+private:
+    wchar_t          __dp_;
+    wchar_t          __ts_;
+    _CCW_STD::string __grp_;
+    string_type      __sym_;
+    string_type      __pos_;
+    string_type      __neg_;
+    int              __frac_;
+    pattern          __pf_;
+    pattern          __nf_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __dp_ = L'.'; __ts_ = L','; __frac_ = 0;
+        __neg_.assign(1, L'-');
+        for (int __i = 0; __i < 4; ++__i) { __pf_.field[__i] = (char)money_base::none; __nf_.field[__i] = (char)money_base::none; }
+#if defined(_CCW_OS_WIN)
+        __ccw_mp_raw __r;
+        __ccw_mp_load(__n, _Intl, __r);
+        if (!__r.__dp_.empty()) __dp_ = __r.__dp_[0];
+        if (!__r.__ts_.empty()) __ts_ = __r.__ts_[0];
+        __grp_  = __r.__grp_;
+        __sym_  = __r.__sym_;
+        __pos_  = __r.__pos_;
+        __neg_  = __r.__neg_;
+        __frac_ = __r.__frac_;
+        for (int __i = 0; __i < 4; ++__i) { __pf_.field[__i] = __r.__pf_[__i]; __nf_.field[__i] = __r.__nf_[__i]; }
+#else
+        (void)__n;
+#endif
+    }
+public:
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const char* __n, _CCW_STD::size_t __refs = 0) : moneypunct<wchar_t, _Intl>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit moneypunct_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : moneypunct<wchar_t, _Intl>(__refs) { __init(__n.c_str()); }
+protected:
+    virtual ~moneypunct_byname() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t          do_decimal_point() const { return __dp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual wchar_t          do_thousands_sep() const { return __ts_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::string do_grouping()      const { return __grp_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_curr_symbol()   const { return __sym_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_positive_sign() const { return __pos_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual string_type      do_negative_sign() const { return __neg_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual int              do_frac_digits()   const { return __frac_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pattern          do_pos_format()    const { return __pf_; }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual pattern          do_neg_format()    const { return __nf_; }
 };
 template <class _CharT, class _InputIterator = istreambuf_iterator<_CharT, char_traits<_CharT> > > class _CCW_LIBCPP_TEMPLATE_VIS time_get_byname;
 template <class _InputIterator> class _CCW_LIBCPP_TEMPLATE_VIS time_get_byname<char, _InputIterator> : public time_get<char, _InputIterator> {
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const char*, _CCW_STD::size_t __refs = 0) : time_get<char, _InputIterator>(__refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : time_get<char, _InputIterator>(__refs) {}
+    typedef char                            char_type;
+    typedef _InputIterator                iter_type;
+    typedef _CCW_STD::basic_string<char>    string_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const char* __n, _CCW_STD::size_t __refs = 0) : time_get<char, _InputIterator>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : time_get<char, _InputIterator>(__refs) { __init(__n.c_str()); }
+
+private:
+    string_type __wd_[7];
+    string_type __awd_[7];
+    string_type __mo_[12];
+    string_type __amo_[12];
+    bool        __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ccw_tm_raw __r;
+        __ccw_tm_load(__n, __r);
+        if (!__r.__ok_) return;
+        for (int __i = 0; __i < 7; ++__i)  { __wd_[__i] = __ccw_lc_narrow_str(__r.__wd_[__i]);  __awd_[__i] = __ccw_lc_narrow_str(__r.__awd_[__i]); }
+        for (int __i = 0; __i < 12; ++__i) { __mo_[__i] = __ccw_lc_narrow_str(__r.__mo_[__i]); __amo_[__i] = __ccw_lc_narrow_str(__r.__amo_[__i]); }
+        __ok_ = true;
+#else
+        (void)__n;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int __match(iter_type& __b, iter_type __e, const string_type* __names, int __n) const {
+        bool             __live[24];
+        int              __nlive = 0;
+        _CCW_STD::size_t __k     = 0;
+        int              __done  = -1;
+        for (int __i = 0; __i < __n; ++__i) { __live[__i] = !__names[__i].empty(); if (__live[__i]) ++__nlive; }
+        while (__b != __e && __nlive > 0) {
+            char_type __c    = *__b;
+            int       __next = 0;
+            for (int __i = 0; __i < __n; ++__i) {
+                if (!__live[__i]) continue;
+                if (__k < __names[__i].size() && __ccw_tm_fold(__names[__i][__k]) == __ccw_tm_fold(__c)) ++__next;
+                else __live[__i] = false;
+            }
+            if (__next == 0) break;
+            ++__b; ++__k; __nlive = __next;
+            for (int __i = 0; __i < __n; ++__i) if (__live[__i] && __names[__i].size() == __k) __done = __i;
+        }
+        return __done;
+    }
 protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_get_weekday(iter_type __b, iter_type __e, ios_base& __iob, int& __err, _CCW_STD::tm* __t) const {
+        if (!__ok_) return time_get<char, _InputIterator>::do_get_weekday(__b, __e, __iob, __err, __t);
+        string_type __c[24];
+        for (int __i = 0; __i < 7; ++__i) { __c[__i] = __awd_[__i]; __c[__i + 7] = __wd_[__i]; }
+        int __i2 = __match(__b, __e, __c, 14);
+        if (__i2 < 0) __err |= 2; else __t->tm_wday = __i2 % 7;
+        return __b;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_get_monthname(iter_type __b, iter_type __e, ios_base& __iob, int& __err, _CCW_STD::tm* __t) const {
+        if (!__ok_) return time_get<char, _InputIterator>::do_get_monthname(__b, __e, __iob, __err, __t);
+        string_type __c[24];
+        for (int __i = 0; __i < 12; ++__i) { __c[__i] = __amo_[__i]; __c[__i + 12] = __mo_[__i]; }
+        int __i2 = __match(__b, __e, __c, 24);
+        if (__i2 < 0) __err |= 2; else __t->tm_mon = __i2 % 12;
+        return __b;
+    }
+    virtual ~time_get_byname() {}
+};
+template <class _InputIterator> class _CCW_LIBCPP_TEMPLATE_VIS time_get_byname<wchar_t, _InputIterator> : public time_get<wchar_t, _InputIterator> {
+public:
+    typedef wchar_t                            char_type;
+    typedef _InputIterator                iter_type;
+    typedef _CCW_STD::basic_string<wchar_t>    string_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const char* __n, _CCW_STD::size_t __refs = 0) : time_get<wchar_t, _InputIterator>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_get_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : time_get<wchar_t, _InputIterator>(__refs) { __init(__n.c_str()); }
+
+private:
+    string_type __wd_[7];
+    string_type __awd_[7];
+    string_type __mo_[12];
+    string_type __amo_[12];
+    bool        __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ccw_tm_raw __r;
+        __ccw_tm_load(__n, __r);
+        if (!__r.__ok_) return;
+        for (int __i = 0; __i < 7; ++__i)  { __wd_[__i] = (__r.__wd_[__i]);  __awd_[__i] = (__r.__awd_[__i]); }
+        for (int __i = 0; __i < 12; ++__i) { __mo_[__i] = (__r.__mo_[__i]); __amo_[__i] = (__r.__amo_[__i]); }
+        __ok_ = true;
+#else
+        (void)__n;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI int __match(iter_type& __b, iter_type __e, const string_type* __names, int __n) const {
+        bool             __live[24];
+        int              __nlive = 0;
+        _CCW_STD::size_t __k     = 0;
+        int              __done  = -1;
+        for (int __i = 0; __i < __n; ++__i) { __live[__i] = !__names[__i].empty(); if (__live[__i]) ++__nlive; }
+        while (__b != __e && __nlive > 0) {
+            char_type __c    = *__b;
+            int       __next = 0;
+            for (int __i = 0; __i < __n; ++__i) {
+                if (!__live[__i]) continue;
+                if (__k < __names[__i].size() && __ccw_tm_fold(__names[__i][__k]) == __ccw_tm_fold(__c)) ++__next;
+                else __live[__i] = false;
+            }
+            if (__next == 0) break;
+            ++__b; ++__k; __nlive = __next;
+            for (int __i = 0; __i < __n; ++__i) if (__live[__i] && __names[__i].size() == __k) __done = __i;
+        }
+        return __done;
+    }
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_get_weekday(iter_type __b, iter_type __e, ios_base& __iob, int& __err, _CCW_STD::tm* __t) const {
+        if (!__ok_) return time_get<wchar_t, _InputIterator>::do_get_weekday(__b, __e, __iob, __err, __t);
+        string_type __c[24];
+        for (int __i = 0; __i < 7; ++__i) { __c[__i] = __awd_[__i]; __c[__i + 7] = __wd_[__i]; }
+        int __i2 = __match(__b, __e, __c, 14);
+        if (__i2 < 0) __err |= 2; else __t->tm_wday = __i2 % 7;
+        return __b;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_get_monthname(iter_type __b, iter_type __e, ios_base& __iob, int& __err, _CCW_STD::tm* __t) const {
+        if (!__ok_) return time_get<wchar_t, _InputIterator>::do_get_monthname(__b, __e, __iob, __err, __t);
+        string_type __c[24];
+        for (int __i = 0; __i < 12; ++__i) { __c[__i] = __amo_[__i]; __c[__i + 12] = __mo_[__i]; }
+        int __i2 = __match(__b, __e, __c, 24);
+        if (__i2 < 0) __err |= 2; else __t->tm_mon = __i2 % 12;
+        return __b;
+    }
     virtual ~time_get_byname() {}
 };
 template <class _CharT, class _OutputIterator = ostreambuf_iterator<_CharT, char_traits<_CharT> > > class _CCW_LIBCPP_TEMPLATE_VIS time_put_byname;
 template <class _OutputIterator> class _CCW_LIBCPP_TEMPLATE_VIS time_put_byname<char, _OutputIterator> : public time_put<char, _OutputIterator> {
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const char*, _CCW_STD::size_t __refs = 0) : time_put<char, _OutputIterator>(__refs) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const _CCW_STD::string&, _CCW_STD::size_t __refs = 0) : time_put<char, _OutputIterator>(__refs) {}
+    typedef char                            char_type;
+    typedef _OutputIterator               iter_type;
+    typedef _CCW_STD::basic_string<char>    string_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const char* __n, _CCW_STD::size_t __refs = 0) : time_put<char, _OutputIterator>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : time_put<char, _OutputIterator>(__refs) { __init(__n.c_str()); }
+
+private:
+    string_type __wd_[7];
+    string_type __awd_[7];
+    string_type __mo_[12];
+    string_type __amo_[12];
+    string_type __am_;
+    string_type __pm_;
+    bool        __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ccw_tm_raw __r;
+        __ccw_tm_load(__n, __r);
+        if (!__r.__ok_) return;
+        for (int __i = 0; __i < 7; ++__i)  { __wd_[__i] = __ccw_lc_narrow_str(__r.__wd_[__i]);  __awd_[__i] = __ccw_lc_narrow_str(__r.__awd_[__i]); }
+        for (int __i = 0; __i < 12; ++__i) { __mo_[__i] = __ccw_lc_narrow_str(__r.__mo_[__i]); __amo_[__i] = __ccw_lc_narrow_str(__r.__amo_[__i]); }
+        __am_ = __ccw_lc_narrow_str(__r.__am_); __pm_ = __ccw_lc_narrow_str(__r.__pm_);
+        __ok_ = true;
+#else
+        (void)__n;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iter_type __emit(iter_type __s, const string_type& __v) const {
+        for (_CCW_STD::size_t __i = 0; __i < __v.size(); ++__i) { *__s = __v[__i]; ++__s; }
+        return __s;
+    }
 protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_put(iter_type __s, ios_base& __iob, char_type __fill, const _CCW_STD::tm* __t,
+                                                       char __format, char __modifier) const {
+        if (__ok_ && __t) {
+            int __w = __t->tm_wday, __m = __t->tm_mon;
+            switch (__format) {
+            case 'a': if (__w >= 0 && __w < 7  && !__awd_[__w].empty()) return __emit(__s, __awd_[__w]); break;
+            case 'A': if (__w >= 0 && __w < 7  && !__wd_[__w].empty())  return __emit(__s, __wd_[__w]);  break;
+            case 'b': case 'h': if (__m >= 0 && __m < 12 && !__amo_[__m].empty()) return __emit(__s, __amo_[__m]); break;
+            case 'B': if (__m >= 0 && __m < 12 && !__mo_[__m].empty())  return __emit(__s, __mo_[__m]);  break;
+            case 'p': { const string_type& __v = (__t->tm_hour < 12) ? __am_ : __pm_;
+                        if (!__v.empty()) return __emit(__s, __v); } break;
+            default: break;
+            }
+        }
+        return time_put<char, _OutputIterator>::do_put(__s, __iob, __fill, __t, __format, __modifier);
+    }
+    virtual ~time_put_byname() {}
+};
+template <class _OutputIterator> class _CCW_LIBCPP_TEMPLATE_VIS time_put_byname<wchar_t, _OutputIterator> : public time_put<wchar_t, _OutputIterator> {
+public:
+    typedef wchar_t                            char_type;
+    typedef _OutputIterator               iter_type;
+    typedef _CCW_STD::basic_string<wchar_t>    string_type;
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const char* __n, _CCW_STD::size_t __refs = 0) : time_put<wchar_t, _OutputIterator>(__refs) { __init(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit time_put_byname(const _CCW_STD::string& __n, _CCW_STD::size_t __refs = 0) : time_put<wchar_t, _OutputIterator>(__refs) { __init(__n.c_str()); }
+
+private:
+    string_type __wd_[7];
+    string_type __awd_[7];
+    string_type __mo_[12];
+    string_type __amo_[12];
+    string_type __am_;
+    string_type __pm_;
+    bool        __ok_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __init(const char* __n) {
+        __ok_ = false;
+#if defined(_CCW_OS_WIN)
+        __ccw_tm_raw __r;
+        __ccw_tm_load(__n, __r);
+        if (!__r.__ok_) return;
+        for (int __i = 0; __i < 7; ++__i)  { __wd_[__i] = (__r.__wd_[__i]);  __awd_[__i] = (__r.__awd_[__i]); }
+        for (int __i = 0; __i < 12; ++__i) { __mo_[__i] = (__r.__mo_[__i]); __amo_[__i] = (__r.__amo_[__i]); }
+        __am_ = (__r.__am_); __pm_ = (__r.__pm_);
+        __ok_ = true;
+#else
+        (void)__n;
+#endif
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI iter_type __emit(iter_type __s, const string_type& __v) const {
+        for (_CCW_STD::size_t __i = 0; __i < __v.size(); ++__i) { *__s = __v[__i]; ++__s; }
+        return __s;
+    }
+protected:
+    _CCW_LIBCPP_HIDE_FROM_ABI virtual iter_type do_put(iter_type __s, ios_base& __iob, char_type __fill, const _CCW_STD::tm* __t,
+                                                       char __format, char __modifier) const {
+        if (__ok_ && __t) {
+            int __w = __t->tm_wday, __m = __t->tm_mon;
+            switch (__format) {
+            case 'a': if (__w >= 0 && __w < 7  && !__awd_[__w].empty()) return __emit(__s, __awd_[__w]); break;
+            case 'A': if (__w >= 0 && __w < 7  && !__wd_[__w].empty())  return __emit(__s, __wd_[__w]);  break;
+            case 'b': case 'h': if (__m >= 0 && __m < 12 && !__amo_[__m].empty()) return __emit(__s, __amo_[__m]); break;
+            case 'B': if (__m >= 0 && __m < 12 && !__mo_[__m].empty())  return __emit(__s, __mo_[__m]);  break;
+            case 'p': { const string_type& __v = (__t->tm_hour < 12) ? __am_ : __pm_;
+                        if (!__v.empty()) return __emit(__s, __v); } break;
+            default: break;
+            }
+        }
+        return time_put<wchar_t, _OutputIterator>::do_put(__s, __iob, __fill, __t, __format, __modifier);
+    }
     virtual ~time_put_byname() {}
 };
 
@@ -1102,5 +2088,37 @@ locale::operator()(const _CCW_STD::string& __x, const _CCW_STD::string& __y) con
                        __y.data(), __y.data() + __y.size()) < 0;
 }
 
+
+inline locale::__imp* locale::__named_imp(const char* __n) {
+#if defined(_CCW_OS_WIN)
+    if (!__n || !__ccw_win_locale_valid(__n)) return 0;
+    locale::__imp* __i = new locale::__imp(*__classic_imp());
+    __i->__name_ = __n;
+    __i->__install(numpunct<char>::id.__index(),    new numpunct_byname<char>(__n, 1));
+    __i->__install(numpunct<wchar_t>::id.__index(), new numpunct_byname<wchar_t>(__n, 1));
+    __i->__install(moneypunct<char, false>::id.__index(),    new moneypunct_byname<char, false>(__n, 1));
+    __i->__install(moneypunct<char, true>::id.__index(),     new moneypunct_byname<char, true>(__n, 1));
+    __i->__install(moneypunct<wchar_t, false>::id.__index(), new moneypunct_byname<wchar_t, false>(__n, 1));
+    __i->__install(moneypunct<wchar_t, true>::id.__index(),  new moneypunct_byname<wchar_t, true>(__n, 1));
+    __i->__install(time_put<char>::id.__index(),    new time_put_byname<char>(__n, 1));
+    __i->__install(time_put<wchar_t>::id.__index(), new time_put_byname<wchar_t>(__n, 1));
+    __i->__install(time_get<char>::id.__index(),    new time_get_byname<char>(__n, 1));
+    __i->__install(time_get<wchar_t>::id.__index(), new time_get_byname<wchar_t>(__n, 1));
+    __i->__install(_CCW_STD::collate<char>::id.__index(),    new _CCW_STD::collate_byname<char>(__n, 1));
+    __i->__install(_CCW_STD::collate<wchar_t>::id.__index(), new _CCW_STD::collate_byname<wchar_t>(__n, 1));
+    __i->__install(_CCW_STD::ctype<char>::id.__index(),    new _CCW_STD::ctype_byname<char>(__n, 1));
+    __i->__install(_CCW_STD::ctype<wchar_t>::id.__index(), new _CCW_STD::ctype_byname<wchar_t>(__n, 1));
+    return __i;
+#else
+    (void)__n;
+    return 0;
+#endif
+}
+
+
 _CCW_LIBCPP_END_NAMESPACE_STD
+
+#include "__locale_dir/wstring_convert.h"
+#include "__iterator/streambuf_iterators.h"   // after the body: <streambuf> pulls <locale> back in
+
 #endif // _CCW_LIBCPP_LOCALE

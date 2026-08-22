@@ -15,7 +15,9 @@
 #include <istream>
 #include <ostream>
 #include <string>
+#include <locale>       // codecvt -- the wide forms convert through it
 #include <cstdio>
+#include <cstring>
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _CharT, class _Traits >
@@ -27,10 +29,70 @@ public:
     typedef typename _Traits::pos_type pos_type;
     typedef typename _Traits::off_type off_type;
 private:
-    _CCW_STD::FILE* __f_;
-    bool       __owned_;
+    typedef codecvt<char_type, char, _CCW_STD::mbstate_t> __cvt_type;
+
+    _CCW_STD::FILE*     __f_;
+    bool                __owned_;
+    _CCW_STD::mbstate_t __st_;
+    char_type           __pb_;
+    bool                __haspb_;
+    char_type           __pend_ch_;
+    bool                __pend_;
     basic_filebuf(const basic_filebuf&);
     basic_filebuf& operator=(const basic_filebuf&);
+
+    _CCW_LIBCPP_HIDE_FROM_ABI void __clear_state() {
+        char* __q = (char*)(void*)&__st_;
+        for (_CCW_STD::size_t __i = 0; __i < sizeof(__st_); ++__i) __q[__i] = 0;
+        __haspb_ = false;
+        __pend_  = false;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI const __cvt_type* __cvt() const {
+        return has_facet<__cvt_type>(this->getloc()) ? &use_facet<__cvt_type>(this->getloc()) : 0;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __noconv() const {
+        const __cvt_type* __c = __cvt();
+        return !__c || __c->always_noconv();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::streamsize __put_n(const char_type* __s, _CCW_STD::streamsize __n) {
+        if (__noconv())
+            return (_CCW_STD::streamsize)_CCW_STD::fwrite(__s, sizeof(char_type), (_CCW_STD::size_t)__n, __f_);
+        const __cvt_type& __cv  = *__cvt();
+        const char_type*  __fn  = __s;
+        const char_type*  __fe  = __s + __n;
+        char              __buf[64];
+        while (__fn != __fe) {
+            const char_type* __prev = __fn;
+            char*            __tn   = 0;
+            codecvt_base::result __r = __cv.out(__st_, __fn, __fe, __fn, __buf, __buf + sizeof(__buf), __tn);
+            _CCW_STD::size_t __k = (_CCW_STD::size_t)(__tn - __buf);
+            if (__k && _CCW_STD::fwrite(__buf, 1, __k, __f_) != __k) break;
+            if (__r == codecvt_base::error) break;
+            if (__fn == __prev) break;
+        }
+        return (_CCW_STD::streamsize)(__fn - __s);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool __get_one(char_type& __out_) {
+        const __cvt_type& __cv = *__cvt();
+        if (__pend_) { __out_ = __pend_ch_; __pend_ = false; return true; }
+        for (int __i = 0; __i < 8; ++__i) {
+            int __c = _CCW_STD::fgetc(__f_);
+            if (__c == EOF) return false;
+            char        __one = (char)__c;
+            const char* __fn  = 0;
+            char_type   __w[2];
+            char_type*  __tn  = 0;
+            __w[0] = char_type(); __w[1] = char_type();
+            codecvt_base::result __r = __cv.in(__st_, &__one, &__one + 1, __fn, __w, __w + 2, __tn);
+            if (__r == codecvt_base::error) return false;
+            if (__tn != __w) {
+                __out_ = __w[0];
+                if (__tn - __w > 1) { __pend_ch_ = __w[1]; __pend_ = true; }
+                return true;
+            }
+        }
+        return false;
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI static const char* __mode_str(ios_base::openmode __m) {
         bool __bin = (__m & ios_base::binary) != 0;
         int __base = __m & (ios_base::in | ios_base::out | ios_base::trunc | ios_base::app);
@@ -41,8 +103,8 @@ private:
         return __bin ? "wb" : "w";   // out (+trunc)
     }
 public:
-    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf() : __f_(0), __owned_(false) {}
-    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_filebuf(_CCW_STD::FILE* __f) : __f_(__f), __owned_(false) {}   // adopt (console)
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf() : __f_(0), __owned_(false), __pb_(char_type()), __haspb_(false), __pend_ch_(char_type()), __pend_(false) { __clear_state(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI explicit basic_filebuf(_CCW_STD::FILE* __f) : __f_(__f), __owned_(false), __pb_(char_type()), __haspb_(false), __pend_ch_(char_type()), __pend_(false) { __clear_state(); }   // adopt (console)
     _CCW_LIBCPP_HIDE_FROM_ABI ~basic_filebuf() { close(); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI bool is_open() const { return __f_ != 0; }
@@ -51,16 +113,19 @@ public:
         __f_ = _CCW_STD::fopen(__name, __mode_str(__m));
         if (!__f_) return 0;
         __owned_ = true;
+        __clear_state();
         if (__m & ios_base::ate) _CCW_STD::fseek(__f_, 0, SEEK_END);
         return this;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf* close() {
         if (__f_ && __owned_) _CCW_STD::fclose(__f_);
         __f_ = 0; __owned_ = false;
+        __clear_state();
         return this;
     }
 
-    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf(_CCW_RV_REF_BEG basic_filebuf _CCW_RV_REF_END __rr) : __f_(0), __owned_(false) {
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_filebuf(_CCW_RV_REF_BEG basic_filebuf _CCW_RV_REF_END __rr) : __f_(0), __owned_(false), __pb_(char_type()), __haspb_(false), __pend_ch_(char_type()), __pend_(false) {
+        __clear_state();
         basic_filebuf& __r = _CCW_MOVED_OBJ(__rr);
         __f_ = __r.__f_; __owned_ = __r.__owned_;
         __r.__f_ = 0;    __r.__owned_ = false;
@@ -77,37 +142,69 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_filebuf& __r) {
         _CCW_STD::FILE* __tf = __f_;    __f_    = __r.__f_;    __r.__f_    = __tf;
         bool       __to = __owned_;__owned_= __r.__owned_;__r.__owned_= __to;
+        _CCW_STD::mbstate_t __ts = __st_; __st_ = __r.__st_; __r.__st_ = __ts;
+        char_type  __tc = __pb_;   __pb_   = __r.__pb_;   __r.__pb_   = __tc;
+        bool       __th = __haspb_;__haspb_= __r.__haspb_;__r.__haspb_= __th;
+        char_type  __tp = __pend_ch_; __pend_ch_ = __r.__pend_ch_; __r.__pend_ch_ = __tp;
+        bool       __tq = __pend_;    __pend_    = __r.__pend_;    __r.__pend_    = __tq;
     }
 
 protected:
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type overflow(int_type __c = _Traits::eof()) {
         if (!__f_) return _Traits::eof();
         if (__c == _Traits::eof()) return _Traits::not_eof(__c);
-        return _CCW_STD::fputc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+        if (__noconv())
+            return _CCW_STD::fputc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+        char_type __ch = _Traits::to_char_type(__c);
+        return __put_n(&__ch, 1) == 1 ? __c : _Traits::eof();
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsputn(const char_type* __s, _CCW_STD::streamsize __n) {
         if (!__f_) return 0;
-        return (_CCW_STD::streamsize)_CCW_STD::fwrite(__s, 1, (_CCW_STD::size_t)__n, __f_);
+        return __put_n(__s, __n);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type underflow() {
         if (!__f_) return _Traits::eof();
-        int __c = _CCW_STD::fgetc(__f_);
-        if (__c == EOF) return _Traits::eof();
-        _CCW_STD::ungetc(__c, __f_);
-        return _Traits::to_int_type((char)__c);
+        if (__noconv()) {
+            int __c = _CCW_STD::fgetc(__f_);
+            if (__c == EOF) return _Traits::eof();
+            _CCW_STD::ungetc(__c, __f_);
+            return _Traits::to_int_type((char)__c);
+        }
+        if (__haspb_) return _Traits::to_int_type(__pb_);
+        char_type __w = char_type();
+        if (!__get_one(__w)) return _Traits::eof();
+        __pb_ = __w; __haspb_ = true;
+        return _Traits::to_int_type(__w);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type uflow() {
         if (!__f_) return _Traits::eof();
-        int __c = _CCW_STD::fgetc(__f_);
-        return __c == EOF ? _Traits::eof() : _Traits::to_int_type((char)__c);
+        if (__noconv()) {
+            int __c = _CCW_STD::fgetc(__f_);
+            return __c == EOF ? _Traits::eof() : _Traits::to_int_type((char)__c);
+        }
+        int_type __r = underflow();
+        if (__r != _Traits::eof()) __haspb_ = false;
+        return __r;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int_type pbackfail(int_type __c = _Traits::eof()) {
         if (!__f_ || __c == _Traits::eof()) return _Traits::eof();
-        return _CCW_STD::ungetc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+        if (__noconv())
+            return _CCW_STD::ungetc((int)(unsigned char)_Traits::to_char_type(__c), __f_) == EOF ? _Traits::eof() : __c;
+        if (__haspb_) return _Traits::eof();
+        __pb_ = _Traits::to_char_type(__c); __haspb_ = true;
+        return __c;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual _CCW_STD::streamsize xsgetn(char_type* __s, _CCW_STD::streamsize __n) {
         if (!__f_) return 0;
-        return (_CCW_STD::streamsize)_CCW_STD::fread(__s, 1, (_CCW_STD::size_t)__n, __f_);
+        if (__noconv()) return (_CCW_STD::streamsize)_CCW_STD::fread(__s, sizeof(char_type), (_CCW_STD::size_t)__n, __f_);
+        _CCW_STD::streamsize __k = 0;
+        while (__k < __n) {
+            if (__haspb_) { __s[__k++] = __pb_; __haspb_ = false; continue; }
+            char_type __w = char_type();
+            if (!__get_one(__w)) break;
+            __s[__k++] = __w;
+        }
+        return __k;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI virtual int sync() { return __f_ ? (_CCW_STD::fflush(__f_) == 0 ? 0 : -1) : -1; }
 
@@ -117,6 +214,7 @@ protected:
         int __whence = __way == ios_base::beg ? SEEK_SET
                      : __way == ios_base::end ? SEEK_END
                                               : SEEK_CUR;
+        __haspb_ = false;
         if (_CCW_STD::fseek(__f_, (long)__off, __whence) != 0) return pos_type(-1);
         long __p = _CCW_STD::ftell(__f_);
         return __p < 0 ? pos_type(-1) : pos_type(__p);

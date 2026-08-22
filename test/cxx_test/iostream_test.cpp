@@ -78,15 +78,15 @@ TEST_CASE(iostream, init_and_wide_streams) {
     test_true( STD::cout.rdbuf() != 0 );
     test_pass("cxx03:ios_base::Init (auto init of standard streams)");
 
-#if !defined(__WATCOMC__)
+#if 1
 
-    test_true( sizeof(STD::wcout) > 0 );
+    test_true( STD::wcout.rdbuf() != 0 );
     test_pass("cxx03:wcout");
-    test_true( sizeof(STD::wcin) > 0 );
+    test_true( STD::wcin.rdbuf() != 0 );
     test_pass("cxx03:wcin");
-    test_true( sizeof(STD::wcerr) > 0 );
+    test_true( STD::wcerr.rdbuf() != 0 );
     test_pass("cxx03:wcerr");
-    test_true( sizeof(STD::wclog) > 0 );
+    test_true( STD::wclog.rdbuf() != 0 );
     test_pass("cxx03:wclog");
 #else
     TEST_SKIP1(); test_skip("cxx03:wcout");

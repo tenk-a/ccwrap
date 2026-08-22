@@ -1,4 +1,7 @@
 #include "test_cxx.hpp"
+#include <clocale>
+#include <stdexcept>
+#include <type_traits>
 
 #include <locale>
 #include <string>
@@ -7,6 +10,12 @@
 #include <ctime>
 #include <cstring>
 #include <type_traits>
+
+#if defined(_MSC_VER) && _MSC_VER < 1700 && !defined(_CCW_STD_RELOCATED)
+#  define _TST_CVT_LENGTH_STATE const STD::mbstate_t&
+#else
+#  define _TST_CVT_LENGTH_STATE STD::mbstate_t&
+#endif
 
 namespace {
 
@@ -69,7 +78,7 @@ struct LbCodecvt : STD::codecvt<char, char, STD::mbstate_t> {
     int  do_encoding() const TEST_NOTHROW { return 7; }
     bool do_always_noconv() const TEST_NOTHROW { return false; }
     int  do_max_length() const TEST_NOTHROW { return 9; }
-    int  do_length(STD::mbstate_t&, const char*, const char*, STD::size_t) const { return 3; }
+    int  do_length(_TST_CVT_LENGTH_STATE, const char*, const char*, STD::size_t) const { return 3; }
     base::result do_in(STD::mbstate_t&, const char* from, const char*, const char*& from_next,
                        char* to, char*, char*& to_next) const {
         from_next = from; to_next = to;
@@ -1099,5 +1108,333 @@ TEST_CASE(locale, time_get_format_range_cxx11) {
     TEST_NOTE("the format-range form of time_get::get is C++11");
     TEST_SKIP_N(5);
     test_skip("cxx11:time_get::get(iter_type, iter_type, ios_base&, iostate&, tm*, const char_type*, const char_type*)");
+#endif
+}
+
+
+#if TEST_TARGET_CXX >= 2011
+typedef STD::codecvt<wchar_t, char, STD_NS mbstate_t> WscCvt;
+typedef STD::wstring_convert<WscCvt>                  WscConv;
+
+static bool wsc_utf8_locale() {
+    static const char* const names[] = { ".UTF-8", ".utf8", "C.UTF-8", "en_US.UTF-8", ".65001" };
+    for (unsigned i = 0; i < sizeof names / sizeof names[0]; ++i)
+        if (STD::setlocale(LC_ALL, names[i]) != 0) return true;
+    return false;
+}
+#endif
+
+TEST_CASE(locale, wstring_convert_cxx11) {
+#if TEST_TARGET_CXX >= 2011
+    STD::string saved(STD::setlocale(LC_ALL, NULL));
+    const bool  utf8 = wsc_utf8_locale();
+
+    STD::string u8;
+    u8 += (char)0xE3; u8 += (char)0x81; u8 += (char)0x82; u8 += 'A';
+
+    {   WscConv c;
+        test_true( sizeof(WscConv) > 0 );
+        test_pass("cxx11:wstring_convert");
+        test_true(( STD::is_same<WscConv::byte_string, STD::string>::value ));
+        test_pass("cxx11:wstring_convert::byte_string");
+        test_true(( STD::is_same<WscConv::wide_string, STD::wstring>::value ));
+        test_pass("cxx11:wstring_convert::wide_string");
+        test_true(( STD::is_same<WscConv::state_type, WscCvt::state_type>::value ));
+        test_pass("cxx11:wstring_convert::state_type");
+        test_true( sizeof(WscConv::int_type) > 0 );
+        test_pass("cxx11:wstring_convert::int_type");
+        test_pass("cxx11:wstring_convert default construction");
+        test_pass("cxx11:wstring_convert::~wstring_convert"); }
+
+    {   WscConv c(new WscCvt);
+        test_eq( (long)c.converted(), 0L );
+        test_pass("cxx11:wstring_convert::wstring_convert(Codecvt* pcvt)"); }
+
+    {   WscCvt::state_type st;
+        STD::memset(&st, 0, sizeof st);
+        WscConv c(new WscCvt, st);
+        test_eq( (long)c.converted(), 0L );
+        test_pass("cxx11:wstring_convert::wstring_convert(Codecvt* pcvt, state_type state)"); }
+
+    {   WscConv c(STD::string("<B>"), STD::wstring(L"<W>"));
+        test_eq( (long)c.converted(), 0L );
+        test_pass("cxx11:wstring_convert::wstring_convert(const byte_string& byte_err, const wide_string& wide_err)"); }
+
+    {   WscConv c;
+        STD::wstring w = c.from_bytes('Z');
+        test_eq( (long)w.size(), 1L );
+        test_true( w[0] == (wchar_t)'Z' );
+        test_pass("cxx11:wstring_convert::from_bytes(char)"); }
+
+    {   WscConv c;
+        STD::wstring w = c.from_bytes("ab");
+        test_eq( (long)w.size(), 2L );
+        test_true( w[0] == (wchar_t)'a' && w[1] == (wchar_t)'b' );
+        test_pass("cxx11:wstring_convert::from_bytes(const char*)"); }
+
+    {   WscConv c;
+        STD::wstring w = c.from_bytes(STD::string("abc"));
+        test_eq( (long)w.size(), 3L );
+        test_pass("cxx11:wstring_convert::from_bytes(const byte_string&)"); }
+
+    {   WscConv c;
+        const char*  b = "abcd";
+        STD::wstring w = c.from_bytes(b, b + 2);
+        test_eq( (long)w.size(), 2L );
+        test_eq( (long)c.converted(), 2L );
+        test_pass("cxx11:wstring_convert::from_bytes(const char* first, const char* last)"); }
+
+    if (utf8) {
+        WscConv     c;
+        STD::string bad;
+        bad += (char)0xFF;
+        bool threw = false;
+        try { c.from_bytes(bad); } catch (const STD::range_error&) { threw = true; } catch (...) { }
+        test_true( threw );
+    } else {
+        TEST_NOTE("this locale accepts any byte, so from_bytes cannot fail");
+        TEST_SKIP1();
+    }
+    test_pass("cxx11:wstring_convert::from_bytes (conversion error without wide_err -> range_error)");
+
+    if (utf8) {
+        WscConv      c(STD::string("<B>"), STD::wstring(L"<W>"));
+        STD::string  bad;
+        bad += (char)0xFF;
+        STD::wstring w = c.from_bytes(bad);
+        test_eq( (long)w.size(), 3L );
+        test_true( w[0] == (wchar_t)'<' );
+    } else {
+        TEST_NOTE("this locale accepts any byte, so from_bytes cannot fail");
+        TEST_SKIP_N(2);
+    }
+    test_pass("cxx11:wstring_convert::from_bytes (conversion error with wide_err -> wide_err)");
+
+    {   WscConv     c;
+        STD::string b = c.to_bytes((wchar_t)'Q');
+        test_eq( (long)b.size(), 1L );
+        test_true( b[0] == 'Q' );
+        test_pass("cxx11:wstring_convert::to_bytes(Elem)"); }
+
+    {   WscConv     c;
+        STD::string b = c.to_bytes(L"xy");
+        test_eq( (long)b.size(), 2L );
+        test_pass("cxx11:wstring_convert::to_bytes(const Elem*)"); }
+
+    {   WscConv     c;
+        STD::string b = c.to_bytes(STD::wstring(L"xyz"));
+        test_eq( (long)b.size(), 3L );
+        test_pass("cxx11:wstring_convert::to_bytes(const wide_string&)"); }
+
+    {   WscConv        c;
+        const wchar_t* w = L"wxyz";
+        STD::string    b = c.to_bytes(w, w + 2);
+        test_eq( (long)b.size(), 2L );
+        test_eq( (long)c.converted(), 2L );
+        test_pass("cxx11:wstring_convert::to_bytes(const Elem* first, const Elem* last)"); }
+
+    if (utf8) {
+        WscConv      c;
+        STD::wstring bad;
+        bad.push_back((wchar_t)0xD800);
+        bool threw = false;
+        try { c.to_bytes(bad); } catch (const STD::range_error&) { threw = true; } catch (...) { }
+        test_true( threw );
+    } else {
+        TEST_NOTE("this locale maps every wide unit, so to_bytes cannot fail");
+        TEST_SKIP1();
+    }
+    test_pass("cxx11:wstring_convert::to_bytes (conversion error without byte_err -> byte_err)");
+
+    if (utf8) {
+        WscConv      c(STD::string("<B>"), STD::wstring(L"<W>"));
+        STD::wstring bad;
+        bad.push_back((wchar_t)0xD800);
+        STD::string  b = c.to_bytes(bad);
+        test_eq( (long)b.size(), 3L );
+        test_true( b[0] == '<' );
+    } else {
+        TEST_NOTE("this locale maps every wide unit, so to_bytes cannot fail");
+        TEST_SKIP_N(2);
+    }
+    test_pass("cxx11:wstring_convert::to_bytes (conversion error with byte_err -> byte_err)");
+
+    {   WscConv c;
+        c.from_bytes(u8);
+        test_eq( (long)c.converted(), (long)u8.size() );
+        test_pass("cxx11:wstring_convert::converted"); }
+
+    {   WscConv          c;
+        WscConv::state_type st = c.state();
+        test_true( sizeof(st) > 0 );
+        test_pass("cxx11:wstring_convert::state"); }
+
+    STD::setlocale(LC_ALL, saved.c_str());
+#else
+    TEST_NOTE("wstring_convert is C++11");
+    TEST_SKIP_N(29);
+    test_skip("cxx11:wstring_convert");
+    test_skip("cxx11:wstring_convert::byte_string");
+    test_skip("cxx11:wstring_convert::wide_string");
+    test_skip("cxx11:wstring_convert::state_type");
+    test_skip("cxx11:wstring_convert::int_type");
+    test_skip("cxx11:wstring_convert default construction");
+    test_skip("cxx11:wstring_convert::~wstring_convert");
+    test_skip("cxx11:wstring_convert::wstring_convert(Codecvt* pcvt)");
+    test_skip("cxx11:wstring_convert::wstring_convert(Codecvt* pcvt, state_type state)");
+    test_skip("cxx11:wstring_convert::wstring_convert(const byte_string& byte_err, const wide_string& wide_err)");
+    test_skip("cxx11:wstring_convert::from_bytes(char)");
+    test_skip("cxx11:wstring_convert::from_bytes(const char*)");
+    test_skip("cxx11:wstring_convert::from_bytes(const byte_string&)");
+    test_skip("cxx11:wstring_convert::from_bytes(const char* first, const char* last)");
+    test_skip("cxx11:wstring_convert::from_bytes (conversion error without wide_err -> range_error)");
+    test_skip("cxx11:wstring_convert::from_bytes (conversion error with wide_err -> wide_err)");
+    test_skip("cxx11:wstring_convert::to_bytes(Elem)");
+    test_skip("cxx11:wstring_convert::to_bytes(const Elem*)");
+    test_skip("cxx11:wstring_convert::to_bytes(const wide_string&)");
+    test_skip("cxx11:wstring_convert::to_bytes(const Elem* first, const Elem* last)");
+    test_skip("cxx11:wstring_convert::to_bytes (conversion error without byte_err -> byte_err)");
+    test_skip("cxx11:wstring_convert::to_bytes (conversion error with byte_err -> byte_err)");
+    test_skip("cxx11:wstring_convert::converted");
+    test_skip("cxx11:wstring_convert::state");
+#endif
+}
+
+TEST_CASE(locale, wstring_convert_cxx14) {
+#if TEST_TARGET_CXX >= 2014
+    test_true(( !STD::is_convertible<WscCvt*, WscConv>::value ));
+    test_pass("cxx14:wstring_convert::wstring_convert(Codecvt* pcvt) is explicit");
+    test_true(( !STD::is_convertible<STD::string, WscConv>::value ));
+    test_pass("cxx14:wstring_convert::wstring_convert(const byte_string& byte_err, const wide_string& wide_err) is explicit");
+    {   WscConv c;
+        test_eq( (long)c.converted(), 0L );
+        test_pass("cxx14:wstring_convert::converted() const noexcept"); }
+    TEST_SKIP_WAT("Open Watcom cannot see a private copy constructor through is_copy_constructible (A47)");
+    test_true( !STD::is_copy_constructible<WscConv>::value );
+    test_pass("cxx14:wstring_convert::wstring_convert(const wstring_convert&) = delete");
+    test_true( !STD::is_copy_assignable<WscConv>::value );
+    test_pass("cxx14:wstring_convert::operator=(const wstring_convert&) = delete");
+#else
+    TEST_NOTE("these refinements are C++14 (LWG 2176)");
+    TEST_SKIP_N(5);
+    test_skip("cxx14:wstring_convert::wstring_convert(Codecvt* pcvt) is explicit");
+    test_skip("cxx14:wstring_convert::wstring_convert(const byte_string& byte_err, const wide_string& wide_err) is explicit");
+    test_skip("cxx14:wstring_convert::converted() const noexcept");
+    test_skip("cxx14:wstring_convert::wstring_convert(const wstring_convert&) = delete");
+    test_skip("cxx14:wstring_convert::operator=(const wstring_convert&) = delete");
+#endif
+}
+
+TEST_CASE(locale, wstring_convert_cxx20) {
+#if TEST_TARGET_CXX >= 2020
+    WscConv c;
+    test_eq( (long)c.converted(), 0L );
+    test_pass("cxx20:wstring_convert::wstring_convert() (separate delegating constructor)");
+#else
+    TEST_NOTE("the defaulted constructor was split out by P0935R0 (C++20)");
+    TEST_SKIP1();
+    test_skip("cxx20:wstring_convert::wstring_convert() (separate delegating constructor)");
+#endif
+}
+
+TEST_CASE(locale, wbuffer_convert_cxx11) {
+#if TEST_TARGET_CXX >= 2011
+    STD::string saved(STD::setlocale(LC_ALL, NULL));
+    (void)wsc_utf8_locale();
+    typedef STD::wbuffer_convert<WscCvt> WbConv;
+
+    {   WbConv b;
+        test_true( b.rdbuf() == 0 );
+        test_pass("cxx11:wbuffer_convert");
+        test_pass("cxx11:wbuffer_convert default construction");
+        test_pass("cxx11:wbuffer_convert::~wbuffer_convert"); }
+
+    {   STD::stringstream ss;
+        WbConv            b(ss.rdbuf());
+        STD::basic_streambuf<wchar_t>* sb = &b;
+        test_true( sb != 0 );
+        test_pass("cxx11:wbuffer_convert is a basic_streambuf<Elem, Tr>");
+        test_true(( STD::is_same<WbConv::state_type, WscCvt::state_type>::value ));
+        test_pass("cxx11:wbuffer_convert::state_type");
+        test_true( b.rdbuf() == ss.rdbuf() );
+        test_pass("cxx11:wbuffer_convert::rdbuf"); }
+
+    {   STD::stringstream ss1, ss2;
+        WbConv            b(ss1.rdbuf());
+        STD_NS streambuf* old = b.rdbuf(ss2.rdbuf());
+        test_true( old == ss1.rdbuf() );
+        test_true( b.rdbuf() == ss2.rdbuf() );
+        test_pass("cxx11:wbuffer_convert::rdbuf(streambuf* bytebuf)"); }
+
+    {   WscCvt::state_type st;
+        STD::memset(&st, 0, sizeof st);
+        STD::stringstream ss;
+        WbConv            b(ss.rdbuf(), new WscCvt, st);
+        test_true( b.rdbuf() == ss.rdbuf() );
+        test_pass("cxx11:wbuffer_convert::wbuffer_convert(streambuf* bytebuf, Codecvt* pcvt, state_type state)");
+        WbConv::state_type s2 = b.state();
+        test_true( sizeof(s2) > 0 );
+        test_pass("cxx11:wbuffer_convert::state"); }
+
+    {   STD::stringstream ss;
+        WbConv            b(ss.rdbuf());
+        STD::wostream     wos(&b);
+        wos << (wchar_t)'h' << (wchar_t)'i';
+        wos.flush();
+        test_eq( ss.str(), STD::string("hi") );
+        test_pass("cxx11:wbuffer_convert wide output via byte streambuf"); }
+
+    {   STD::stringstream ss("hi");
+        WbConv            b(ss.rdbuf());
+        STD::wistream     wis(&b);
+        wchar_t           w[4];
+        wis.read(w, 2);
+        test_eq( (long)wis.gcount(), 2L );
+        test_true( w[0] == (wchar_t)'h' && w[1] == (wchar_t)'i' );
+        test_pass("cxx11:wbuffer_convert wide input via byte streambuf"); }
+
+    STD::setlocale(LC_ALL, saved.c_str());
+#else
+    TEST_NOTE("wbuffer_convert is C++11");
+    TEST_SKIP_N(11);
+    test_skip("cxx11:wbuffer_convert");
+    test_skip("cxx11:wbuffer_convert is a basic_streambuf<Elem, Tr>");
+    test_skip("cxx11:wbuffer_convert::state_type");
+    test_skip("cxx11:wbuffer_convert::wbuffer_convert(streambuf* bytebuf, Codecvt* pcvt, state_type state)");
+    test_skip("cxx11:wbuffer_convert default construction");
+    test_skip("cxx11:wbuffer_convert::~wbuffer_convert");
+    test_skip("cxx11:wbuffer_convert::rdbuf");
+    test_skip("cxx11:wbuffer_convert::rdbuf(streambuf* bytebuf)");
+    test_skip("cxx11:wbuffer_convert::state");
+    test_skip("cxx11:wbuffer_convert wide input via byte streambuf");
+    test_skip("cxx11:wbuffer_convert wide output via byte streambuf");
+#endif
+}
+
+TEST_CASE(locale, wbuffer_convert_cxx14_cxx20) {
+#if TEST_TARGET_CXX >= 2014
+    typedef STD::wbuffer_convert<WscCvt> WbConv;
+    test_true(( !STD::is_convertible<STD_NS streambuf*, WbConv>::value ));
+    test_pass("cxx14:wbuffer_convert::wbuffer_convert(streambuf* bytebuf, Codecvt* pcvt, state_type state) is explicit");
+    TEST_SKIP_WAT("Open Watcom cannot see a private copy constructor through is_copy_constructible (A47)");
+    test_true( !STD::is_copy_constructible<WbConv>::value );
+    test_pass("cxx14:wbuffer_convert::wbuffer_convert(const wbuffer_convert&) = delete");
+    test_true( !STD::is_copy_assignable<WbConv>::value );
+    test_pass("cxx14:wbuffer_convert::operator=(const wbuffer_convert&) = delete");
+#else
+    TEST_NOTE("these refinements are C++14 (LWG 2176)");
+    TEST_SKIP_N(3);
+    test_skip("cxx14:wbuffer_convert::wbuffer_convert(streambuf* bytebuf, Codecvt* pcvt, state_type state) is explicit");
+    test_skip("cxx14:wbuffer_convert::wbuffer_convert(const wbuffer_convert&) = delete");
+    test_skip("cxx14:wbuffer_convert::operator=(const wbuffer_convert&) = delete");
+#endif
+#if TEST_TARGET_CXX >= 2020
+    {   STD::wbuffer_convert<WscCvt> b;
+        test_true( b.rdbuf() == 0 );
+        test_pass("cxx20:wbuffer_convert::wbuffer_convert() (separate delegating constructor)"); }
+#else
+    TEST_NOTE("the defaulted constructor was split out by P0935R0 (C++20)");
+    TEST_SKIP1();
+    test_skip("cxx20:wbuffer_convert::wbuffer_convert() (separate delegating constructor)");
 #endif
 }

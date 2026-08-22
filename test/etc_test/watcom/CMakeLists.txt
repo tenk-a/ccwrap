@@ -56,6 +56,7 @@ ccwrap_etc_wat_add_c(watcom_cmath    watcom_cmath_test.c)
 ccwrap_etc_wat_add_c(watcom_stdbit   watcom_stdbit_test.c)
 ccwrap_etc_wat_add_c(watcom_win32_coexist watcom_win32_coexist_test.c)
 ccwrap_etc_wat_add_c(watcom_win32_coexist2 watcom_win32_coexist2_test.c)
+ccwrap_etc_wat_add_c(watcom_locale_utf8 watcom_locale_utf8_test.c)
 ccwrap_etc_wat_add_c(watcom_c99      watcom_c99_test.c OPTS -za99)
 
 function(ccwrap_etc_wat_add_cxx name src)
