@@ -2,13 +2,13 @@
 //===----------------------------------------------------------------------===//
 // Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
 //  ccwrap llibcxx03: <variant> for Open Watcom. Open Watcom has no variadic
-//  templates, so this is a FIXED-ARITY variant of up to 4 alternatives
-//  (variant<T0[,T1[,T2[,T3]]]>). Unused slots default to a private __nil type.
+//  templates, so this is a FIXED-ARITY variant of up to 10 alternatives
+//  (variant<T0[,T1[,...[,T9]]]>). Unused slots default to a private __nil type.
 //  Storage is an aligned buffer (a C++03 union cannot hold non-trivial types);
 //  construct/copy/destroy dispatch on the runtime index via a switch. Provides
-//  index(), holds_alternative<T>, get<T>/get_if<T> (by type), and single-visitor
-//  visit(). get<I> by index and multi-type visitors are omitted (need the
-//  metaprogramming Open Watcom can't express).
+//  index(), holds_alternative<T>, get<T>/get_if<T> (by type), get<I> (by index)
+//  and emplace(). visit() is omitted (needs the metaprogramming Open Watcom
+//  can't express).
 //===----------------------------------------------------------------------===//
 #ifndef _CCW_LIBCPP_VARIANT
 #define _CCW_LIBCPP_VARIANT
@@ -42,28 +42,64 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator> (monostate, monostate) { return 
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<=(monostate, monostate) { return true; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator>=(monostate, monostate) { return true; }
 
-struct __variant_nil1 { };
-struct __variant_nil2 { };
-struct __variant_nil3 { };
+#define _CCW_VARIANT_NIL_DECL(_N) struct __variant_nil##_N { };
+_CCW_VARIANT_NIL_DECL(1) _CCW_VARIANT_NIL_DECL(2) _CCW_VARIANT_NIL_DECL(3)
+_CCW_VARIANT_NIL_DECL(4) _CCW_VARIANT_NIL_DECL(5) _CCW_VARIANT_NIL_DECL(6)
+_CCW_VARIANT_NIL_DECL(7) _CCW_VARIANT_NIL_DECL(8) _CCW_VARIANT_NIL_DECL(9)
+#undef _CCW_VARIANT_NIL_DECL
+
 #define _CCW_VARIANT_NIL_CMP(_N) \
     _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator==(__variant_nil##_N, __variant_nil##_N) { return true; } \
     _CCW_LIBCPP_HIDE_FROM_ABI inline bool operator<(__variant_nil##_N, __variant_nil##_N)  { return false; }
 _CCW_VARIANT_NIL_CMP(1) _CCW_VARIANT_NIL_CMP(2) _CCW_VARIANT_NIL_CMP(3)
+_CCW_VARIANT_NIL_CMP(4) _CCW_VARIANT_NIL_CMP(5) _CCW_VARIANT_NIL_CMP(6)
+_CCW_VARIANT_NIL_CMP(7) _CCW_VARIANT_NIL_CMP(8) _CCW_VARIANT_NIL_CMP(9)
 #undef _CCW_VARIANT_NIL_CMP
 
-template <unsigned long _A, unsigned long _B> struct __variant_umax { enum { value = _A > _B ? _A : _B }; };
+#define _CCW_VARIANT_TPL class _T0, class _T1, class _T2, class _T3, class _T4, \
+                         class _T5, class _T6, class _T7, class _T8, class _T9
+#define _CCW_VARIANT_T   _T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9
 
-template <unsigned _Ip, class _T0, class _T1, class _T2, class _T3> struct __variant_alt {
-    typedef typename conditional<_Ip == 2, _T2, _T3>::type    __a23;
-    typedef typename conditional<_Ip == 1, _T1, __a23>::type  __a123;
-    typedef typename conditional<_Ip == 0, _T0, __a123>::type type;
+template <_CCW_VARIANT_TPL> struct __variant_maxsz {
+    enum { __m0 = (int)sizeof(_T0) };
+    enum { __m1 = __m0 > (int)sizeof(_T1) ? __m0 : (int)sizeof(_T1) };
+    enum { __m2 = __m1 > (int)sizeof(_T2) ? __m1 : (int)sizeof(_T2) };
+    enum { __m3 = __m2 > (int)sizeof(_T3) ? __m2 : (int)sizeof(_T3) };
+    enum { __m4 = __m3 > (int)sizeof(_T4) ? __m3 : (int)sizeof(_T4) };
+    enum { __m5 = __m4 > (int)sizeof(_T5) ? __m4 : (int)sizeof(_T5) };
+    enum { __m6 = __m5 > (int)sizeof(_T6) ? __m5 : (int)sizeof(_T6) };
+    enum { __m7 = __m6 > (int)sizeof(_T7) ? __m6 : (int)sizeof(_T7) };
+    enum { __m8 = __m7 > (int)sizeof(_T8) ? __m7 : (int)sizeof(_T8) };
+    enum { value = __m8 > (int)sizeof(_T9) ? __m8 : (int)sizeof(_T9) };
 };
 
-template <class _T0, class _T1 = __variant_nil1, class _T2 = __variant_nil2, class _T3 = __variant_nil3>
+template <unsigned _Ip, _CCW_VARIANT_TPL> struct __variant_alt {
+    typedef typename conditional<_Ip == 8, _T8, _T9>::type   __a8;
+    typedef typename conditional<_Ip == 7, _T7, __a8>::type  __a7;
+    typedef typename conditional<_Ip == 6, _T6, __a7>::type  __a6;
+    typedef typename conditional<_Ip == 5, _T5, __a6>::type  __a5;
+    typedef typename conditional<_Ip == 4, _T4, __a5>::type  __a4;
+    typedef typename conditional<_Ip == 3, _T3, __a4>::type  __a3;
+    typedef typename conditional<_Ip == 2, _T2, __a3>::type  __a2;
+    typedef typename conditional<_Ip == 1, _T1, __a2>::type  __a1;
+    typedef typename conditional<_Ip == 0, _T0, __a1>::type  type;
+};
+
+#define _CCW_VARIANT_AS(_N) \
+    _CCW_LIBCPP_HIDE_FROM_ABI _T##_N* __as##_N() { return reinterpret_cast<_T##_N*>(__buf_); }
+#define _CCW_VARIANT_DTOR(_N)   case _N: __as##_N()->~_T##_N(); break;
+#define _CCW_VARIANT_COPY(_N)   case _N: ::new (static_cast<void*>(__buf_)) _T##_N(*const_cast<variant&>(__o).__as##_N()); break;
+#define _CCW_VARIANT_MOVE(_N)   case _N: ::new (static_cast<void*>(__buf_)) _T##_N(::_ccw::move(*__o.__as##_N())); break;
+#define _CCW_VARIANT_CTOR(_N) \
+    _CCW_LIBCPP_HIDE_FROM_ABI variant(const _T##_N& __v) { ::new (static_cast<void*>(__buf_)) _T##_N(__v); __index_ = _N; }
+#define _CCW_VARIANT_ASSIGN(_N) \
+    _CCW_LIBCPP_HIDE_FROM_ABI variant& operator=(const _T##_N& __v) { __destroy(); ::new (static_cast<void*>(__buf_)) _T##_N(__v); __index_ = _N; return *this; }
+
+template <class _T0, class _T1 = __variant_nil1, class _T2 = __variant_nil2, class _T3 = __variant_nil3,
+          class _T4 = __variant_nil4, class _T5 = __variant_nil5, class _T6 = __variant_nil6,
+          class _T7 = __variant_nil7, class _T8 = __variant_nil8, class _T9 = __variant_nil9>
 class _CCW_LIBCPP_TEMPLATE_VIS variant {
-    enum { __sz = __variant_umax<sizeof(_T0),
-                    __variant_umax<sizeof(_T1),
-                      __variant_umax<sizeof(_T2), sizeof(_T3)>::value>::value>::value };
+    enum { __sz = __variant_maxsz<_CCW_VARIANT_T>::value };
     union {
         char        __buf_[__sz];
         long double __align_ld_;
@@ -72,57 +108,48 @@ class _CCW_LIBCPP_TEMPLATE_VIS variant {
     };
     int __index_;
 
-    _CCW_LIBCPP_HIDE_FROM_ABI _T0* __as0() { return reinterpret_cast<_T0*>(__buf_); }
-    _CCW_LIBCPP_HIDE_FROM_ABI _T1* __as1() { return reinterpret_cast<_T1*>(__buf_); }
-    _CCW_LIBCPP_HIDE_FROM_ABI _T2* __as2() { return reinterpret_cast<_T2*>(__buf_); }
-    _CCW_LIBCPP_HIDE_FROM_ABI _T3* __as3() { return reinterpret_cast<_T3*>(__buf_); }
+    _CCW_VARIANT_AS(0) _CCW_VARIANT_AS(1) _CCW_VARIANT_AS(2) _CCW_VARIANT_AS(3) _CCW_VARIANT_AS(4)
+    _CCW_VARIANT_AS(5) _CCW_VARIANT_AS(6) _CCW_VARIANT_AS(7) _CCW_VARIANT_AS(8) _CCW_VARIANT_AS(9)
 
     _CCW_LIBCPP_HIDE_FROM_ABI void __destroy() {
         switch (__index_) {
-            case 0: __as0()->~_T0(); break;
-            case 1: __as1()->~_T1(); break;
-            case 2: __as2()->~_T2(); break;
-            case 3: __as3()->~_T3(); break;
+            _CCW_VARIANT_DTOR(0) _CCW_VARIANT_DTOR(1) _CCW_VARIANT_DTOR(2) _CCW_VARIANT_DTOR(3) _CCW_VARIANT_DTOR(4)
+            _CCW_VARIANT_DTOR(5) _CCW_VARIANT_DTOR(6) _CCW_VARIANT_DTOR(7) _CCW_VARIANT_DTOR(8) _CCW_VARIANT_DTOR(9)
         }
         __index_ = -1;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __copy_from(const variant& __o) {
         switch (__o.__index_) {
-            case 0: ::new (static_cast<void*>(__buf_)) _T0(*const_cast<variant&>(__o).__as0()); break;
-            case 1: ::new (static_cast<void*>(__buf_)) _T1(*const_cast<variant&>(__o).__as1()); break;
-            case 2: ::new (static_cast<void*>(__buf_)) _T2(*const_cast<variant&>(__o).__as2()); break;
-            case 3: ::new (static_cast<void*>(__buf_)) _T3(*const_cast<variant&>(__o).__as3()); break;
+            _CCW_VARIANT_COPY(0) _CCW_VARIANT_COPY(1) _CCW_VARIANT_COPY(2) _CCW_VARIANT_COPY(3) _CCW_VARIANT_COPY(4)
+            _CCW_VARIANT_COPY(5) _CCW_VARIANT_COPY(6) _CCW_VARIANT_COPY(7) _CCW_VARIANT_COPY(8) _CCW_VARIANT_COPY(9)
         }
         __index_ = __o.__index_;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __move_from(variant& __o) {
         switch (__o.__index_) {
-            case 0: ::new (static_cast<void*>(__buf_)) _T0(::_ccw::move(*__o.__as0())); break;
-            case 1: ::new (static_cast<void*>(__buf_)) _T1(::_ccw::move(*__o.__as1())); break;
-            case 2: ::new (static_cast<void*>(__buf_)) _T2(::_ccw::move(*__o.__as2())); break;
-            case 3: ::new (static_cast<void*>(__buf_)) _T3(::_ccw::move(*__o.__as3())); break;
+            _CCW_VARIANT_MOVE(0) _CCW_VARIANT_MOVE(1) _CCW_VARIANT_MOVE(2) _CCW_VARIANT_MOVE(3) _CCW_VARIANT_MOVE(4)
+            _CCW_VARIANT_MOVE(5) _CCW_VARIANT_MOVE(6) _CCW_VARIANT_MOVE(7) _CCW_VARIANT_MOVE(8) _CCW_VARIANT_MOVE(9)
         }
         __index_ = __o.__index_;
     }
 public:
     _CCW_LIBCPP_HIDE_FROM_ABI variant() { _T0 __z = _T0(); ::new (static_cast<void*>(__buf_)) _T0(__z); __index_ = 0; }   // value-init first alternative (Open Watcom does not zero a placement-new `_T0()`)
     _CCW_LIBCPP_HIDE_FROM_ABI variant(const variant& __o) { __copy_from(__o); }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant(const _T0& __v) { ::new (static_cast<void*>(__buf_)) _T0(__v); __index_ = 0; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant(const _T1& __v) { ::new (static_cast<void*>(__buf_)) _T1(__v); __index_ = 1; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant(const _T2& __v) { ::new (static_cast<void*>(__buf_)) _T2(__v); __index_ = 2; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant(const _T3& __v) { ::new (static_cast<void*>(__buf_)) _T3(__v); __index_ = 3; }
+
+    _CCW_VARIANT_CTOR(0) _CCW_VARIANT_CTOR(1) _CCW_VARIANT_CTOR(2) _CCW_VARIANT_CTOR(3) _CCW_VARIANT_CTOR(4)
+    _CCW_VARIANT_CTOR(5) _CCW_VARIANT_CTOR(6) _CCW_VARIANT_CTOR(7) _CCW_VARIANT_CTOR(8) _CCW_VARIANT_CTOR(9)
 
     template <_CCW_STD::size_t _Ip>
     _CCW_LIBCPP_HIDE_FROM_ABI explicit variant(in_place_index_t<_Ip>) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         _Vt __z = _Vt(); ::new (static_cast<void*>(__buf_)) _Vt(__z); __index_ = (int)_Ip; }
     template <_CCW_STD::size_t _Ip, class _A0>
     _CCW_LIBCPP_HIDE_FROM_ABI variant(in_place_index_t<_Ip>, _A0 __a0) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         ::new (static_cast<void*>(__buf_)) _Vt(__a0); __index_ = (int)_Ip; }
     template <_CCW_STD::size_t _Ip, class _A0, class _A1>
     _CCW_LIBCPP_HIDE_FROM_ABI variant(in_place_index_t<_Ip>, _A0 __a0, _A1 __a1) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         ::new (static_cast<void*>(__buf_)) _Vt(__a0, __a1); __index_ = (int)_Ip; }
     template <class _Tp>
     _CCW_LIBCPP_HIDE_FROM_ABI explicit variant(in_place_type_t<_Tp>) {
@@ -136,11 +163,11 @@ public:
 #if _CCW_HAS_INIT_LIST
     template <_CCW_STD::size_t _Ip, class _Up>
     _CCW_LIBCPP_HIDE_FROM_ABI variant(in_place_index_t<_Ip>, _CCW_STD::initializer_list<_Up> __il) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         ::new (static_cast<void*>(__buf_)) _Vt(__il); __index_ = (int)_Ip; }
     template <_CCW_STD::size_t _Ip, class _Up, class _A0>
     _CCW_LIBCPP_HIDE_FROM_ABI variant(in_place_index_t<_Ip>, _CCW_STD::initializer_list<_Up> __il, _A0 __a0) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         ::new (static_cast<void*>(__buf_)) _Vt(__il, __a0); __index_ = (int)_Ip; }
     template <class _Tp, class _Up>
     _CCW_LIBCPP_HIDE_FROM_ABI variant(in_place_type_t<_Tp>, _CCW_STD::initializer_list<_Up> __il) {
@@ -161,10 +188,9 @@ public:
         if (this != &__o) { __destroy(); __move_from(__o); }
         return *this;
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant& operator=(const _T0& __v) { __destroy(); ::new (static_cast<void*>(__buf_)) _T0(__v); __index_ = 0; return *this; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant& operator=(const _T1& __v) { __destroy(); ::new (static_cast<void*>(__buf_)) _T1(__v); __index_ = 1; return *this; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant& operator=(const _T2& __v) { __destroy(); ::new (static_cast<void*>(__buf_)) _T2(__v); __index_ = 2; return *this; }
-    _CCW_LIBCPP_HIDE_FROM_ABI variant& operator=(const _T3& __v) { __destroy(); ::new (static_cast<void*>(__buf_)) _T3(__v); __index_ = 3; return *this; }
+
+    _CCW_VARIANT_ASSIGN(0) _CCW_VARIANT_ASSIGN(1) _CCW_VARIANT_ASSIGN(2) _CCW_VARIANT_ASSIGN(3) _CCW_VARIANT_ASSIGN(4)
+    _CCW_VARIANT_ASSIGN(5) _CCW_VARIANT_ASSIGN(6) _CCW_VARIANT_ASSIGN(7) _CCW_VARIANT_ASSIGN(8) _CCW_VARIANT_ASSIGN(9)
 
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t index() const {
         return __index_ < 0 ? (_CCW_STD::size_t)-1 : (_CCW_STD::size_t)__index_; }
@@ -172,7 +198,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(variant& __o) { variant __t(*this); *this = __o; __o = __t; }
 
     template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int __which() const {
-        return is_same<_Tp, _T0>::value ? 0 : is_same<_Tp, _T1>::value ? 1 : is_same<_Tp, _T2>::value ? 2 : is_same<_Tp, _T3>::value ? 3 : -1; }
+        return is_same<_Tp, _T0>::value ? 0 : is_same<_Tp, _T1>::value ? 1 :
+               is_same<_Tp, _T2>::value ? 2 : is_same<_Tp, _T3>::value ? 3 :
+               is_same<_Tp, _T4>::value ? 4 : is_same<_Tp, _T5>::value ? 5 :
+               is_same<_Tp, _T6>::value ? 6 : is_same<_Tp, _T7>::value ? 7 :
+               is_same<_Tp, _T8>::value ? 8 : is_same<_Tp, _T9>::value ? 9 : -1; }
     template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace() {
         __destroy(); ::new (static_cast<void*>(__buf_)) _Tp(); __index_ = __which<_Tp>(); return *reinterpret_cast<_Tp*>(__buf_); }
     template <class _Tp, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_A0 __a0) {
@@ -184,83 +214,103 @@ public:
 
 #if !defined(__WATCOMC__)
     template <_CCW_STD::size_t _Ip>
-    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type& emplace() {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type& emplace() {
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         __destroy(); _Vt __z = _Vt(); ::new (static_cast<void*>(__buf_)) _Vt(__z); __index_ = (int)_Ip; return *reinterpret_cast<_Vt*>(__buf_); }
     template <_CCW_STD::size_t _Ip, class _A0>
-    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type& emplace(_A0 __a0) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type& emplace(_A0 __a0) {
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         __destroy(); ::new (static_cast<void*>(__buf_)) _Vt(__a0); __index_ = (int)_Ip; return *reinterpret_cast<_Vt*>(__buf_); }
     template <_CCW_STD::size_t _Ip, class _A0, class _A1>
-    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type& emplace(_A0 __a0, _A1 __a1) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type& emplace(_A0 __a0, _A1 __a1) {
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         __destroy(); ::new (static_cast<void*>(__buf_)) _Vt(__a0, __a1); __index_ = (int)_Ip; return *reinterpret_cast<_Vt*>(__buf_); }
 #if _CCW_HAS_INIT_LIST
     template <_CCW_STD::size_t _Ip, class _Up>
-    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type& emplace(_CCW_STD::initializer_list<_Up> __il) {
-        typedef typename __variant_alt<(unsigned)_Ip, _T0, _T1, _T2, _T3>::type _Vt;
+    _CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type& emplace(_CCW_STD::initializer_list<_Up> __il) {
+        typedef typename __variant_alt<(unsigned)_Ip, _CCW_VARIANT_T>::type _Vt;
         __destroy(); ::new (static_cast<void*>(__buf_)) _Vt(__il); __index_ = (int)_Ip; return *reinterpret_cast<_Vt*>(__buf_); }
     template <class _Tp, class _Up>
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp& emplace(_CCW_STD::initializer_list<_Up> __il) {
         __destroy(); ::new (static_cast<void*>(__buf_)) _Tp(__il); __index_ = __which<_Tp>(); return *reinterpret_cast<_Tp*>(__buf_); }
+#endif
 #endif // !__WATCOMC__
 
-#endif
     _CCW_LIBCPP_HIDE_FROM_ABI void* __raw() { return __buf_; }
     _CCW_LIBCPP_HIDE_FROM_ABI const void* __raw() const { return __buf_; }
 };
 
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
+#undef _CCW_VARIANT_AS
+#undef _CCW_VARIANT_DTOR
+#undef _CCW_VARIANT_COPY
+#undef _CCW_VARIANT_MOVE
+#undef _CCW_VARIANT_CTOR
+#undef _CCW_VARIANT_ASSIGN
+
+template <class _Tp, _CCW_VARIANT_TPL>
 _CCW_LIBCPP_HIDE_FROM_ABI int __variant_which() {
     if (is_same<_Tp, _T0>::value) return 0;
     if (is_same<_Tp, _T1>::value) return 1;
     if (is_same<_Tp, _T2>::value) return 2;
     if (is_same<_Tp, _T3>::value) return 3;
+    if (is_same<_Tp, _T4>::value) return 4;
+    if (is_same<_Tp, _T5>::value) return 5;
+    if (is_same<_Tp, _T6>::value) return 6;
+    if (is_same<_Tp, _T7>::value) return 7;
+    if (is_same<_Tp, _T8>::value) return 8;
+    if (is_same<_Tp, _T9>::value) return 9;
     return -1;
 }
 
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI bool holds_alternative(const variant<_T0, _T1, _T2, _T3>& __v) {
-    return (int)__v.index() == _CCW_STD::__variant_which<_Tp, _T0, _T1, _T2, _T3>();
+template <class _Tp, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI bool holds_alternative(const variant<_CCW_VARIANT_T>& __v) {
+    return (int)__v.index() == _CCW_STD::__variant_which<_Tp, _CCW_VARIANT_T>();
 }
 
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI _Tp* get_if(variant<_T0, _T1, _T2, _T3>* __v) {
-    if (__v && (int)__v->index() == _CCW_STD::__variant_which<_Tp, _T0, _T1, _T2, _T3>()) return reinterpret_cast<_Tp*>(__v->__raw());
+template <class _Tp, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp* get_if(variant<_CCW_VARIANT_T>* __v) {
+    if (__v && (int)__v->index() == _CCW_STD::__variant_which<_Tp, _CCW_VARIANT_T>()) return reinterpret_cast<_Tp*>(__v->__raw());
     return 0;
 }
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI const _Tp* get_if(const variant<_T0, _T1, _T2, _T3>* __v) {
-    if (__v && (int)__v->index() == _CCW_STD::__variant_which<_Tp, _T0, _T1, _T2, _T3>()) return reinterpret_cast<const _Tp*>(const_cast<variant<_T0, _T1, _T2, _T3>*>(__v)->__raw());
+template <class _Tp, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI const _Tp* get_if(const variant<_CCW_VARIANT_T>* __v) {
+    if (__v && (int)__v->index() == _CCW_STD::__variant_which<_Tp, _CCW_VARIANT_T>()) return reinterpret_cast<const _Tp*>(const_cast<variant<_CCW_VARIANT_T>*>(__v)->__raw());
     return 0;
 }
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI _Tp& get(variant<_T0, _T1, _T2, _T3>& __v) {
+template <class _Tp, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI _Tp& get(variant<_CCW_VARIANT_T>& __v) {
     _Tp* __p = get_if<_Tp>(&__v); if (!__p) _CCW_THROW(bad_variant_access()); return *__p;
 }
-template <class _Tp, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI const _Tp& get(const variant<_T0, _T1, _T2, _T3>& __v) {
+template <class _Tp, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI const _Tp& get(const variant<_CCW_VARIANT_T>& __v) {
     const _Tp* __p = get_if<_Tp>(&__v); if (!__p) _CCW_THROW(bad_variant_access()); return *__p;
 }
 
-template <unsigned _Ip, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>::type& get(variant<_T0, _T1, _T2, _T3>& __v) {
-    typedef typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>::type _Tp;
+template <unsigned _Ip, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI typename __variant_alt<_Ip, _CCW_VARIANT_T>::type& get(variant<_CCW_VARIANT_T>& __v) {
+    typedef typename __variant_alt<_Ip, _CCW_VARIANT_T>::type _Tp;
     _Tp* __p = get_if<_Tp>(&__v); if (!__p) _CCW_THROW(bad_variant_access()); return *__p;
 }
-template <unsigned _Ip, class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI const typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>::type& get(const variant<_T0, _T1, _T2, _T3>& __v) {
-    typedef typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>::type _Tp;
+template <unsigned _Ip, _CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI const typename __variant_alt<_Ip, _CCW_VARIANT_T>::type& get(const variant<_CCW_VARIANT_T>& __v) {
+    typedef typename __variant_alt<_Ip, _CCW_VARIANT_T>::type _Tp;
     const _Tp* __p = get_if<_Tp>(&__v); if (!__p) _CCW_THROW(bad_variant_access()); return *__p;
 }
 
 _ccw_inline_const _CCW_STD::size_t variant_npos = (_CCW_STD::size_t)-1;
 
 template <class _Vp> struct variant_size;
-template <class _T0, class _T1, class _T2, class _T3> struct variant_size<variant<_T0, _T1, _T2, _T3> > {
-    enum { value = 1 + (is_same<_T1, __variant_nil1>::value ? 0 : 1)
-                     + (is_same<_T2, __variant_nil2>::value ? 0 : 1)
-                     + (is_same<_T3, __variant_nil3>::value ? 0 : 1) };
+template <_CCW_VARIANT_TPL> struct variant_size<variant<_CCW_VARIANT_T> > {
+    enum { __n1 = is_same<_T1, __variant_nil1>::value ? 0 : 1 };
+    enum { __n2 = is_same<_T2, __variant_nil2>::value ? 0 : 1 };
+    enum { __n3 = is_same<_T3, __variant_nil3>::value ? 0 : 1 };
+    enum { __n4 = is_same<_T4, __variant_nil4>::value ? 0 : 1 };
+    enum { __n5 = is_same<_T5, __variant_nil5>::value ? 0 : 1 };
+    enum { __n6 = is_same<_T6, __variant_nil6>::value ? 0 : 1 };
+    enum { __n7 = is_same<_T7, __variant_nil7>::value ? 0 : 1 };
+    enum { __n8 = is_same<_T8, __variant_nil8>::value ? 0 : 1 };
+    enum { __n9 = is_same<_T9, __variant_nil9>::value ? 0 : 1 };
+    enum { value = 1 + __n1 + __n2 + __n3 + __n4 + __n5 + __n6 + __n7 + __n8 + __n9 };
 };
 
 template <class _Vp> struct variant_size<const _Vp>          { enum { value = variant_size<_Vp>::value }; };
@@ -268,8 +318,8 @@ template <class _Vp> struct variant_size<volatile _Vp>       { enum { value = va
 template <class _Vp> struct variant_size<const volatile _Vp> { enum { value = variant_size<_Vp>::value }; };
 
 template <unsigned _Ip, class _Vp> struct variant_alternative;
-template <unsigned _Ip, class _T0, class _T1, class _T2, class _T3> struct variant_alternative<_Ip, variant<_T0, _T1, _T2, _T3> > {
-    typedef typename __variant_alt<_Ip, _T0, _T1, _T2, _T3>::type type;
+template <unsigned _Ip, _CCW_VARIANT_TPL> struct variant_alternative<_Ip, variant<_CCW_VARIANT_T> > {
+    typedef typename __variant_alt<_Ip, _CCW_VARIANT_T>::type type;
 };
 template <unsigned _Ip, class _Vp> struct variant_alternative<_Ip, const _Vp> {
     typedef const typename variant_alternative<_Ip, _Vp>::type type;
@@ -283,32 +333,34 @@ template <class _Vp>
 const _CCW_STD::size_t variant_size_v = (_CCW_STD::size_t)variant_size<_Vp>::value;
 #endif
 
-template <class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y) {
+#define _CCW_VARIANT_EQ(_N) case _N: return get<_N>(__x) == get<_N>(__y);
+#define _CCW_VARIANT_LT(_N) case _N: return get<_N>(__x) <  get<_N>(__y);
+
+template <_CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y) {
     if (__x.index() != __y.index()) return false;
     switch (__x.index()) {
-        case 0: return get<0>(__x) == get<0>(__y);
-        case 1: return get<1>(__x) == get<1>(__y);
-        case 2: return get<2>(__x) == get<2>(__y);
-        case 3: return get<3>(__x) == get<3>(__y);
+        _CCW_VARIANT_EQ(0) _CCW_VARIANT_EQ(1) _CCW_VARIANT_EQ(2) _CCW_VARIANT_EQ(3) _CCW_VARIANT_EQ(4)
+        _CCW_VARIANT_EQ(5) _CCW_VARIANT_EQ(6) _CCW_VARIANT_EQ(7) _CCW_VARIANT_EQ(8) _CCW_VARIANT_EQ(9)
     }
     return true;
 }
-template <class _T0, class _T1, class _T2, class _T3>
-_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y) {
+template <_CCW_VARIANT_TPL>
+_CCW_LIBCPP_HIDE_FROM_ABI bool operator<(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y) {
     if (__x.index() != __y.index()) return __x.index() < __y.index();
     switch (__x.index()) {
-        case 0: return get<0>(__x) < get<0>(__y);
-        case 1: return get<1>(__x) < get<1>(__y);
-        case 2: return get<2>(__x) < get<2>(__y);
-        case 3: return get<3>(__x) < get<3>(__y);
+        _CCW_VARIANT_LT(0) _CCW_VARIANT_LT(1) _CCW_VARIANT_LT(2) _CCW_VARIANT_LT(3) _CCW_VARIANT_LT(4)
+        _CCW_VARIANT_LT(5) _CCW_VARIANT_LT(6) _CCW_VARIANT_LT(7) _CCW_VARIANT_LT(8) _CCW_VARIANT_LT(9)
     }
     return false;
 }
-template <class _T0, class _T1, class _T2, class _T3> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y) { return !(__x == __y); }
-template <class _T0, class _T1, class _T2, class _T3> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y)  { return __y < __x; }
-template <class _T0, class _T1, class _T2, class _T3> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y) { return !(__y < __x); }
-template <class _T0, class _T1, class _T2, class _T3> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const variant<_T0, _T1, _T2, _T3>& __x, const variant<_T0, _T1, _T2, _T3>& __y) { return !(__x < __y); }
+#undef _CCW_VARIANT_EQ
+#undef _CCW_VARIANT_LT
+
+template <_CCW_VARIANT_TPL> _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y) { return !(__x == __y); }
+template <_CCW_VARIANT_TPL> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y)  { return __y < __x; }
+template <_CCW_VARIANT_TPL> _CCW_LIBCPP_HIDE_FROM_ABI bool operator<=(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y) { return !(__y < __x); }
+template <_CCW_VARIANT_TPL> _CCW_LIBCPP_HIDE_FROM_ABI bool operator>=(const variant<_CCW_VARIANT_T>& __x, const variant<_CCW_VARIANT_T>& __y) { return !(__x < __y); }
 
 template <> struct hash<monostate> {
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(monostate) const { return (_CCW_STD::size_t)66740831u; }
@@ -319,22 +371,28 @@ template <> struct hash<monostate> {
         _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(__variant_nil##_N) const { return 0; } \
     };
 _CCW_VARIANT_NIL_HASH(1) _CCW_VARIANT_NIL_HASH(2) _CCW_VARIANT_NIL_HASH(3)
+_CCW_VARIANT_NIL_HASH(4) _CCW_VARIANT_NIL_HASH(5) _CCW_VARIANT_NIL_HASH(6)
+_CCW_VARIANT_NIL_HASH(7) _CCW_VARIANT_NIL_HASH(8) _CCW_VARIANT_NIL_HASH(9)
 #undef _CCW_VARIANT_NIL_HASH
 
-template <class _T0, class _T1, class _T2, class _T3>
-struct _CCW_LIBCPP_TEMPLATE_VIS hash<variant<_T0, _T1, _T2, _T3> > {
-    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const variant<_T0, _T1, _T2, _T3>& __v) const {
+#define _CCW_VARIANT_HASH(_N) case _N: __h = hash<_T##_N>()(get<_N>(__v)); break;
+
+template <_CCW_VARIANT_TPL>
+struct _CCW_LIBCPP_TEMPLATE_VIS hash<variant<_CCW_VARIANT_T> > {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const variant<_CCW_VARIANT_T>& __v) const {
         if (__v.valueless_by_exception()) return (_CCW_STD::size_t)66740832u;
         _CCW_STD::size_t __h = 0;
         switch (__v.index()) {
-            case 0: __h = hash<_T0>()(get<0>(__v)); break;
-            case 1: __h = hash<_T1>()(get<1>(__v)); break;
-            case 2: __h = hash<_T2>()(get<2>(__v)); break;
-            case 3: __h = hash<_T3>()(get<3>(__v)); break;
+            _CCW_VARIANT_HASH(0) _CCW_VARIANT_HASH(1) _CCW_VARIANT_HASH(2) _CCW_VARIANT_HASH(3) _CCW_VARIANT_HASH(4)
+            _CCW_VARIANT_HASH(5) _CCW_VARIANT_HASH(6) _CCW_VARIANT_HASH(7) _CCW_VARIANT_HASH(8) _CCW_VARIANT_HASH(9)
         }
         return __h ^ ((_CCW_STD::size_t)(__v.index() + 1) * 2654435761u);
     }
 };
+#undef _CCW_VARIANT_HASH
+
+#undef _CCW_VARIANT_TPL
+#undef _CCW_VARIANT_T
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 _CCW_EH_ANCHOR(evar, bad_variant_access, bad_variant_access)

@@ -75,6 +75,25 @@ TEST_CASE(variant, emplace_traits) {
     test_eq( (int)STD::variant_size<V3>::value, 3 );
     test_true( (STD::is_same<STD::variant_alternative<0, V3>::type, char>::value) );
     test_true( (STD::is_same<STD::variant_alternative<2, V3>::type, double>::value) );
+
+    typedef STD::variant<char, short, int, long, float, double, unsigned, bool, STD::string, void*> V10;
+    test_eq( (int)STD::variant_size<V10>::value, 10 );
+    test_true( (STD::is_same<STD::variant_alternative<0, V10>::type, char>::value) );
+    test_true( (STD::is_same<STD::variant_alternative<8, V10>::type, STD::string>::value) );
+    test_true( (STD::is_same<STD::variant_alternative<9, V10>::type, void*>::value) );
+    V10 vb;
+    test_eq( (int)vb.index(), 0 );
+    vb = STD::string("nine");
+    test_eq( (int)vb.index(), 8 );
+    test_eq( STD::get<8>(vb), STD::string("nine") );
+    test_eq( STD::get<STD::string>(vb), STD::string("nine") );
+    test_true( STD::holds_alternative<STD::string>(vb) );
+    V10 vc(vb);
+    test_true( vc == vb );
+    vb = (void*)0;
+    test_eq( (int)vb.index(), 9 );
+    test_true( STD::get<9>(vb) == (void*)0 );
+    test_true( vc != vb );
     test_pass("cxx17:variant traits");
 }
 
