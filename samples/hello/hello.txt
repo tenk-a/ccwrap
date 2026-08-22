@@ -1,0 +1,4 @@
+hello world
+
+string を cout するだけのサンプル。
+(open watcom 付属のだとこれができない...)

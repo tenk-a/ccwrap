@@ -1,0 +1,102 @@
+cmake_minimum_required(VERSION 3.24)
+
+project(smp_coreutils LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+
+set(ROOT_DIR         "${CMAKE_SOURCE_DIR}")
+set(SRC_DIR          "${CMAKE_SOURCE_DIR}/src")
+set(CCWRAP_DIR       "${ROOT_DIR}/../..")
+
+set(CCW_TOOLS        ls sort uniq wc)
+set(CCW_STARTUP_TOOL ls)
+
+set(CMN_INC_DIRS     "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CMN_LIB_DIRS     "")
+set(CMN_LIBS         "")
+set(CMN_DEFS         "")
+set(CMN_COMPILE_OPTS "")
+set(CMN_RES          "")
+
+if(MSVC AND WIN32)
+  list(APPEND CMN_DEFS  _ANSI)
+  list(APPEND CMN_LIBS  "kernel32.lib" "user32.lib" "shell32.lib" "advapi32.lib")
+  list(APPEND CMN_COMPILE_OPTS  "-Zc:wchar_t" "-Zc:forScope")
+  if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "19.0.24215.1")
+    list(APPEND CMN_COMPILE_OPTS  "-utf-8")
+  endif()
+  if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "19.0.24215.1")
+    list(APPEND CMN_COMPILE_OPTS  "-Zc:rvalueCast")
+  endif()
+  if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "19.14.26428.1")
+    list(APPEND CMN_COMPILE_OPTS  "-Zc:__cplusplus")
+  endif()
+  if(CMAKE_C_COMPILER_VERSION VERSION_LESS "19.10")
+    set(NEED_CCWARP 1)
+    list(APPEND CMN_INC_DIRS "${CCWRAP_DIR}/vc/std")
+    list(APPEND CMN_COMPILE_OPTS  "-FIccwrap_header.h")
+    list(APPEND CMN_DEFS _UNICODE)
+  endif()
+  list(APPEND CMN_RES  "${SRC_DIR}/win/ActiveCodePageUTF8.manifest")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY  "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CCW_STARTUP_TOOL})
+elseif(APPLE)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+    list(PREPEND CMN_INC_DIRS  "/opt/homebrew/include")
+    list(PREPEND CMN_LIB_DIRS  "/opt/homebrew/lib")
+  else()
+    list(PREPEND CMN_INC_DIRS  "/usr/local/include")
+    list(PREPEND CMN_LIB_DIRS  "/usr/local/lib")
+  endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+  if(WIN32)
+    list(APPEND CMN_DEFS  _ANSI  FOR_WIN10_1903_OR_LATER)
+    list(APPEND CMN_RES   "${SRC_DIR}/win/ActiveCodePageUTF8.rc")
+  endif()
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    list(APPEND CMN_COMPILE_OPTS  "-finput-charset=utf-8" "-fexec-charset=utf-8" "-fwide-exec-charset=utf-32LE")
+  endif()
+elseif(CMAKE_C_COMPILER_ID MATCHES "Watcom")
+  set(NEED_CCWARP 1)
+  set(CMAKE_WATCOM_RUNTIME_LIBRARY "MultiThreaded")
+  string(REGEX REPLACE "(^| )-xs($| )" "\\2" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  list(APPEND CMN_INC_DIRS "${CCWRAP_DIR}/watcom/std")
+  list(PREPEND CMN_LIB_DIRS  "${CCWRAP_DIR}/watcom/lib/nt")
+  list(APPEND CMN_COMPILE_OPTS  "-fi=${CCWRAP_DIR}/watcom/std/ccwrap_header.h" "-xst" "-xr" "-zm" "$<$<COMPILE_LANGUAGE:CXX>:-zv>")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " option eliminate option vfremoval")
+else()
+endif()
+
+foreach(tool IN LISTS CCW_TOOLS)
+  add_executable(${tool})
+
+  target_sources(${tool} PRIVATE
+    "${SRC_DIR}/${tool}.cpp"
+    ${CMN_RES}
+  )
+
+  target_compile_definitions(${tool} PRIVATE
+    ${CMN_DEFS}
+  )
+
+  target_compile_options(${tool} PRIVATE
+    ${CMN_COMPILE_OPTS}
+  )
+
+  target_include_directories(${tool} PRIVATE
+    ${CMN_INC_DIRS}
+  )
+
+  target_link_directories(${tool} PRIVATE
+    ${CMN_LIB_DIRS}
+  )
+
+  target_link_libraries(${tool} PRIVATE
+    ${CMN_LIBS}
+  )
+endforeach()
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/bin" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+endif()
+install(TARGETS ${CCW_TOOLS} RUNTIME DESTINATION ".")
