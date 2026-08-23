@@ -6,3 +6,8 @@
 #include_next <numeric>
 
 #include <../../detail/cxx/numeric.hpp>
+
+#if defined(__cplusplus) && !defined(__cpp_lib_parallel_algorithm)
+#include <execution>
+#include <../../detail/llibcxx03/include/__numeric/execution_overloads.h>
+#endif

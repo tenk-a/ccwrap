@@ -42,7 +42,7 @@ public:
 }
 #endif
 
-#if defined(__cplusplus) && !defined(__cpp_impl_destroying_delete)
+#if defined(__cplusplus) && !defined(__cpp_lib_destroying_delete)
 namespace _CCW_STD20 {
 struct destroying_delete_t { explicit destroying_delete_t() {} };
 _ccw_inline_const destroying_delete_t destroying_delete = destroying_delete_t();

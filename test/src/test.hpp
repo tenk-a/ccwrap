@@ -142,6 +142,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <exception>
 #include <cstdarg>
 #include <cstring>
 #include <vector>
@@ -227,10 +228,24 @@ _TeST_CASE_I(group, name) { _ccw::_test::TestMgr<>::instance().setCaseSkip(); }
 #if TEST_HAS_EH
 #define _TeST_TRY         try
 #define _TeST_CATCH_ALL   catch (...)
+#define _TeST_REPORT_ESCAPED(g, n)                                            \
+    do {                                                                      \
+        try { throw; }                                                        \
+        catch (const STD::exception& __tst_e) {                               \
+            _ccw::_test::TestMgr<>::putf(                                     \
+                "[%s.%s]: an exception escaped the case body: %s\n",           \
+                (g), (n), __tst_e.what());                                    \
+        }                                                                     \
+        catch (...) {                                                         \
+            _ccw::_test::TestMgr<>::putf(                                     \
+                "[%s.%s]: an exception escaped the case body\n", (g), (n));    \
+        }                                                                     \
+    } while (0)
 #define test_fail()       throw false
 #else
 #define _TeST_TRY         if (1)
 #define _TeST_CATCH_ALL   else if (0)
+#define _TeST_REPORT_ESCAPED(g, n)  ((void)0)
 #define test_fail()       _ccw::_test::_test_true<void>(false, "test_fail()", \
                               *_test_case(), __FILE__, __LINE__)
 #endif
@@ -652,6 +667,7 @@ unsigned TestMgr<DMY>::run() {
                 tc.func_();
             } _TeST_CATCH_ALL {
                 ++tc.errors_;
+                _TeST_REPORT_ESCAPED(tc.group_, tc.name_);
             }
             tc.case_skip_ = takeCaseSkip();
 #if defined(TST_HEAPCHK)

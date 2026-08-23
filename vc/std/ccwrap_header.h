@@ -448,6 +448,14 @@ typedef _ccw_uint32             _ccw_char32;
  #endif
 #endif
 
+#ifndef _ccw_inline_constant
+ #if defined(__cpp_inline_variables) && __cpp_inline_variables >= 201606L
+  #define _ccw_inline_constant      inline _ccw_constexpr_or_const
+ #else
+  #define _ccw_inline_constant      static _ccw_constexpr_or_const
+ #endif
+#endif
+
 #ifndef _ccw_move_or_swap
  #if _ccw_cplusplus >= 201103L
   #define _ccw_move_or_swap(l,r)    ((l) = std::move(r))

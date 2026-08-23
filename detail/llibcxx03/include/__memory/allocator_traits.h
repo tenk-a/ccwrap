@@ -6,6 +6,7 @@
 #define _CCW_LIBCPP___MEMORY_ALLOCATOR_TRAITS_H
 #include "../__config"
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/__ccw_intrinsic_traits.h"   // is_empty (needs an intrinsic; absent on Open Watcom)
 #include "../__memory/allocate_at_least.h"   // allocation_result (returned by allocate_at_least)
 #include <cstddef>
 #if _CCW_LIBCPP_HAS_NATIVE_MEMORY_TRAITS
@@ -45,7 +46,12 @@ struct allocator_traits {
         propagate_on_container_move_assignment;
     typedef typename __ccw_at_get_propagate_on_container_swap<_Alloc, false_type>::type
         propagate_on_container_swap;
+#if defined(__WATCOMC__)
     typedef typename __ccw_at_get_is_always_equal<_Alloc, false_type>::type is_always_equal;
+#else
+    typedef typename __ccw_at_get_is_always_equal<_Alloc,
+        integral_constant<bool, is_empty<_Alloc>::value> >::type is_always_equal;
+#endif
 
     template <class _Tp> struct rebind_alloc { typedef typename _Alloc::template rebind<_Tp>::other type; };
     template <class _Tp> struct rebind_traits { typedef allocator_traits<typename _Alloc::template rebind<_Tp>::other> type; };

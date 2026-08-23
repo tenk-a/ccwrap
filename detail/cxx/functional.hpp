@@ -82,7 +82,7 @@ template<class T> struct bit_not { T operator()(const T& a) const { return ~a; }
 }   // namespace std
 #endif
 
-#if defined(__GLIBCXX__)
+#if defined(__GLIBCXX__) && defined(__cplusplus) && __cplusplus >= 201402L
 #  if defined(__has_include)
 #    if __has_include(<bits/predefined_ops.h>)
 #      define _CCW_NATIVE_HAS_EQ_LT_VOID 1

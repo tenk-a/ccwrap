@@ -1,6 +1,6 @@
 #include "test_cxx.hpp"
 
-#if TEST_TARGET_CXX >= 2023 && _TST_TEST_HAS(<spanstream>) && (!defined(__GNUC__) || __cplusplus >= 202302L)
+#if TEST_TARGET_CXX >= 2023 && _TST_TEST_HAS(<spanstream>)
 #include <spanstream>
 #include <span>
 #include <string>
@@ -68,7 +68,7 @@ TEST_CASE_SKIP(spanstream, ispanstream)
 TEST_CASE_SKIP(spanstream, seek)
 #endif
 
-#if TEST_TARGET_CXX >= 2023 && _TST_TEST_HAS(<spanstream>) && (!defined(__GNUC__) || __cplusplus >= 202302L)
+#if TEST_TARGET_CXX >= 2023 && _TST_TEST_HAS(<spanstream>)
 TEST_CASE(spanstream, member_types_cxx23) {
     typedef STD::char_traits<char> Tr;
 

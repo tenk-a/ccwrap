@@ -397,6 +397,7 @@ TEST_CASE(locale, messages_facet) {
     test_true( true );
     test_pass("cxx03:messages::close");
 
+#if defined(_CCW_HAS_MESSAGE_CATALOG)
     {
         const char* mp = "ccw_msgtest.msg";
         STD::FILE*  fp = STD::fopen(mp, "wb");
@@ -416,6 +417,9 @@ TEST_CASE(locale, messages_facet) {
             STD::remove(mp);
         }
     }
+#else
+    TEST_NOTE("the catalog format is unspecified; only the ccwrap reader takes gencat source");
+#endif
 }
 
 typedef STD::moneypunct_byname<char, false> ccw_mpf_byname;

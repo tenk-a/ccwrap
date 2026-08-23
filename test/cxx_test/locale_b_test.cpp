@@ -1122,12 +1122,29 @@ static bool wsc_utf8_locale() {
         if (STD::setlocale(LC_ALL, names[i]) != 0) return true;
     return false;
 }
+
+static bool wsc_facet_decodes_utf8() {
+    if (!wsc_utf8_locale()) return false;
+    STD::string u8;
+    u8 += (char)0xE3; u8 += (char)0x81; u8 += (char)0x82;
+#if TEST_HAS_EH
+    try {
+        WscConv c;
+        return c.from_bytes(u8).size() == 1;
+    } catch (...) {
+        return false;
+    }
+#else
+    WscConv c(STD::string("!"), STD::wstring(L"!"));
+    return c.from_bytes(u8).size() == 1;
+#endif
+}
 #endif
 
 TEST_CASE(locale, wstring_convert_cxx11) {
 #if TEST_TARGET_CXX >= 2011
     STD::string saved(STD::setlocale(LC_ALL, NULL));
-    const bool  utf8 = wsc_utf8_locale();
+    const bool  utf8 = wsc_facet_decodes_utf8();
 
     STD::string u8;
     u8 += (char)0xE3; u8 += (char)0x81; u8 += (char)0x82; u8 += 'A';
@@ -1259,9 +1276,10 @@ TEST_CASE(locale, wstring_convert_cxx11) {
     }
     test_pass("cxx11:wstring_convert::to_bytes (conversion error with byte_err -> byte_err)");
 
-    {   WscConv c;
-        c.from_bytes(u8);
-        test_eq( (long)c.converted(), (long)u8.size() );
+    {   WscConv     c;
+        STD::string src = utf8 ? u8 : STD::string("ab");
+        c.from_bytes(src);
+        test_eq( (long)c.converted(), (long)src.size() );
         test_pass("cxx11:wstring_convert::converted"); }
 
     {   WscConv          c;

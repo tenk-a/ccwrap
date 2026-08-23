@@ -1,0 +1,18 @@
+// ccwrap gcc forwarder for <hive>. libstdc++ ships the file but keeps its contents
+// behind a language-version gate, so __has_include_next alone would land on an empty
+// header. Take the native one only when the mode is C++26 or later; otherwise llibcxx03.
+#pragma once
+
+#include <ccwrap_common.h>
+
+#if defined(__has_include_next) && defined(__cplusplus) && __cplusplus >= 202400L
+# if __has_include_next(<hive>)
+#  define _CCW_HAVE_NATIVE_HIVE 1
+# endif
+#endif
+
+#ifdef _CCW_HAVE_NATIVE_HIVE
+# include_next <hive>
+#else
+# include <../../detail/llibcxx03/include/hive>
+#endif

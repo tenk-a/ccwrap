@@ -56,7 +56,7 @@ struct atomic {
     _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __exp, _Tp __des, memory_order, memory_order) {
         return compare_exchange_strong(__exp, __des);
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return true; }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return sizeof(_Tp) <= sizeof(long); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI operator _Tp() const { return __v_; }
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator=(_Tp __d) { __v_ = __d; return __d; }

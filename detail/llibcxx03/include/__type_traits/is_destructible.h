@@ -13,6 +13,13 @@
 #include "__ccw_native_traits.h"
 #include "../__type_traits/integral_constant.h"
 #if !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS
+
+#if defined(__has_builtin)
+#  if __has_builtin(__is_destructible)
+#    define _CCW_LIBCPP_IS_DESTRUCTIBLE_BUILTIN 1
+#  endif
+#endif
+
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Up> _Up& __ccw_destr_lval();
@@ -21,7 +28,9 @@ struct __ccw_destr_no  { char __c[2]; };
 
 template <class _Tp>
 struct __ccw_is_destructible_test {
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if defined(_CCW_LIBCPP_IS_DESTRUCTIBLE_BUILTIN)
+    static const bool value = __is_destructible(_Tp);
+#elif defined(_MSC_VER) && _MSC_VER < 1600
     static const bool value = true;
 #else
 # if defined(_MSC_VER)

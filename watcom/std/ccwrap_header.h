@@ -174,6 +174,9 @@
  #ifndef _ccw_inline_const
   #define _ccw_inline_const         static const
  #endif
+ #ifndef _ccw_inline_constant
+  #define _ccw_inline_constant      static _ccw_constexpr_or_const
+ #endif
 
   #ifndef _CPPRTTI
     #define _CCW_NO_RTTI        1

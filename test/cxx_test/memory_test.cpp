@@ -343,7 +343,7 @@ TEST_CASE(memory, allocator_traits_members) {
     test_true( !T::propagate_on_container_swap::value );
     test_pass("cxx11:allocator_traits::propagate_on_container_copy_assignment");
 
-#if defined(__WATCOMC__) || (defined(_MSC_VER) && _MSC_VER < 1900)
+#if defined(__WATCOMC__) || (defined(_MSC_VER) && _MSC_VER < 1900)  || (defined(__GLIBCXX__) && __cplusplus < 201103L)
     test_true( !T::propagate_on_container_move_assignment::value );
 #else
     test_true( T::propagate_on_container_move_assignment::value );

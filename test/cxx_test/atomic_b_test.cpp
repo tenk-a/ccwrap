@@ -887,6 +887,8 @@ TEST_CASE(atomic, atomic_ref_fetch_and_operators) {
     test_pass("cxx20:atomic_ref<int>::operator^=");
 }
 
+struct AtRefPair { int a; int b; };
+
 TEST_CASE(atomic, atomic_ref_other_types) {
 
     #if _tst_cplusplus >= 201103L
@@ -946,7 +948,7 @@ TEST_CASE(atomic, atomic_ref_other_types) {
     test_eq( ptr - arr, STD::ptrdiff_t(2) );
     test_pass("cxx20:atomic_ref<int*>::operator-=");
 
-    struct Pair { int a; int b; };
+    typedef AtRefPair Pair;
 #if _tst_cplusplus >= 201103L
     alignas(STD::atomic_ref<Pair>::required_alignment) Pair pr = { 1, 2 };
 #else

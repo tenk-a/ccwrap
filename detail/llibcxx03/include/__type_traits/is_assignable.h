@@ -10,6 +10,13 @@
 #include "../__type_traits/is_const.h"
 #include "../__type_traits/is_class.h"
 #if !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS
+
+#if defined(__has_builtin)
+#  if __has_builtin(__is_assignable)
+#    define _CCW_LIBCPP_IS_ASSIGNABLE_BUILTIN 1
+#  endif
+#endif
+
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Up> _Up        __ccw_asg_declval();
@@ -40,7 +47,10 @@ struct __ccw_is_assignable_rule {
 };
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if defined(_CCW_LIBCPP_IS_ASSIGNABLE_BUILTIN)
+template <class _Tp, class _Up> struct _CCW_LIBCPP_TEMPLATE_VIS is_assignable
+    : public integral_constant<bool, __is_assignable(_Tp, _Up)> {};
+#elif defined(_MSC_VER) && _MSC_VER < 1600
 template <class _Tp, class _Up> struct _CCW_LIBCPP_TEMPLATE_VIS is_assignable
     : public integral_constant<bool, __ccw_is_assignable_rule<_Tp, _Up>::value> {};
 #else
@@ -61,7 +71,10 @@ struct __ccw_is_copy_asgn_test {
     static const bool value = sizeof(__t<_Tp>(0)) == sizeof(__ccw_asg_yes);
 };
 
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if defined(_CCW_LIBCPP_IS_ASSIGNABLE_BUILTIN)
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_copy_assignable
+    : public integral_constant<bool, __is_assignable(_Tp&, const _Tp&)> {};
+#elif defined(_MSC_VER) && _MSC_VER < 1600
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_copy_assignable
     : public integral_constant<bool, !is_const<_Tp>::value> {};
 #else

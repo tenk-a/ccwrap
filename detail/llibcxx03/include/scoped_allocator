@@ -18,6 +18,18 @@
 #include "tuple"                    // the fixed-arity tuple + __ccw_tup_ctor
 #include <cstddef>
 
+#if defined(__has_builtin)
+#  if __has_builtin(__is_constructible)
+#    define _CCW_LIBCPP_SA_IS_CONSTRUCTIBLE_BUILTIN 1
+#  endif
+#endif
+
+#if defined(_CCW_LIBCPP_SA_IS_CONSTRUCTIBLE_BUILTIN)
+#  define _CCW_SA_LEADS(_Tp, _Inner, _CmTypes) __is_constructible(_Tp, allocator_arg_t, _Inner& _CmTypes)
+#else
+#  define _CCW_SA_LEADS(_Tp, _Inner, _CmTypes) true
+#endif
+
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 struct __sa_nil {};
@@ -183,7 +195,12 @@ private:
         ::new ((void*)__p) value_type(__z);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(value_type* __p, true_type) {
+        __construct_ua(__p, integral_constant<bool,
+            _CCW_SA_LEADS(value_type, inner_allocator_type, _CCW_FNCTMPL_CM_TYPEARG(0))>()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_ua(value_type* __p, true_type) {
         ::new ((void*)__p) value_type(allocator_arg, inner_allocator()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_ua(value_type* __p, false_type) {
+        ::new ((void*)__p) value_type(inner_allocator()); }
 
 #define _CCW_SA_DISP(N)                                                             \
     template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
@@ -191,8 +208,17 @@ private:
         ::new ((void*)__p) _Tp(_CCW_FNCTMPL_FNCARG(N));                             \
     }                                                                               \
     template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
-    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), true_type) { \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_ua(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), true_type) { \
         ::new ((void*)__p) _Tp(allocator_arg, inner_allocator() _CCW_FNCTMPL_CM_FNCARG(N)); \
+    }                                                                               \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_ua(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), false_type) { \
+        ::new ((void*)__p) _Tp(_CCW_FNCTMPL_FNCARG_MC(N) inner_allocator());        \
+    }                                                                               \
+    template <class _Tp _CCW_FNCTMPL_CM_TMPLARG(N)>                                 \
+    _CCW_LIBCPP_HIDE_FROM_ABI void __construct_disp(_Tp* __p _CCW_FNCTMPL_CM_DECLARG(N), true_type) { \
+        __construct_ua(__p _CCW_FNCTMPL_CM_FNCARG(N), integral_constant<bool,       \
+            _CCW_SA_LEADS(_Tp, inner_allocator_type, _CCW_FNCTMPL_CM_TYPEARG(N))>()); \
     }
     _CCW_FNCTMPL_GENERATE(_CCW_SA_DISP)
 #undef _CCW_SA_DISP

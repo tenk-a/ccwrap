@@ -45,6 +45,21 @@ struct atomic_ref {
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void notify_one() const {}
     _CCW_LIBCPP_HIDE_FROM_ABI void notify_all() const {}
+
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_add(_Tp __d, memory_order = memory_order_seq_cst) const { _Tp __o = *__ptr_; *__ptr_ = (_Tp)(__o + __d); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_sub(_Tp __d, memory_order = memory_order_seq_cst) const { _Tp __o = *__ptr_; *__ptr_ = (_Tp)(__o - __d); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_and(_Tp __d, memory_order = memory_order_seq_cst) const { _Tp __o = *__ptr_; *__ptr_ = (_Tp)(__o & __d); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_or (_Tp __d, memory_order = memory_order_seq_cst) const { _Tp __o = *__ptr_; *__ptr_ = (_Tp)(__o | __d); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_xor(_Tp __d, memory_order = memory_order_seq_cst) const { _Tp __o = *__ptr_; *__ptr_ = (_Tp)(__o ^ __d); return __o; }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++()    const { return (_Tp)(fetch_add((_Tp)1) + 1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++(int) const { return fetch_add((_Tp)1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--()    const { return (_Tp)(fetch_sub((_Tp)1) - 1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--(int) const { return fetch_sub((_Tp)1); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator+=(_Tp __d) const { return (_Tp)(fetch_add(__d) + __d); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator-=(_Tp __d) const { return (_Tp)(fetch_sub(__d) - __d); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator&=(_Tp __d) const { return (_Tp)(fetch_and(__d) & __d); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator|=(_Tp __d) const { return (_Tp)(fetch_or (__d) | __d); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator^=(_Tp __d) const { return (_Tp)(fetch_xor(__d) ^ __d); }
 private:
     atomic_ref& operator=(const atomic_ref&);   // copy-assignment is deleted (use operator=(T))
 };
@@ -152,23 +167,23 @@ template <> struct atomic_ref<_Tp> {                                            
     _CCW_LIBCPP_HIDE_FROM_ABI operator _Tp() const { return *__ptr_; }                                                     \
     _CCW_LIBCPP_HIDE_FROM_ABI bool is_lock_free() const { return true; }                                                   \
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp  load(memory_order = memory_order_seq_cst) const { return *__ptr_; }                     \
-    _CCW_LIBCPP_HIDE_FROM_ABI void store(_Tp __d, memory_order = memory_order_seq_cst) const { __ccw_ilk_xchg((long volatile*)__ptr_, (long)__d); } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  exchange(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_xchg((long volatile*)__ptr_, (long)__d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI void store(_Tp __d, memory_order = memory_order_seq_cst) const { __ccw_ilk_t_xchg(__ptr_, __d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp  exchange(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_t_xchg(__ptr_, __d); } \
     _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __e, _Tp __d, memory_order = memory_order_seq_cst) const {  \
-        long __old = __ccw_ilk_cas((long volatile*)__ptr_, (long)__d, (long)__e);                         \
-        if (__old == (long)__e) return true; __e = (_Tp)__old; return false; }                                        \
+        _Tp __old = __ccw_ilk_t_cas(__ptr_, __d, __e);                         \
+        if (__old == __e) return true; __e = __old; return false; }                                        \
     _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_strong(_Tp& __e, _Tp __d, memory_order, memory_order) const { return compare_exchange_strong(__e, __d); } \
     _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __e, _Tp __d, memory_order = memory_order_seq_cst) const { return compare_exchange_strong(__e, __d); } \
     _CCW_LIBCPP_HIDE_FROM_ABI bool compare_exchange_weak(_Tp& __e, _Tp __d, memory_order, memory_order) const { return compare_exchange_strong(__e, __d); } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_add(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_xadd((long volatile*)__ptr_, (long)__d); } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_sub(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_xadd((long volatile*)__ptr_, -(long)__d); } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_and(_Tp __d, memory_order = memory_order_seq_cst) const { for (;;) { long __o = *(long volatile*)__ptr_, __n = __o & (long)__d; if (__ccw_ilk_cas((long volatile*)__ptr_, __n, __o) == __o) return (_Tp)__o; } } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_or(_Tp __d,  memory_order = memory_order_seq_cst) const { for (;;) { long __o = *(long volatile*)__ptr_, __n = __o | (long)__d; if (__ccw_ilk_cas((long volatile*)__ptr_, __n, __o) == __o) return (_Tp)__o; } } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_xor(_Tp __d, memory_order = memory_order_seq_cst) const { for (;;) { long __o = *(long volatile*)__ptr_, __n = __o ^ (long)__d; if (__ccw_ilk_cas((long volatile*)__ptr_, __n, __o) == __o) return (_Tp)__o; } } \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++()    const { return (_Tp)__ccw_ilk_inc((long volatile*)__ptr_); }      \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++(int) const { return (_Tp)(__ccw_ilk_inc((long volatile*)__ptr_) - 1); }\
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--()    const { return (_Tp)__ccw_ilk_dec((long volatile*)__ptr_); }      \
-    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--(int) const { return (_Tp)(__ccw_ilk_dec((long volatile*)__ptr_) + 1); }\
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_add(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_t_xadd(__ptr_, __d); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_sub(_Tp __d, memory_order = memory_order_seq_cst) const { return (_Tp)__ccw_ilk_t_xadd(__ptr_, (_Tp)(0 - __d)); } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_and(_Tp __d, memory_order = memory_order_seq_cst) const { for (;;) { _Tp __o = *(_Tp volatile*)__ptr_, __n = (_Tp)(__o & __d); if (__ccw_ilk_t_cas(__ptr_, __n, __o) == __o) return __o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_or(_Tp __d,  memory_order = memory_order_seq_cst) const { for (;;) { _Tp __o = *(_Tp volatile*)__ptr_, __n = (_Tp)(__o | __d); if (__ccw_ilk_t_cas(__ptr_, __n, __o) == __o) return __o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp fetch_xor(_Tp __d, memory_order = memory_order_seq_cst) const { for (;;) { _Tp __o = *(_Tp volatile*)__ptr_, __n = (_Tp)(__o ^ __d); if (__ccw_ilk_t_cas(__ptr_, __n, __o) == __o) return __o; } } \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++()    const { return (_Tp)__ccw_ilk_t_inc(__ptr_); }      \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator++(int) const { return (_Tp)(__ccw_ilk_t_inc(__ptr_) - 1); }\
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--()    const { return (_Tp)__ccw_ilk_t_dec(__ptr_); }      \
+    _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator--(int) const { return (_Tp)(__ccw_ilk_t_dec(__ptr_) + 1); }\
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator+=(_Tp __d) const { return (_Tp)(fetch_add(__d) + __d); }                        \
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator-=(_Tp __d) const { return (_Tp)(fetch_sub(__d) - __d); }                        \
     _CCW_LIBCPP_HIDE_FROM_ABI _Tp operator&=(_Tp __d) const { return (_Tp)(fetch_and(__d) & __d); } \

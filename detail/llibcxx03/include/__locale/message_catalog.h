@@ -6,6 +6,9 @@
 #define _CCW_LIBCPP___LOCALE_MESSAGE_CATALOG_H
 
 #include "../__config"
+
+#define _CCW_HAS_MESSAGE_CATALOG 1
+
 #include <string>
 #include <vector>
 #include <cstdio>

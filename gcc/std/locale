@@ -5,6 +5,10 @@
 
 #include_next <locale>
 
+#if defined(__cplusplus) && __cplusplus < 201103L
+#include <../../detail/llibcxx03/include/__locale_dir/wstring_convert.h>
+#endif
+
 #if __cplusplus < 201103L
 namespace std {
 template <class _CharT>

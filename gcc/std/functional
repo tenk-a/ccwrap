@@ -8,7 +8,18 @@
 #include <../../detail/cxx/functional.hpp>
 
 #if __cplusplus < 201103L
+#include <../../detail/llibcxx03/include/__functional/bad_function_call.h>
 #include <../../detail/llibcxx03/include/__functional/function.h>
+#include <../../detail/llibcxx03/include/__functional/bind.h>
+#include <../../detail/llibcxx03/include/__functional/mem_fn.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#include <../../detail/llibcxx03/include/__functional/identity.h>
+#endif
+
+#if defined(__cplusplus) && !defined(__cpp_lib_unwrap_ref)
+#include <../../detail/llibcxx03/include/__functional/unwrap_reference.h>
 #endif
 
 #if __cplusplus < 201703L
