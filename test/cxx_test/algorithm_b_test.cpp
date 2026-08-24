@@ -422,7 +422,6 @@ TEST_CASE(algorithm, swap_family) {
     STD::swap(s1, s2);
     test_str_eq( s1, "right" );
     test_str_eq( s2, "left" );
-    test_pass("cxx03:swap");
 
     int x[3] = {1, 2, 3};
     int y[3] = {7, 8, 9};
@@ -439,8 +438,12 @@ TEST_CASE(algorithm, swap_family) {
     test_eq( ar1[0], 3 );
     test_eq( ar2[0], 1 );
 #else
+    (void)x; (void)y;
+    TEST_NOTE("swap(T (&)[N]) and array<T,N> need a bounded-array parameter, which "
+              "Open Watcom cannot match (A12)");
     TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1();
 #endif
+    test_pass("cxx03:swap");
 
     int __v1_a[] = {1, 2, 3};
     STD::vector<int> v1(__v1_a, __v1_a + sizeof __v1_a / sizeof *__v1_a);

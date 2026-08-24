@@ -150,6 +150,22 @@ public:
         return __r;
     }
 #endif
+    template <class _CharT, class _CharTraits, class _Alloc>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _CharTraits, _Alloc>
+    to_string(_CharT __zero, _CharT __one) const {
+        basic_string<_CharT, _CharTraits, _Alloc> __s;
+        __s.reserve(_Size);
+        for (size_type __i = _Size; __i > 0; --__i) __s.push_back(test(__i - 1) ? __one : __zero);
+        return __s;
+    }
+    template <class _CharT, class _CharTraits, class _Alloc>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, _CharTraits, _Alloc> to_string() const {
+        return to_string<_CharT, _CharTraits, _Alloc>(_CharT('0'), _CharT('1'));
+    }
+    template <class _CharT>
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_string<_CharT, char_traits<_CharT>, allocator<_CharT> > to_string() const {
+        return to_string<_CharT, char_traits<_CharT>, allocator<_CharT> >(_CharT('0'), _CharT('1'));
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI string to_string() const { return to_string('0', '1'); }
     _CCW_LIBCPP_HIDE_FROM_ABI string to_string(char __zero, char __one) const {
         string __s;

@@ -10,6 +10,7 @@
 #include "../__config"
 #include "../__iterator/iterator_traits.h"
 #include "../__string/char_traits.h"
+#include "../__fwd/ios.h"
 #include <streambuf>
 #include <cstddef>
 
@@ -23,7 +24,7 @@ class _CCW_LIBCPP_TEMPLATE_VIS istreambuf_iterator {
 public:
     typedef input_iterator_tag                  iterator_category;
     typedef _CharT                              value_type;
-    typedef typename _Traits::off_type          difference_type;
+    typedef streamoff                           difference_type;
     typedef _CharT*                             pointer;
     typedef _CharT                              reference;
     typedef _CharT                              char_type;
@@ -62,7 +63,11 @@ class _CCW_LIBCPP_TEMPLATE_VIS ostreambuf_iterator {
 public:
     typedef output_iterator_tag                 iterator_category;
     typedef void                                value_type;
+#if _CCW_TARGET_CXX >= 2020
+    typedef _CCW_STD::ptrdiff_t                 difference_type;
+#else
     typedef void                                difference_type;
+#endif
     typedef void                                pointer;
     typedef void                                reference;
     typedef _CharT                              char_type;

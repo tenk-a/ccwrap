@@ -238,8 +238,7 @@ TEST_CASE(chrono, cal_month_day_and_last) {
     test_true( mdl < month_day_last(March) );
     test_pass("cxx20:month_day_last");
 
-    #if !defined(__WATCOMC__)
-
+    #if 1
     test_true( mdl == month_day_last(February) );
     test_pass("cxx20:month_day_last operator==");
     #else

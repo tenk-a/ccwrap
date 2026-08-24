@@ -2,6 +2,7 @@
 
 #include <istream>
 #include <sstream>
+#include <type_traits>
 #include <ios>
 #include <string>
 #include <cstring>
@@ -281,12 +282,8 @@ TEST_CASE(istream, typedefs_and_aliases_cxx03) {
     test_true(( STD::is_same<STD::iostream, STD::basic_iostream<char> >::value ));
     test_pass("cxx03:iostream");
 
-#if !defined(__WATCOMC__)
     test_true(( STD::is_base_of<STD::basic_istream<char>, STD::basic_iostream<char> >::value ));
     test_true(( STD::is_base_of<STD::basic_ostream<char>, STD::basic_iostream<char> >::value ));
-#else
-    TEST_SKIP_N(2);
-#endif
     STD::stringstream ss("7");
     STD::iostream& io = ss;
     int got = 0;

@@ -482,6 +482,11 @@ TEST_CASE(random, more_engines_and_dist) {
         test_eq( v, 1043618065L );
         test_pass("cxx11:linear_congruential_engine");
     }
+#else
+    TEST_NOTE("the Open Watcom port fixes the engine result type, so "
+              "linear_congruential_engine<T, a, c, m> cannot be spelled (B8)");
+    test_skip("cxx11:linear_congruential_engine");
+#endif
     {
 
         STD::minstd_rand mr(1);
@@ -518,14 +523,6 @@ TEST_CASE(random, more_engines_and_dist) {
         test_true( s >= 0 );
         test_pass("cxx11:negative_binomial_distribution");
     }
-#else
-    test_skip("cxx11:linear_congruential_engine");
-    test_skip("cxx11:minstd_rand");
-    test_skip("cxx11:default_random_engine");
-    test_skip("cxx11:ranlux24_base");
-    test_skip("cxx11:ranlux48");
-    test_skip("cxx11:negative_binomial_distribution");
-#endif
 }
 
 TEST_CASE(random, engine_result_types_cxx11) {
@@ -561,6 +558,14 @@ TEST_CASE(random, engine_result_types_cxx11) {
         test_eq( (long)e(), (long)fresh() );
         test_pass("cxx11:linear_congruential_engine::seed");
     }
+#else
+    TEST_NOTE("the Open Watcom port fixes the engine result type, so "
+              "linear_congruential_engine<T, a, c, m> cannot be spelled (B8)");
+    test_skip("cxx11:linear_congruential_engine::result_type");
+    TEST_NOTE("the Open Watcom port fixes the engine result type, so "
+              "linear_congruential_engine<T, a, c, m> cannot be spelled (B8)");
+    test_skip("cxx11:linear_congruential_engine::seed");
+#endif
     {
         typedef STD::subtract_with_carry_engine<STD::uint_fast32_t, 24, 10, 24> SWC;
         SWC e(1);
@@ -645,22 +650,6 @@ TEST_CASE(random, engine_result_types_cxx11) {
         test_eq( (long)e(), (long)fresh() );
         test_pass("cxx11:shuffle_order_engine::seed");
     }
-#else
-    TEST_NOTE("the Open Watcom port ships a reduced <random>");
-    test_skip("cxx11:linear_congruential_engine::result_type");
-    test_skip("cxx11:linear_congruential_engine::seed");
-    test_skip("cxx11:subtract_with_carry_engine::result_type");
-    test_skip("cxx11:subtract_with_carry_engine::seed");
-    test_skip("cxx11:discard_block_engine::result_type");
-    test_skip("cxx11:discard_block_engine::base");
-    test_skip("cxx11:discard_block_engine::seed");
-    test_skip("cxx11:independent_bits_engine::result_type");
-    test_skip("cxx11:independent_bits_engine::base");
-    test_skip("cxx11:independent_bits_engine::seed");
-    test_skip("cxx11:shuffle_order_engine::result_type");
-    test_skip("cxx11:shuffle_order_engine::base");
-    test_skip("cxx11:shuffle_order_engine::seed");
-#endif
 
     test_true(( STD::is_same<STD::random_device::result_type, unsigned int>::value ));
     test_true(( STD::is_same<STD::seed_seq::result_type, STD::uint_least32_t>::value ));
@@ -672,17 +661,12 @@ TEST_CASE(random, engine_result_types_cxx11) {
         test_true( out[0] != 0 || out[1] != 0 );
     }
     test_pass("cxx11:seed_seq::result_type");
-#if !defined(__WATCOMC__)
     {
         STD::random_device rd;
         STD::random_device::result_type v = rd();
         test_true( v >= STD::random_device::min() && v <= STD::random_device::max() );
     }
     test_pass("cxx11:random_device::result_type");
-#else
-    TEST_NOTE("no random_device in the Open Watcom port");
-    test_skip("cxx11:random_device::result_type");
-#endif
 }
 
 TEST_CASE(random, distribution_result_types_cxx11) {
@@ -710,7 +694,6 @@ TEST_CASE(random, distribution_result_types_cxx11) {
         test_true( v == true || v == false );
         test_pass("cxx11:bernoulli_distribution::result_type");
     }
-#if !defined(__WATCOMC__)
     {
         STD::normal_distribution<double> d(0.0, 1.0);
         test_true(( STD::is_same<STD::normal_distribution<double>::result_type,
@@ -775,17 +758,6 @@ TEST_CASE(random, distribution_result_types_cxx11) {
         test_true( de[1] > de[0] );
         test_pass("cxx11:piecewise_linear_distribution::densities");
     }
-#else
-    TEST_NOTE("the Open Watcom port ships a reduced <random>");
-    test_skip("cxx11:normal_distribution::result_type");
-    test_skip("cxx11:discrete_distribution::result_type");
-    test_skip("cxx11:piecewise_constant_distribution::result_type");
-    test_skip("cxx11:piecewise_constant_distribution::intervals");
-    test_skip("cxx11:piecewise_constant_distribution::densities");
-    test_skip("cxx11:piecewise_linear_distribution::result_type");
-    test_skip("cxx11:piecewise_linear_distribution::intervals");
-    test_skip("cxx11:piecewise_linear_distribution::densities");
-#endif
 }
 
 TEST_CASE(random, uniform_random_bit_generator_cxx20) {

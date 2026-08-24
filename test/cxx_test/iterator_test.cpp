@@ -54,6 +54,8 @@ TEST_CASE(iterator, cxx11) {
     test_eq( *(STD::end(a) - 1), 30 );
 #else
     (void)a;
+    TEST_NOTE("Open Watcom cannot match a bounded array T[N] against a template "
+              "parameter, so the array overloads cannot be provided (A12)");
     TEST_SKIP1(); TEST_SKIP1();
 #endif
 
@@ -115,6 +117,8 @@ TEST_CASE(iterator, cxx17) {
     test_eq( *STD::data(da), 7 );
     test_pass("cxx17:data");
 #else
+    TEST_NOTE("Open Watcom cannot match a bounded array T[N] against a template "
+              "parameter, so the array overloads cannot be provided (A12)");
     TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1();
     test_skip("cxx17:data");
 #endif

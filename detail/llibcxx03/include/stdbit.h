@@ -18,6 +18,8 @@
 #define __STDC_ENDIAN_BIG__    4321
 #define __STDC_ENDIAN_NATIVE__ __STDC_ENDIAN_LITTLE__   /* Open Watcom targets are little-endian */
 
+#define _CCW_STD_STDBIT_DEFINED   /* same set as detail/cxx/stdbit.hpp; keeps the two from colliding */
+
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <unsigned _Sz> struct __ccw_bitsel;

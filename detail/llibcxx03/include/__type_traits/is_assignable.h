@@ -7,7 +7,9 @@
 #include "../__config"
 #include "__ccw_native_traits.h"
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/__ccw_triviality.h"
 #include "../__type_traits/is_const.h"
+#include "../__type_traits/remove_reference.h"
 #include "../__type_traits/is_class.h"
 #if !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS
 
@@ -96,12 +98,24 @@ template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_nothrow_copy_assignable
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_nothrow_move_assignable
     : public is_move_assignable<_Tp> {};
 
+#if defined(__WATCOMC__)
+template <class _Tp, class _Up> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_assignable
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_assignable<_Tp, _Up>::value,
+                                                           (bool)__ccw_triv_core<typename remove_reference<_Tp>::type>::value>::value> {};
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_copy_assignable
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_copy_assignable<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_move_assignable
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_move_assignable<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+#else
 template <class _Tp, class _Up> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_assignable
     : public is_assignable<_Tp, _Up> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_copy_assignable
     : public is_copy_assignable<_Tp> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_move_assignable
     : public is_move_assignable<_Tp> {};
+#endif // defined(__WATCOMC__)
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif // !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS

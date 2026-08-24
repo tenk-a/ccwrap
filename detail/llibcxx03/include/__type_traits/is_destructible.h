@@ -12,6 +12,7 @@
 #include "../__config"
 #include "__ccw_native_traits.h"
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/__ccw_triviality.h"
 #if !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS
 
 #if defined(__has_builtin)
@@ -56,7 +57,8 @@ template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_nothrow_destructible
 
 #if defined(__WATCOMC__)
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_destructible
-    : public is_destructible<_Tp> {};
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_destructible<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
 #else
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_destructible
     : public integral_constant<bool, __has_trivial_destructor(_Tp)> {};

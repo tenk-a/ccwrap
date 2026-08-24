@@ -13,4 +13,6 @@
 #  define __STDC_VERSION_STDCKDINT_H__ 202311L
 #endif
 
+#define _CCW_STD_CKD_DEFINED   /* same set as detail/cxx/stdckdint.hpp; keeps the two from colliding */
+
 #endif // _CCW_LIBCPP_STDCKDINT_H

@@ -7,6 +7,7 @@
 #include "../__utility/move.h"
 #include <exception>   // _CCW_STD::exception (bad_weak_ptr)
 #include "../__exception/eh_anchor.h"
+#include "../__functional/hash.h"
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp> class _CCW_LIBCPP_TEMPLATE_VIS shared_ptr;
@@ -381,6 +382,14 @@ _CCW_LIBCPP_HIDE_FROM_ABI shared_ptr<_Tp> allocate_shared(const _Alloc& __al, co
     __enable_weak_this(__p, __p, __s.__cb());
     return __s;
 }
+
+#if !_CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS hash<shared_ptr<_Tp> > {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const shared_ptr<_Tp>& __p) const {
+        return hash<_Tp*>()(__p.get());
+    }
+};
+#endif
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 _CCW_EH_ANCHOR(ebwp, bad_weak_ptr, bad_weak_ptr)

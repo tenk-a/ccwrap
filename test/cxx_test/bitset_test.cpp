@@ -291,7 +291,7 @@ TEST_CASE(bitset, observers_and_conversions) {
 #else
     test_skip("cxx11:bitset::to_string(zero, one)");
 #endif
-#if !defined(__WATCOMC__)
+#if 1
     STD::string s  = b8.to_string<char, STD::char_traits<char>, STD::allocator<char> >();
     test_true( s  == "10000001" );
     STD::wstring ws = b8.to_string<wchar_t>();

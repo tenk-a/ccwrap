@@ -8,6 +8,7 @@
 #ifndef _CCW_LIBCPP_SYSTEM_ERROR
 #define _CCW_LIBCPP_SYSTEM_ERROR
 #include "__config"
+#include "__functional/hash.h"
 #include <cerrno>
 #include <cstring>
 #include "__fwd/ostream.h"   // NOT <iosfwd>: that reaches <streambuf> -> <ios> -> here
@@ -274,6 +275,19 @@ private:
         return __what + ": " + __ec.message();
     }
 };
+
+#if !_CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+template <> struct _CCW_LIBCPP_TEMPLATE_VIS hash<error_code> {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const error_code& __e) const {
+        return (_CCW_STD::size_t)__e.value() ^ (_CCW_STD::size_t)(_CCW_STD::size_t)(void*)&__e.category();
+    }
+};
+template <> struct _CCW_LIBCPP_TEMPLATE_VIS hash<error_condition> {
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::size_t operator()(const error_condition& __e) const {
+        return (_CCW_STD::size_t)__e.value() ^ (_CCW_STD::size_t)(_CCW_STD::size_t)(void*)&__e.category();
+    }
+};
+#endif
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 _CCW_EH_ANCHOR(esys, system_error, system_error)

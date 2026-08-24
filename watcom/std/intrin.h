@@ -10,6 +10,10 @@
 
 #if defined(__WATCOMC__) && defined(__386__)
 
+#if !defined(_M_IX86)
+#  define _M_IX86 600
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +41,17 @@ extern long _InterlockedExchange(long volatile* _Target, long _Value);
     parm [edx] [eax]                \
     value [eax]                     \
     modify [eax];
+
+extern unsigned short _byteswap_ushort(unsigned short _Val);
+#pragma aux _byteswap_ushort = "rol ax, 8" parm [ax] value [ax] modify [ax];
+
+extern void _mm_pause(void);                  // rep nop (0xF3 0x90) -- assembled as bytes
+#pragma aux _mm_pause = 0xf3 0x90;            // in case the inline assembler lacks `pause`
+
+extern void __debugbreak(void);
+#pragma aux __debugbreak = "int 3";
+
+#if _M_IX86 >= 400
 
 extern long _InterlockedExchangeAdd(long volatile* _Addend, long _Value);
 #pragma aux _InterlockedExchangeAdd =  \
@@ -70,9 +85,87 @@ extern long _InterlockedDecrement(long volatile* _Addend);   // returns the new 
     value [eax]                      \
     modify [eax];
 
+extern unsigned long _byteswap_ulong(unsigned long _Val);
+#pragma aux _byteswap_ulong = "bswap eax" parm [eax] value [eax] modify [eax];
+
+extern unsigned __int64 _byteswap_uint64(unsigned __int64 _Val);
+#pragma aux _byteswap_uint64 =  \
+    "bswap eax"                 \
+    "bswap edx"                 \
+    "xchg eax, edx"             \
+    parm [edx eax]              \
+    value [edx eax]             \
+    modify [eax edx];
+
+#endif // _M_IX86 >= 400
+
+#if _M_IX86 >= 500
+
+extern unsigned __int64 __rdtsc(void);       // cycle counter (edx:eax)
+#pragma aux __rdtsc = "rdtsc" value [edx eax] modify [edx eax];
+
+extern void __cpuid(int _CpuInfo[4], int _FunctionId);
+#pragma aux __cpuid =           \
+    "cpuid"                     \
+    "mov [edi], eax"            \
+    "mov [edi+4], ebx"          \
+    "mov [edi+8], ecx"          \
+    "mov [edi+12], edx"         \
+    parm [edi] [eax]            \
+    modify [eax ebx ecx edx];
+
+#endif // _M_IX86 >= 500
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+#if _M_IX86 < 400
+
+// 386: no xadd / cmpxchg / bswap. `lock xchg` is all the atomicity the part has, so the
+// read-modify-write forms run under a spin lock built from it. doc/src/watcom/std/intrin.h.md
+// states what that guarantees (and what it does not, in C).
+#ifdef __cplusplus
+inline long* __ccw_ilk_lock386() { static long __ccw_lk = 0; return &__ccw_lk; }
+#else
+static long __ccw_ilk_lk386_ = 0;
+static __inline long* __ccw_ilk_lock386(void) { return &__ccw_ilk_lk386_; }
+#endif
+
+static __inline void __ccw_ilk_acquire386(void) {
+    while (_InterlockedExchange(__ccw_ilk_lock386(), 1) != 0) _mm_pause();
+}
+static __inline void __ccw_ilk_release386(void) { _InterlockedExchange(__ccw_ilk_lock386(), 0); }
+
+static __inline long _InterlockedExchangeAdd(long volatile* _Addend, long _Value) {
+    long __old;
+    __ccw_ilk_acquire386();
+    __old = *_Addend;
+    *_Addend = __old + _Value;
+    __ccw_ilk_release386();
+    return __old;
+}
+static __inline long _InterlockedCompareExchange(long volatile* _Dest, long _Exchange, long _Comparand) {
+    long __old;
+    __ccw_ilk_acquire386();
+    __old = *_Dest;
+    if (__old == _Comparand) *_Dest = _Exchange;
+    __ccw_ilk_release386();
+    return __old;
+}
+static __inline long _InterlockedIncrement(long volatile* _Addend) { return _InterlockedExchangeAdd(_Addend,  1) + 1; }
+static __inline long _InterlockedDecrement(long volatile* _Addend) { return _InterlockedExchangeAdd(_Addend, -1) - 1; }
+
+static __inline unsigned long _byteswap_ulong(unsigned long _Val) {
+    return ((_Val & 0x000000FFul) << 24) | ((_Val & 0x0000FF00ul) << 8)
+         | ((_Val & 0x00FF0000ul) >> 8)  | ((_Val & 0xFF000000ul) >> 24);
+}
+static __inline unsigned __int64 _byteswap_uint64(unsigned __int64 _Val) {
+    return ((unsigned __int64)_byteswap_ulong((unsigned long)_Val) << 32)
+         |  (unsigned __int64)_byteswap_ulong((unsigned long)(_Val >> 32));
+}
+
+#endif // _M_IX86 < 400
 
 static __inline long _InterlockedOr(long volatile* _Value, long _Mask) {
     long __o, __n;
@@ -89,48 +182,6 @@ static __inline long _InterlockedXor(long volatile* _Value, long _Mask) {
     do { __o = *_Value; __n = __o ^ _Mask; } while (_InterlockedCompareExchange(_Value, __n, __o) != __o);
     return __o;
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern unsigned short _byteswap_ushort(unsigned short _Val);
-#pragma aux _byteswap_ushort = "rol ax, 8" parm [ax] value [ax] modify [ax];
-
-extern unsigned long _byteswap_ulong(unsigned long _Val);
-#pragma aux _byteswap_ulong = "bswap eax" parm [eax] value [eax] modify [eax];
-
-extern unsigned __int64 _byteswap_uint64(unsigned __int64 _Val);
-#pragma aux _byteswap_uint64 =  \
-    "bswap eax"                 \
-    "bswap edx"                 \
-    "xchg eax, edx"             \
-    parm [edx eax]              \
-    value [edx eax]             \
-    modify [eax edx];
-
-extern unsigned __int64 __rdtsc(void);       // cycle counter (edx:eax)
-#pragma aux __rdtsc = "rdtsc" value [edx eax] modify [edx eax];
-
-extern void _mm_pause(void);                  // rep nop (0xF3 0x90) -- assembled as bytes
-#pragma aux _mm_pause = 0xf3 0x90;            // in case the inline assembler lacks `pause`
-
-extern void __debugbreak(void);
-#pragma aux __debugbreak = "int 3";
-
-extern void __cpuid(int _CpuInfo[4], int _FunctionId);
-#pragma aux __cpuid =           \
-    "cpuid"                     \
-    "mov [edi], eax"            \
-    "mov [edi+4], ebx"          \
-    "mov [edi+8], ecx"          \
-    "mov [edi+12], edx"         \
-    parm [edi] [eax]            \
-    modify [eax ebx ecx edx];
-
-#ifdef __cplusplus
-}  // extern "C"
-#endif
 
 static __inline void _ReadWriteBarrier(void) {}
 static __inline void _ReadBarrier(void) {}

@@ -8,6 +8,7 @@
 #include "is_class.h"
 #include "__ccw_native_traits.h"
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/__ccw_triviality.h"
 #if !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
@@ -122,6 +123,21 @@ struct _CCW_LIBCPP_TEMPLATE_VIS is_constructible<_Tp, __ccw_ctor_none, __ccw_cto
 template <class _Tp, class _A0 = __ccw_ctor_none, class _A1 = __ccw_ctor_none, class _A2 = __ccw_ctor_none>
 struct _CCW_LIBCPP_TEMPLATE_VIS is_nothrow_constructible
     : public is_constructible<_Tp, _A0, _A1, _A2> {};
+#if defined(__WATCOMC__)
+template <class _Tp, class _A0 = __ccw_ctor_none, class _A1 = __ccw_ctor_none, class _A2 = __ccw_ctor_none>
+struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_constructible
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_constructible<_Tp, _A0, _A1, _A2>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_default_constructible
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_default_constructible<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_copy_constructible
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_copy_constructible<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_move_constructible
+    : public integral_constant<bool, (bool)__ccw_triv_both<(bool)is_move_constructible<_Tp>::value,
+                                                           (bool)__ccw_triv_core<_Tp>::value>::value> {};
+#else
 template <class _Tp, class _A0 = __ccw_ctor_none, class _A1 = __ccw_ctor_none, class _A2 = __ccw_ctor_none>
 struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_constructible
     : public is_constructible<_Tp, _A0, _A1, _A2> {};
@@ -132,6 +148,7 @@ template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_copy_construct
     : public is_copy_constructible<_Tp> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_move_constructible
     : public is_move_constructible<_Tp> {};
+#endif // defined(__WATCOMC__)
 
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif // !_CCW_LIBCPP_HAS_NATIVE_CTOR_TRAITS

@@ -5,7 +5,10 @@
 #define _CCW_LIBCPP___FWD_IOS_H
 #include "../__config"
 #include "../__fwd/string.h"
+#include <cstddef>
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
+typedef _CCW_STD::ptrdiff_t streamsize;
+typedef long streamoff;
 template <class _CharT, class _Traits = char_traits<_CharT> > class basic_ios;
 typedef basic_ios<char> ios;
 typedef basic_ios<wchar_t> wios;

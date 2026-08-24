@@ -259,6 +259,9 @@ TEST_CASE(system_error, error_code_members) {
     test_pass("cxx11:error_code(ErrorCodeEnum)");
 #else
     STD::error_code ec = STD::make_error_code(_tst_io_errc(STD::io_errc::stream));
+    TEST_NOTE("Open Watcom has no enum class, so io_errc / errc are structs; giving "
+              "error_code an implicit conversion from them makes every comparison "
+              "between two such values ambiguous (A11 / B4)");
     TEST_SKIP1();
     test_skip("cxx11:error_code(ErrorCodeEnum)");
 #endif
@@ -282,6 +285,8 @@ TEST_CASE(system_error, error_code_members) {
     test_eq( ec.value(), 1 );
     test_pass("cxx11:error_code::operator=(ErrorCodeEnum)");
 #else
+    TEST_NOTE("same as error_code(ErrorCodeEnum): the implicit conversion cannot be "
+              "added without breaking io_errc / errc comparisons (A11 / B4)");
     TEST_SKIP_N(2);
     test_skip("cxx11:error_code::operator=(ErrorCodeEnum)");
 #endif
@@ -309,6 +314,8 @@ TEST_CASE(system_error, error_condition_members) {
     test_pass("cxx11:error_condition(ErrorConditionEnum)");
 #else
     STD::error_condition c3 = STD::make_error_condition(STD::errc(STD::errc::io_error));
+    TEST_NOTE("Open Watcom has no enum class, so errc is a struct; an implicit "
+              "conversion to error_condition makes errc comparisons ambiguous (A11 / B4)");
     TEST_SKIP1();
     test_skip("cxx11:error_condition(ErrorConditionEnum)");
 #endif
@@ -319,6 +326,8 @@ TEST_CASE(system_error, error_condition_members) {
     test_pass("cxx11:error_condition::operator=(ErrorConditionEnum)");
 #else
     c3 = STD::make_error_condition(STD::errc(STD::errc::invalid_argument));
+    TEST_NOTE("Open Watcom has no enum class, so errc is a struct; an implicit "
+              "conversion to error_condition makes errc comparisons ambiguous (A11 / B4)");
     TEST_SKIP1();
     test_skip("cxx11:error_condition::operator=(ErrorConditionEnum)");
 #endif
@@ -385,7 +394,7 @@ TEST_CASE(system_error, cxx17_traits_and_hash) {
     test_skip("cxx17:is_error_condition_enum_v");
 #endif
 
-#if !defined(__WATCOMC__)
+#if 1
     STD::error_code a = STD::make_error_code(STD::errc::invalid_argument);
     STD::error_code b = STD::make_error_code(STD::errc::invalid_argument);
     STD::hash<STD::error_code> hc;

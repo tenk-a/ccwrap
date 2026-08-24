@@ -1,11 +1,13 @@
 /*
  * ccwrap: libc++ layout. classic C++03 body.
- *   default_delete, _CCW_STD::align, uses_allocator, construct_at.
+ *   default_delete, _CCW_STD::align, uses_allocator, construct_at,
+ *   get_temporary_buffer / return_temporary_buffer.
  */
 #ifndef _CCW_LIBCPP___MEMORY_MISC_H
 #define _CCW_LIBCPP___MEMORY_MISC_H
 #include "../__config"
 #include "../__fnctmpl.h"
+#include "../__utility/pair.h"
 #include <new>
 #include <cstddef>
 
@@ -27,6 +29,23 @@ struct default_delete<_Tp[]> {
     _CCW_LIBCPP_HIDE_FROM_ABI default_delete() {}
     _CCW_LIBCPP_HIDE_FROM_ABI void operator()(_Tp* __p) const { delete[] __p; }
 };
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI pair<_Tp*, _CCW_STD::ptrdiff_t> get_temporary_buffer(_CCW_STD::ptrdiff_t __n) {
+    pair<_Tp*, _CCW_STD::ptrdiff_t> __r((_Tp*)0, (_CCW_STD::ptrdiff_t)0);
+    if (__n <= 0) return __r;
+    const _CCW_STD::ptrdiff_t __max = (_CCW_STD::ptrdiff_t)(~(_CCW_STD::size_t)0 / sizeof(_Tp));
+    if (__n > __max) __n = __max;
+    while (__n > 0) {
+        void* __p = ::operator new((_CCW_STD::size_t)__n * sizeof(_Tp), nothrow);
+        if (__p) { __r.first = (_Tp*)__p; __r.second = __n; break; }
+        __n /= 2;
+    }
+    return __r;
+}
+
+template <class _Tp>
+_CCW_LIBCPP_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) { ::operator delete((void*)__p); }
 
 _CCW_LIBCPP_HIDE_FROM_ABI inline void* align(_CCW_STD::size_t __alignment, _CCW_STD::size_t __size, void*& __ptr, _CCW_STD::size_t& __space) {
     if (__space < __size) return 0;

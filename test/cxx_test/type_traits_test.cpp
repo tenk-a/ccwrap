@@ -59,18 +59,15 @@ TEST_CASE(type_traits, primary_categories) {
     test_pass("cxx11:is_reference");
     test_true(  STD::is_lvalue_reference<int&>::value );
     test_pass("cxx11:is_lvalue_reference");
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("bounded array T[N] does not match a partial specialization (A12)");
     test_true(  STD::is_array<int[3]>::value );
     test_pass("cxx11:is_array");
 
-#if !defined(__WATCOMC__)
     test_true(  STD::is_enum<PlainEnum>::value );
+    test_true( !STD::is_enum<Empty>::value );
+    test_true( !STD::is_enum<int>::value );
     test_pass("cxx11:is_enum");
-#else
-    TEST_SKIP1();
-    test_skip("cxx11:is_enum");
-#endif
-#if !defined(__WATCOMC__)
+#if 1   /* is_class / is_object / is_base_of are intrinsic-free in llibcxx03 */
     test_true(  STD::is_class<Empty>::value );
     test_true(  STD::is_object<int>::value );
     test_pass("cxx11:is_class");
@@ -132,28 +129,19 @@ TEST_CASE(type_traits, properties) {
     test_pass("cxx11:is_signed");
     test_true(  STD::is_unsigned<unsigned>::value );
     test_pass("cxx11:is_unsigned");
-#if !defined(__WATCOMC__)
     test_true(  STD::is_empty<Empty>::value );
+    test_true( !STD::is_empty<TTAgg>::value );
     test_pass("cxx11:is_empty");
-#else
-    TEST_SKIP1();
-    test_skip("cxx11:is_empty");
-#endif
-#if !defined(__WATCOMC__)
     test_true(  STD::is_polymorphic<Poly>::value );
     test_true( !STD::is_polymorphic<Empty>::value );
     test_pass("cxx11:is_polymorphic");
-#else
-    TEST_SKIP1(); TEST_SKIP1();
-    test_skip("cxx11:is_polymorphic");
-#endif
     test_true(  (STD::alignment_of<double>::value >= 1u) );
     test_pass("cxx11:alignment_of");
 
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("bounded array T[N] does not match a partial specialization (A12)");
     test_eq( (int)STD::rank<int[3][4]>::value, 2 );
     test_pass("cxx11:rank");
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("bounded array T[N] does not match a partial specialization (A12)");
     test_eq( (int)STD::extent<int[3][4]>::value, 3 );
     test_pass("cxx11:extent");
 }
@@ -162,7 +150,7 @@ TEST_CASE(type_traits, relations) {
     test_true(  (STD::is_same<int, int>::value) );
     test_true( !(STD::is_same<int, long>::value) );
     test_pass("cxx11:is_same");
-#if !defined(__WATCOMC__)
+#if 1   /* is_base_of is intrinsic-free in llibcxx03 */
     test_true(  (STD::is_base_of<Poly, Poly>::value) );
     test_pass("cxx11:is_base_of");
 #else
@@ -196,17 +184,13 @@ TEST_CASE(type_traits, transforms) {
     test_true( (STD::is_same<STD::conditional<true, int, long>::type, int>::value) );
     test_true( (STD::is_same<STD::conditional<false, int, long>::type, long>::value) );
     test_pass("cxx11:conditional");
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("bounded array T[N] does not match a partial specialization (A12)");
     test_true( (STD::is_same<STD::remove_extent<int[3]>::type, int>::value) );
     test_pass("cxx11:remove_extent");
 
-#if !defined(__WATCOMC__)
     test_true( (STD::is_same<STD::underlying_type<PlainEnum>::type, STD::underlying_type<PlainEnum>::type>::value) );
+    test_true( sizeof(STD::underlying_type<PlainEnum>::type) == sizeof(PlainEnum) );
     test_pass("cxx11:underlying_type");
-#else
-    TEST_SKIP1();
-    test_skip("cxx11:underlying_type");
-#endif
 }
 
 TEST_CASE(type_traits, helpers) {
@@ -413,7 +397,7 @@ TEST_CASE(type_traits, is_constructible_family) {
     test_true(  STD::is_copy_constructible<int*>::value );
     test_true(  STD::is_copy_constructible<Pod>::value );
     test_true(  STD::is_copy_constructible<NoDflt>::value );
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("Open Watcom does not apply access control during template argument deduction, so an inaccessible copy constructor is not detected");
     TEST_SKIP_VC110("MSVC before VS2013 has no expression SFINAE: cannot detect a private copy constructor");
     test_true( !STD::is_copy_constructible<NoCopy>::value );
     TEST_SKIP_VC_RANGE(1600, 1800, "vc10/vc11 answer false for a reference, which is copy-constructible");
@@ -424,7 +408,7 @@ TEST_CASE(type_traits, is_constructible_family) {
 
     test_true(  STD::is_move_constructible<int>::value );
     test_true(  STD::is_move_constructible<Pod>::value );
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("Open Watcom does not apply access control during template argument deduction, so an inaccessible copy constructor is not detected");
     TEST_SKIP_VC110("MSVC before VS2013 has no expression SFINAE: cannot detect a private copy constructor");
     test_true( !STD::is_move_constructible<NoCopy>::value );
     test_pass("cxx11:is_move_constructible");
@@ -434,7 +418,7 @@ TEST_CASE(type_traits, is_constructible_family) {
     test_true( !STD::is_nothrow_default_constructible<HasCtor>::value );
     test_pass("cxx11:is_nothrow_default_constructible");
     test_true(  STD::is_nothrow_copy_constructible<Pod>::value );
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("Open Watcom does not apply access control during template argument deduction, so an inaccessible copy constructor is not detected");
     TEST_SKIP_VC110("MSVC before VS2013 has no expression SFINAE: cannot detect a private copy constructor");
     test_true( !STD::is_nothrow_copy_constructible<NoCopy>::value );
     test_pass("cxx11:is_nothrow_copy_constructible");
@@ -506,7 +490,7 @@ TEST_CASE(type_traits, transform_traits_more) {
     test_true(( STD::is_same<STD::remove_all_extents<int>::type, int>::value ));
     test_pass("cxx11:remove_all_extents");
 
-#if !defined(__WATCOMC__)
+#if 1   /* llibcxx03 writes common_type without an intrinsic */
     test_true(( STD::is_same<STD::common_type<int, long>::type, long>::value ));
     test_true(( STD::is_same<STD::common_type<int, int>::type, int>::value ));
     test_pass("cxx11:common_type");
@@ -518,13 +502,35 @@ TEST_CASE(type_traits, transform_traits_more) {
 
 #if defined(__WATCOMC__)
 TEST_CASE(type_traits, class_property_traits) {
+    TEST_NOTE("Open Watcom has no __is_union intrinsic and a union cannot be told from a "
+              "class in the language (A16)");
     test_skip("cxx11:is_union");
+    TEST_NOTE("Open Watcom has no __has_virtual_destructor intrinsic; is_polymorphic "
+              "cannot tell a virtual destructor from any other virtual function (A16)");
     test_skip("cxx11:has_virtual_destructor");
-    test_skip("cxx11:is_abstract");
-    test_skip("cxx11:is_standard_layout");
-    test_skip("cxx11:is_trivial");
-    test_skip("cxx11:is_trivially_copyable");
-    test_skip("cxx11:is_pod");
+    test_true(  STD::is_abstract<TTAbstract>::value );
+    test_true( !STD::is_abstract<Empty>::value );
+    test_pass("cxx11:is_abstract");
+    TEST_NOTE("no triviality intrinsic: llibcxx03 answers true only where the type "
+              "category alone guarantees it (scalars and arrays of scalars)");
+    test_true(  STD::is_standard_layout<int>::value );
+    test_true( !STD::is_standard_layout<Poly>::value );
+    test_pass("cxx11:is_standard_layout");
+    TEST_NOTE("no triviality intrinsic: llibcxx03 answers true only where the type "
+              "category alone guarantees it (scalars and arrays of scalars)");
+    test_true(  STD::is_trivial<int>::value );
+    test_true( !STD::is_trivial<Poly>::value );
+    test_pass("cxx11:is_trivial");
+    TEST_NOTE("no triviality intrinsic: llibcxx03 answers true only where the type "
+              "category alone guarantees it (scalars and arrays of scalars)");
+    test_true(  STD::is_trivially_copyable<int>::value );
+    test_true( !STD::is_trivially_copyable<Poly>::value );
+    test_pass("cxx11:is_trivially_copyable");
+    TEST_NOTE("no triviality intrinsic: llibcxx03 answers true only where the type "
+              "category alone guarantees it (scalars and arrays of scalars)");
+    test_true(  STD::is_pod<int>::value );
+    test_true( !STD::is_pod<Poly>::value );
+    test_pass("cxx11:is_pod");
 }
 #else
 TEST_CASE(type_traits, class_property_traits) {
@@ -555,16 +561,44 @@ TEST_CASE(type_traits, class_property_traits) {
 
 #if defined(__WATCOMC__)
 TEST_CASE(type_traits, constructible_traits) {
-    test_skip("cxx11:is_constructible");
-    test_skip("cxx11:is_nothrow_constructible");
-    test_skip("cxx11:is_trivially_constructible");
-    test_skip("cxx11:is_trivially_default_constructible");
-    test_skip("cxx11:is_trivially_copy_constructible");
-    test_skip("cxx11:is_trivially_move_constructible");
-    test_skip("cxx11:is_trivially_assignable");
-    test_skip("cxx11:is_trivially_copy_assignable");
-    test_skip("cxx11:is_trivially_move_assignable");
-    test_skip("cxx11:is_trivially_destructible");
+    test_true(( STD::is_constructible<int, int>::value ));
+    test_true(( STD::is_constructible<TTNonAgg>::value ));
+    test_true(( !STD::is_constructible<TTNonAgg, int>::value ));
+    test_true(( !STD::is_constructible<TTAbstract>::value ));
+    test_pass("cxx11:is_constructible");
+    test_true(( STD::is_nothrow_constructible<int, int>::value ));
+    test_pass("cxx11:is_nothrow_constructible");
+
+    TEST_NOTE("no triviality intrinsic: llibcxx03 answers true only where the type "
+              "category alone guarantees it (scalars and arrays of scalars)");
+    test_true(  STD::is_trivially_constructible<int>::value );
+    test_true( !STD::is_trivially_constructible<Poly>::value );
+    test_pass("cxx11:is_trivially_constructible");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_default_constructible<int>::value );
+    test_true( !STD::is_trivially_default_constructible<Poly>::value );
+    test_pass("cxx11:is_trivially_default_constructible");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_copy_constructible<int>::value );
+    test_true( !STD::is_trivially_copy_constructible<Poly>::value );
+    test_pass("cxx11:is_trivially_copy_constructible");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_move_constructible<int>::value );
+    test_pass("cxx11:is_trivially_move_constructible");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(( STD::is_trivially_assignable<int&, int>::value ));
+    test_pass("cxx11:is_trivially_assignable");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_copy_assignable<int>::value );
+    test_true( !STD::is_trivially_copy_assignable<Poly>::value );
+    test_pass("cxx11:is_trivially_copy_assignable");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_move_assignable<int>::value );
+    test_pass("cxx11:is_trivially_move_assignable");
+    TEST_NOTE("no triviality intrinsic: scalars only");
+    test_true(  STD::is_trivially_destructible<int>::value );
+    test_true( !STD::is_trivially_destructible<Poly>::value );
+    test_pass("cxx11:is_trivially_destructible");
 }
 #else
 TEST_CASE(type_traits, constructible_traits) {
@@ -601,8 +635,17 @@ TEST_CASE(type_traits, constructible_traits) {
 
 #if defined(__WATCOMC__)
 TEST_CASE(type_traits, aligned_and_result_of) {
-    test_skip("cxx11:aligned_storage");
-    test_skip("cxx11:aligned_union");
+    TEST_NOTE("Open Watcom has no alignof; alignment_of stands in. Over-alignment beyond "
+              "the widest fundamental type cannot be expressed at all (A33)");
+    typedef STD::aligned_storage<16, 8>::type S16;
+    test_true( sizeof(S16) >= 16 );
+    test_true( STD::alignment_of<S16>::value == 8 );
+    test_pass("cxx11:aligned_storage");
+
+    typedef STD::aligned_union<0, char, double>::type AU;
+    test_true( sizeof(AU) >= sizeof(double) );
+    test_pass("cxx11:aligned_union");
+    TEST_NOTE("removed in C++20; llibcxx03 has no result_of");
     test_skip("cxx11:result_of");
 }
 #else
@@ -1538,7 +1581,7 @@ TEST_CASE(type_traits, variable_templates_misc_cxx17) {
 }
 
 TEST_CASE(type_traits, is_literal_type_cxx11) {
-#if !defined(__WATCOMC__) && (_TST_TT_LANG < 202002L || defined(__GLIBCXX__))
+#if _TST_TT_LANG < 202002L || defined(__GLIBCXX__)
     test_true(  STD::is_literal_type<int>::value );
     test_true( !STD::is_literal_type<Poly>::value );
     test_pass("cxx11:is_literal_type");

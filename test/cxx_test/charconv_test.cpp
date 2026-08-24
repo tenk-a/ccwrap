@@ -571,7 +571,7 @@ TEST_CASE(charconv, round_trip) {
 }
 
 TEST_CASE(charconv, result_equality) {
-#if !defined(__WATCOMC__) && TEST_TARGET_CXX >= 2020
+#if TEST_TARGET_CXX >= 2020
     char buf[16];
     STD::to_chars_result a = STD::to_chars(buf, buf + sizeof buf, 42);
     STD::to_chars_result b = a;

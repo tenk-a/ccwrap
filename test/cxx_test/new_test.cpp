@@ -106,6 +106,8 @@ TEST_CASE(new_hdr, operators_and_bad_alloc) {
     test_pass("cxx03:operator delete(void*,nothrow_t)");
 #else
     ::operator delete(pn);
+    TEST_NOTE("Open Watcom rejects a two-argument operator delete (A7): "
+              "E267 'operator delete' must have one argument");
     TEST_SKIP1();
     test_skip("cxx03:operator delete(void*,nothrow_t)");
 #endif
@@ -118,6 +120,8 @@ TEST_CASE(new_hdr, operators_and_bad_alloc) {
     test_pass("cxx03:operator delete[](void*,nothrow_t)");
 #else
     ::operator delete[](pan);
+    TEST_NOTE("Open Watcom rejects a two-argument operator delete (A7): "
+              "E267 'operator delete' must have one argument");
     TEST_SKIP1();
     test_skip("cxx03:operator delete[](void*,nothrow_t)");
 #endif
@@ -138,8 +142,11 @@ TEST_CASE(new_hdr, operators_and_bad_alloc) {
     test_true( true );
     test_pass("cxx03:placement operator delete[](void*,void*)");
 #else
-    TEST_NOTE("Open Watcom rejects a two-argument operator delete (A7)");
+    TEST_NOTE("Open Watcom rejects a two-argument operator delete (A7): "
+              "E267 'operator delete' must have one argument");
     test_skip("cxx03:placement operator delete(void*,void*)");
+    TEST_NOTE("Open Watcom rejects a two-argument operator delete (A7): "
+              "E267 'operator delete' must have one argument");
     test_skip("cxx03:placement operator delete[](void*,void*)");
 #endif
 

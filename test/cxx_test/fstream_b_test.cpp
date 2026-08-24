@@ -167,7 +167,6 @@ TEST_CASE(fstream, filebuf_surface_cxx03) {
         test_true( !fb.is_open() );
         test_pass("cxx03:basic_filebuf::close");
 
-        TEST_SKIP_WAT("libcxx03 filebuf::close returns non-null for an already closed buffer");
         test_true( fb.close() == 0 );
         test_pass("cxx03:basic_filebuf::close (already closed -> null)");
     }
@@ -195,7 +194,6 @@ TEST_CASE(fstream, filebuf_surface_cxx03) {
         fb.sputn("z", 1);
         fb.close();
         test_true( !fb.is_open() );
-        TEST_SKIP_WAT("libcxx03 filebuf::close returns non-null for an already closed buffer");
         test_true( fb.close() == 0 );
     }
     test_pass("cxx03:basic_filebuf::close (exception closes then rethrows)");
@@ -277,7 +275,6 @@ TEST_CASE(fstream, open_modes_out_cxx03) {
         test_true( fb.open(FB_FILE, io::in | io::app) != 0 );
         fb.sputn("C", 1);
         fb.close();
-        TEST_SKIP_WAT("libcxx03 filebuf does not append in app mode");
         test_eq( fb_read(FB_FILE), STD::string("wC") );
     }
     test_pass("cxx03:basic_filebuf::open(mode=in|app)");
@@ -287,21 +284,17 @@ TEST_CASE(fstream, open_modes_out_cxx03) {
         test_true( fb.open(FB_FILE, io::in | io::out | io::app) != 0 );
         fb.sputn("D", 1);
         fb.close();
-        TEST_SKIP_WAT("libcxx03 filebuf does not append in app mode");
         test_eq( fb_read(FB_FILE), STD::string("wCD") );
     }
     test_pass("cxx03:basic_filebuf::open(mode=in|out|app)");
 
     {
         STD::filebuf fb;
-        TEST_SKIP_WAT("libcxx03 filebuf accepts mode combinations the table does not list");
         test_true( fb.open(FB_FILE, io::ate) == 0 );
         STD::filebuf fb2;
-        TEST_SKIP_WAT("libcxx03 filebuf cannot open with ate");
         test_true( fb2.open(FB_FILE, io::in | io::out | io::ate) != 0 );
         fb2.sputn("E", 1);
         fb2.close();
-        TEST_SKIP_WAT("libcxx03 filebuf cannot open with ate");
         test_eq( fb_read(FB_FILE), STD::string("wCDE") );
     }
     test_pass("cxx03:basic_filebuf::open(mode=ate)");
@@ -383,7 +376,6 @@ TEST_CASE(fstream, open_modes_binary_cxx03) {
         test_true( fb.open(FB_FILE, B | io::in | io::app) != 0 );
         fb.sputn("C", 1);
         fb.close();
-        TEST_SKIP_WAT("libcxx03 filebuf does not append in app mode");
         test_eq( fb_read(FB_FILE), STD::string("wC") );
     }
     test_pass("cxx03:basic_filebuf::open(mode=binary|in|app)");
@@ -393,25 +385,20 @@ TEST_CASE(fstream, open_modes_binary_cxx03) {
         test_true( fb.open(FB_FILE, B | io::in | io::out | io::app) != 0 );
         fb.sputn("D", 1);
         fb.close();
-        TEST_SKIP_WAT("libcxx03 filebuf does not append in app mode");
         test_eq( fb_read(FB_FILE), STD::string("wCD") );
     }
     test_pass("cxx03:basic_filebuf::open(mode=binary|in|out|app)");
 
     {
         STD::filebuf fb;
-        TEST_SKIP_WAT("libcxx03 filebuf accepts mode combinations the table does not list");
         test_true( fb.open(FB_FILE, B) == 0 );
-        TEST_SKIP_WAT("libcxx03 filebuf accepts mode combinations the table does not list");
         test_true( !fb.is_open() );
     }
     test_pass("cxx03:basic_filebuf::open(mode invalid: binary only) -> failure");
 
     {
         STD::filebuf fb;
-        TEST_SKIP_WAT("libcxx03 filebuf accepts mode combinations the table does not list");
         test_true( fb.open(FB_FILE, io::trunc) == 0 );
-        TEST_SKIP_WAT("libcxx03 filebuf accepts mode combinations the table does not list");
         test_true( !fb.is_open() );
     }
     test_pass("cxx03:basic_filebuf::open(mode invalid: trunc only) -> failure");
@@ -618,7 +605,6 @@ TEST_CASE(fstream, filebuf_virtuals_cxx03) {
         test_true( fb.pub_setbuf(0, 0) == static_cast<STD::streambuf*>(&fb) );
         fb.open(FB_FILE2, io::out | io::trunc);
         fb.sputc('u');
-        TEST_SKIP_WAT("libcxx03 filebuf ignores setbuf(0,0) and stays buffered");
         test_eq( fb_read(FB_FILE2), STD::string("u") );
         fb.close();
         test_pass("cxx03:basic_filebuf::setbuf(nullptr, 0) before I/O -> unbuffered");
@@ -747,9 +733,7 @@ TEST_CASE(fstream, filebuf_codecvt_corners_cxx03) {
             if (fb.pub_overflow((int_type)'x') == eof) failed = true;
             fb.close();
         } catch (const STD::exception&) { failed = true; }
-        TEST_SKIP_WAT("libcxx03 filebuf does not report a codecvt error");
         test_true( failed );
-        TEST_SKIP_WAT("libcxx03 filebuf does not report a codecvt error");
         test_true( fb_read(FB_FILE2).empty() );
     }
     test_pass("cxx03:basic_filebuf::overflow (codecvt error)");
@@ -799,7 +783,6 @@ TEST_CASE(fstream, filebuf_codecvt_corners_cxx03) {
             zero_ok = (fb.pub_seekoff(0, io::beg) != STD::filebuf::pos_type(-1));
             fb.close();
         } catch (const STD::exception&) { }
-        TEST_SKIP_WAT("libcxx03 filebuf seekoff ignores a variable-length encoding");
         test_true( nonzero_failed );
         test_true( zero_ok );
     }
@@ -924,7 +907,6 @@ TEST_CASE(fstream, stream_classes_cxx03) {
         STD::fstream g(FB_FILE2, io::in);
         test_true( g.is_open() );
         g << "nope";
-        TEST_SKIP_WAT("libcxx03 fstream does not set failbit when writing to an in-only stream");
         test_true( g.fail() );
         test_pass("cxx03:basic_fstream::open passes mode unchanged");
 

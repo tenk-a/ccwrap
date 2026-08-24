@@ -2,12 +2,12 @@
 // Part of the LLVM Project (Apache-2.0 WITH LLVM-exception).
 //
 //  ccwrap-only header (libc++ splits these one per file and writes them against its own
-//  __has_builtin machinery). These are the traits that CANNOT be written in the language
-//  -- each needs a compiler intrinsic, and every compiler this tree supports has them
-//  EXCEPT Open Watcom (no __is_enum / __is_union / __is_empty /
-//  __is_polymorphic / __is_abstract / __is_base_of / __underlying_type, and no
-//  substitute was found for any of them). is_class is the exception -- it IS
-//  expressible without an intrinsic, and llibcxx03 does that in is_class.h.
+//  __has_builtin machinery). These are the traits every compiler this tree supports
+//  writes with an intrinsic. Open Watcom has none of them; the ones that turned out to
+//  be expressible in the language anyway live one per file, libc++ style
+//  (is_class.h / is_base_of.h / is_enum.h / is_empty.h / is_polymorphic.h /
+//  is_abstract.h / underlying_type.h). What is left here for Open Watcom is
+//  is_union / has_virtual_destructor and the POD-and-triviality family.
 //===----------------------------------------------------------------------===//
 #ifndef _CCW_LIBCPP___TYPE_TRAITS_CCW_INTRINSIC_TRAITS_H
 #define _CCW_LIBCPP___TYPE_TRAITS_CCW_INTRINSIC_TRAITS_H

@@ -143,7 +143,8 @@ TEST_CASE(memory, pointer_cast) {
     test_pass("cxx11:static_pointer_cast");
 
 #if defined(__WATCOMC__)
-
+    TEST_NOTE("llibcxx03 shared_ptr keeps the control block templated on the element "
+              "type, so two shared_ptr of different types cannot share one");
     TEST_SKIP1(); TEST_SKIP1();
 #else
     STD::shared_ptr<Derived> d2 = STD::dynamic_pointer_cast<Derived>(b);
@@ -350,10 +351,7 @@ TEST_CASE(memory, allocator_traits_members) {
 #endif
     test_pass("cxx11:allocator_traits::propagate_on_container_move_assignment");
 
-#if defined(__WATCOMC__)
-    test_true( !T::is_always_equal::value );
-    test_pass("cxx17:allocator_traits::is_always_equal");
-#elif !defined(_MSC_VER) || defined(__cpp_lib_allocator_traits_is_always_equal)
+#if !defined(_MSC_VER) || defined(__cpp_lib_allocator_traits_is_always_equal)
     test_true( T::is_always_equal::value );
     test_pass("cxx17:allocator_traits::is_always_equal");
 #else
@@ -455,7 +453,6 @@ TEST_CASE(memory, unique_ptr_members) {
     test_true( !z );
     test_pass("cxx11:unique_ptr::unique_ptr(nullptr_t)");
 
-#if !defined(__WATCOMC__)
     g_mem_del = 0;
     {
         STD::unique_ptr<MemFoo, MemDeleter> pd(new MemFoo(3), MemDeleter());
@@ -463,10 +460,6 @@ TEST_CASE(memory, unique_ptr_members) {
     }
     test_eq( g_mem_del, 1 );
     test_pass("cxx11:unique_ptr::unique_ptr(pointer, deleter)");
-#else
-    TEST_SKIP_N(2);
-    test_skip("cxx11:unique_ptr::unique_ptr(pointer, deleter)");
-#endif
 
     STD::unique_ptr<MemFoo> a(new MemFoo(5));
 #if _TST_HAS_RVALUE_REF
@@ -496,6 +489,8 @@ TEST_CASE(memory, unique_ptr_members) {
     test_pass("cxx11:unique_ptr::operator=(nullptr_t)");
 #else
     a.reset();
+    TEST_NOTE("Open Watcom has no nullptr; ccwrap defines it as (0), so nullptr_t "
+              "cannot be a type of its own and the assignment cannot be overloaded");
     TEST_SKIP1();
     test_skip("cxx11:unique_ptr::operator=(nullptr_t)");
 #endif
@@ -989,7 +984,7 @@ TEST_CASE(memory, allocator_members_cxx03) {
     test_skip("cxx03:allocator::rebind");
 #endif
 
-#if ((!_TST_HAS_CXX20_LIB_MEMBERS) || defined(__GLIBCXX__)) && !defined(__WATCOMC__)
+#if (!_TST_HAS_CXX20_LIB_MEMBERS) || defined(__GLIBCXX__) || defined(__WATCOMC__)
     STD::pair<MemFoo*, STD::ptrdiff_t> buf = STD::get_temporary_buffer<MemFoo>(4);
     test_true( buf.second >= 0 );
     test_true( buf.second == 0 || buf.first != 0 );
@@ -1106,16 +1101,12 @@ TEST_CASE(memory, smart_ptr_members_cxx11) {
     test_pass("cxx11:unique_ptr::operator->");
 
     g_mem_del = 0;
-#if !defined(__WATCOMC__)
     {
         STD::unique_ptr<MemFoo>::deleter_type dt;
         dt(new MemFoo(1));
         test_eq( g_mem_del, 0 );
     }
     test_pass("cxx11:unique_ptr::deleter_type");
-#else
-    test_skip("cxx11:unique_ptr::deleter_type");
-#endif
 
     g_mem_dtor = 0;
     STD::default_delete<MemCount> dd;
@@ -1134,7 +1125,7 @@ TEST_CASE(memory, shared_from_this_and_hash_cxx11) {
     test_eq( (long)n.use_count(), 2L );
     test_pass("cxx11:enable_shared_from_this::shared_from_this");
 
-#if !defined(__WATCOMC__)
+#if 1
     STD::shared_ptr<MemFoo> a(new MemFoo(1));
     STD::shared_ptr<MemFoo> b = a;
     STD::shared_ptr<MemFoo> c(new MemFoo(1));

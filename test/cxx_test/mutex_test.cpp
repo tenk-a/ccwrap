@@ -303,10 +303,13 @@ TEST_CASE(mutex, destructors_and_noncopyable) {
     test_skip("cxx17:scoped_lock::scoped_lock(const scoped_lock&) = delete");
 #endif
 #else
-    TEST_NOTE("C++03 has no deleted functions, so the trait cannot see the intent");
+    TEST_NOTE("C++03 has no deleted functions, so the trait cannot see the intent; Open Watcom also does not apply access control during deduction");
     test_skip("cxx11:mutex::mutex(const mutex&) = delete");
+    TEST_NOTE("C++03 has no deleted functions, so the trait cannot see the intent; Open Watcom also does not apply access control during deduction");
     test_skip("cxx11:recursive_mutex::recursive_mutex(const recursive_mutex&) = delete");
+    TEST_NOTE("C++03 has no deleted functions, so the trait cannot see the intent; Open Watcom also does not apply access control during deduction");
     test_skip("cxx11:once_flag::once_flag(const once_flag&) = delete");
+    TEST_NOTE("C++03 has no deleted functions, so the trait cannot see the intent; Open Watcom also does not apply access control during deduction");
     test_skip("cxx17:scoped_lock::scoped_lock(const scoped_lock&) = delete");
 #endif
 }

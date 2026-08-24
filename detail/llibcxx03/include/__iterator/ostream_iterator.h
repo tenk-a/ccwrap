@@ -20,6 +20,9 @@ public:
     typedef _CCW_STD::ptrdiff_t      difference_type;
     typedef void                pointer;
     typedef void                reference;
+    typedef char                        char_type;
+    typedef _CCW_STD::char_traits<char> traits_type;
+    typedef _CCW_STD::ostream           ostream_type;
 
     _CCW_LIBCPP_HIDE_FROM_ABI ostream_iterator(ostream& __os) : __os_(&__os), __delim_(0) {}
     _CCW_LIBCPP_HIDE_FROM_ABI ostream_iterator(ostream& __os, const char* __d) : __os_(&__os), __delim_(__d) {}

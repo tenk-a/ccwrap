@@ -527,9 +527,11 @@ TEST_CASE(atomic, primary_template_struct) {
     AP a;
 #if TEST_TARGET_CXX >= 2020
     Point zero = a.load();
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("Open Watcom does not value-initialise an aggregate: T() and a "
+                  "mem-initialiser v_() both leave the members as they were (A37)");
     test_eq( zero.x, 0 );
-    TEST_SKIP_WAT();
+    TEST_SKIP_WAT("Open Watcom does not value-initialise an aggregate: T() and a "
+                  "mem-initialiser v_() both leave the members as they were (A37)");
     test_eq( zero.y, 0 );
     test_pass("cxx11:atomic<struct> default ctor (value-init)");
 #else

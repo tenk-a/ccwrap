@@ -8,6 +8,10 @@
 #include "../__iterator/iterator_traits.h"
 #include <istream>
 #include <cstddef>
+#include <string>   // char_traits
+
+#define _CCW_HAS_STREAM_ITER_MEMBER_TYPES 1
+
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -22,6 +26,9 @@ public:
     typedef _CCW_STD::ptrdiff_t     difference_type;
     typedef const _Tp*         pointer;
     typedef const _Tp&         reference;
+    typedef char                        char_type;
+    typedef _CCW_STD::char_traits<char> traits_type;
+    typedef _CCW_STD::istream           istream_type;
 
     _CCW_LIBCPP_HIDE_FROM_ABI istream_iterator() : __is_(0), __value_(), __end_(true) {}
     _CCW_LIBCPP_HIDE_FROM_ABI istream_iterator(istream& __is) : __is_(&__is), __value_(), __end_(false) { __read(); }

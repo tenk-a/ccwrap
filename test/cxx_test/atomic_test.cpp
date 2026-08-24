@@ -554,7 +554,7 @@ TEST_CASE(atomic, atomic_ref_primary) {
 
 TEST_CASE(atomic, atomic_init_and_ref_minmax) {
 
-#if !defined(__WATCOMC__)
+#if 1
     STD::atomic<int> a;
     STD::atomic_init(&a, 5);
     test_eq( a.load(), 5 );

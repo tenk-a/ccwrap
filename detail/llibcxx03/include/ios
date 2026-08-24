@@ -46,10 +46,6 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline const error_category& iostream_category() {
 _CCW_LIBCPP_HIDE_FROM_ABI inline error_code      make_error_code(io_errc __e)      { return error_code(int(io_errc::enum_type(__e)), iostream_category()); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline error_condition make_error_condition(io_errc __e) { return error_condition(int(io_errc::enum_type(__e)), iostream_category()); }
 
-typedef _CCW_STD::ptrdiff_t streamsize;
-
-typedef long streamoff;
-
 template <class _StateT>
 class fpos {
 public:

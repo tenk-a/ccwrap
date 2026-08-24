@@ -186,12 +186,11 @@ static inline void tss_delete(tss_t key)                  { TlsFree(key); }
 
 static inline void call_once(once_flag* flag, void (*func)(void)) {
     for (;;) {
+        long prev;
         if (flag->_s == 2) return;
-        if (flag->_s == 0 && _InterlockedCompareExchange(&flag->_s, 1, 0) == 0) {
-            func();
-            flag->_s = 2;
-            return;
-        }
+        prev = _InterlockedExchange(&flag->_s, 1);
+        if (prev == 0) { func(); flag->_s = 2; return; }
+        if (prev == 2) { flag->_s = 2; return; }   /* already done; put the 2 back */
         Sleep(0);   /* another thread is running func; spin-yield */
     }
 }

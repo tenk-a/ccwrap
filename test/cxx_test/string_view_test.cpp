@@ -38,13 +38,14 @@ TEST_CASE(string_view, construct_access) {
     test_throw( (void)sv.at(999) );
     test_pass("cxx17:string_view::at (out_of_range)");
 
-#if !defined(__WATCOMC__)
+#if 1
     STD::string s = "from string";
     STD::string_view v2(s);
     test_eq( v2.size(), 11u );
     test_pass("cxx17:string_view(string)");
 #else
     TEST_SKIP1();
+    test_skip("cxx17:string_view(string)");
 #endif
     STD::string_view v3("abcdef", 3);
     test_eq( v3.size(), 3u );
@@ -248,7 +249,7 @@ TEST_CASE(string_view, udl_suffix) {
 }
 
 TEST_CASE(string_view, cxx20_ctor_and_types) {
-#if !defined(__WATCOMC__) && TEST_TARGET_CXX >= 2020     && (__cplusplus < 201703L || _tst_cplusplus >= 202002L)
+#if TEST_TARGET_CXX >= 2020 && (__cplusplus < 201703L || _tst_cplusplus >= 202002L)
     const char* s = "abcdef";
     STD::string_view iv(s, s + 6);
     test_eq( iv.size(), 6u );

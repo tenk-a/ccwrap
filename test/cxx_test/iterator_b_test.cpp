@@ -368,7 +368,6 @@ TEST_CASE(iterator, streambuf_iterators_cxx03) {
     test_pass("cxx11:istreambuf_iterator::traits_type");
     test_true(( STD::is_same<InIt::value_type, char>::value ));
     test_pass("cxx03:istreambuf_iterator::value_type");
-    TEST_SKIP_WAT("libcxx03 istreambuf_iterator::difference_type is not streamoff");
     test_true(( STD::is_same<InIt::difference_type, STD::streamoff>::value ));
     test_pass("cxx03:istreambuf_iterator::difference_type");
     test_true(( STD::is_same<InIt::iterator_category, STD::input_iterator_tag>::value ));
@@ -402,7 +401,6 @@ TEST_CASE(iterator, streambuf_iterators_cxx03) {
     test_true(( STD::is_same<OutIt::iterator_category, STD::output_iterator_tag>::value ));
     test_pass("cxx03:ostreambuf_iterator::iterator_category");
 #if _TST_HAS_CXX20_LIB_MEMBERS
-    TEST_SKIP_WAT("libcxx03 ostreambuf_iterator::difference_type is void, not ptrdiff_t");
     test_true(( STD::is_same<OutIt::difference_type, STD::ptrdiff_t>::value ));
 #else
     test_true( STD::is_void<OutIt::difference_type>::value );

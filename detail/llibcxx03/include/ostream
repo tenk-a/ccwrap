@@ -154,18 +154,23 @@ private:
         bool __left = (__adj & ios_base::left) != 0;
         bool __internal = __numeric && !__left && (__adj & ios_base::internal) != 0;
         _CCW_STD::streamsize __at = __internal ? __internal_at(__s, __n) : 0;
-        if (__pad && !__left && !__internal) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i) this->rdbuf()->sputc(this->fill());
+        bool __bad = this->rdbuf() == 0;
+        if (__pad && !__left && !__internal) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i)
+            if (_Traits::eq_int_type(this->rdbuf()->sputc(this->fill()), _Traits::eof())) { __bad = true; break; }
         if (this->rdbuf()) {
             if (__internal) {
-                this->rdbuf()->sputn(__s, __at);
-                for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i) this->rdbuf()->sputc(this->fill());
-                this->rdbuf()->sputn(__s + __at, __n - __at);
+                if (this->rdbuf()->sputn(__s, __at) != __at) __bad = true;
+                for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i)
+                    if (_Traits::eq_int_type(this->rdbuf()->sputc(this->fill()), _Traits::eof())) { __bad = true; break; }
+                if (this->rdbuf()->sputn(__s + __at, __n - __at) != __n - __at) __bad = true;
             } else {
-                this->rdbuf()->sputn(__s, __n);
+                if (this->rdbuf()->sputn(__s, __n) != __n) __bad = true;
             }
         }
-        if (__pad && __left) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i) this->rdbuf()->sputc(this->fill());
+        if (__pad && __left) for (_CCW_STD::streamsize __i = 0; __i < __pad; ++__i)
+            if (_Traits::eq_int_type(this->rdbuf()->sputc(this->fill()), _Traits::eof())) { __bad = true; break; }
         this->width(0);
+        if (__bad) this->setstate(ios_base::badbit);
         return *this;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI static void __ccw_widen_into(char* __d, const char* __s, _CCW_STD::size_t __n) {
