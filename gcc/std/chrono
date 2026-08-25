@@ -3,8 +3,102 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_CCW_STD_LIB_LIBCXX)
  #include_next <chrono>
 #else
  #include <../../detail/llibcxx03/include/chrono>
+#endif
+
+#if __cplusplus >= 201103L && (!defined(__cpp_lib_chrono) || (__cpp_lib_chrono) < 201907L)
+
+#if !(defined(_LIBCPP_VERSION) && __cplusplus >= 202002L)
+
+#if !defined(__cpp_lib_chrono) || (__cpp_lib_chrono) < 201510L
+namespace std { namespace chrono {
+
+template <class _ToDur, class _Rep, class _Period>
+inline _ToDur floor(const duration<_Rep, _Period>& __d) {
+    _ToDur __t = duration_cast<_ToDur>(__d);
+    if (duration_cast<duration<_Rep, _Period> >(__t).count() > __d.count()) __t = __t - _ToDur(1);
+    return __t;
+}
+template <class _ToDur, class _Rep, class _Period>
+inline _ToDur ceil(const duration<_Rep, _Period>& __d) {
+    _ToDur __t = duration_cast<_ToDur>(__d);
+    if (duration_cast<duration<_Rep, _Period> >(__t).count() < __d.count()) __t = __t + _ToDur(1);
+    return __t;
+}
+template <class _ToDur, class _Rep, class _Period>
+inline _ToDur round(const duration<_Rep, _Period>& __d) {
+    _ToDur __t = duration_cast<_ToDur>(__d);
+    long long __back = (long long)duration_cast<duration<_Rep, _Period> >(__t).count();
+    long long __dc   = (long long)__d.count();
+    _ToDur __lo = __t, __hi = __t;
+    if      (__back > __dc) __lo = __t - _ToDur(1);
+    else if (__back < __dc) __hi = __t + _ToDur(1);
+    else return __t;
+    long long __dlo = __dc - (long long)duration_cast<duration<_Rep, _Period> >(__lo).count();
+    long long __dhi = (long long)duration_cast<duration<_Rep, _Period> >(__hi).count() - __dc;
+    if (__dlo < __dhi) return __lo;
+    if (__dhi < __dlo) return __hi;
+    return ((long long)__lo.count() & 1) ? __hi : __lo;
+}
+template <class _ToDur, class _Clock, class _Dur>
+inline time_point<_Clock, _ToDur> floor(const time_point<_Clock, _Dur>& __t) {
+    return time_point<_Clock, _ToDur>(chrono::floor<_ToDur>(__t.time_since_epoch()));
+}
+template <class _ToDur, class _Clock, class _Dur>
+inline time_point<_Clock, _ToDur> ceil(const time_point<_Clock, _Dur>& __t) {
+    return time_point<_Clock, _ToDur>(chrono::ceil<_ToDur>(__t.time_since_epoch()));
+}
+template <class _ToDur, class _Clock, class _Dur>
+inline time_point<_Clock, _ToDur> round(const time_point<_Clock, _Dur>& __t) {
+    return time_point<_Clock, _ToDur>(chrono::round<_ToDur>(__t.time_since_epoch()));
+}
+template <class _Rep, class _Period>
+inline duration<_Rep, _Period> abs(const duration<_Rep, _Period>& __d) {
+    return __d.count() < 0 ? -__d : __d;
+}
+
+} }   // std::chrono
+#endif  // __cpp_lib_chrono < 201510
+
+namespace _CCW_STD20 { namespace chrono {
+
+typedef char __ccw_clk_y;
+struct       __ccw_clk_n { char __x_[2]; };
+template <class _Tp> __ccw_clk_y __ccw_clk_members(int,
+    typename _Tp::rep* = 0, typename _Tp::period* = 0,
+    typename _Tp::duration* = 0, typename _Tp::time_point* = 0);
+template <class _Tp> __ccw_clk_n __ccw_clk_members(long);
+template <class _Tp> __ccw_clk_y __ccw_clk_hasclock(int, typename _Tp::clock* = 0);
+template <class _Tp> __ccw_clk_n __ccw_clk_hasclock(long);
+
+template <class _Tp> struct is_clock {
+    enum { __has_members = sizeof(__ccw_clk_members<_Tp>(0)) == sizeof(__ccw_clk_y) };
+    enum { __has_clock   = sizeof(__ccw_clk_hasclock<_Tp>(0)) == sizeof(__ccw_clk_y) };
+    static const bool value = __has_members && !__has_clock;
+    typedef bool value_type;
+    typedef is_clock type;
+    operator bool() const { return value; }
+    bool operator()() const { return value; }
+};
+
+#if _CCW_HAS_VAR_TEMPLATE
+template <class _Tp> const bool is_clock_v = is_clock<_Tp>::value;
+#endif
+
+} }   // _CCW_STD20::chrono
+
+#include <../../detail/llibcxx03/include/__chrono/calendar.h>
+#include <../../detail/llibcxx03/include/__chrono/hh_mm_ss.h>
+#include <../../detail/llibcxx03/include/__chrono/calendar_io.h>
+#include <../../detail/llibcxx03/include/__chrono/file_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/utc_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/tai_clock.h>
+#include <../../detail/llibcxx03/include/__chrono/clock_cast.h>
+#include <../../detail/llibcxx03/include/__chrono/time_io.h>
+#include <../../detail/llibcxx03/include/__chrono/hash.h>
+#include <../../detail/llibcxx03/include/__chrono/literals.h>
+#endif  // _LIBCPP_VERSION && C++20
 #endif

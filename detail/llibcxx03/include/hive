@@ -10,6 +10,10 @@
 #include "__config"
 #include "__fnctmpl.h"
 #include <vector>
+#include <ranges>   // from_range_t
+#if _CCW_HAS_INIT_LIST
+#  include <initializer_list>
+#endif
 #include <new>
 #include <cstddef>
 #include <iterator>
@@ -77,6 +81,33 @@ public:
     }
     template <class _InputIt>
     _CCW_LIBCPP_HIDE_FROM_ABI hive(_InputIt __f, _InputIt __l) : __size_(0) { for (; __f != __l; ++__f) insert(*__f); }
+#if _CCW_HAS_INIT_LIST
+    _CCW_LIBCPP_HIDE_FROM_ABI hive(_CCW_STD::initializer_list<_Tp> __il) : __size_(0) {
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p) insert(*__p);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI hive& operator=(_CCW_STD::initializer_list<_Tp> __il) {
+        clear();
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p) insert(*__p);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_CCW_STD::initializer_list<_Tp> __il) { *this = __il; }
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert(_CCW_STD::initializer_list<_Tp> __il) {
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p) insert(*__p);
+    }
+#endif
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI hive(from_range_t, const _Range& __r) : __size_(0) {
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) insert(*__it);
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign_range(const _Range& __r) {
+        clear();
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) insert(*__it);
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI void insert_range(const _Range& __r) {
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) insert(*__it);
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI ~hive() { clear(); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI hive& operator=(const hive& __o) {

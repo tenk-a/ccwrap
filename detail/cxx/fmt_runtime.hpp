@@ -18,8 +18,10 @@
 namespace std {
 namespace __ccw_fmt {
 
+template<class T> struct __ccw_oss { typedef std::basic_ostringstream<char> type; };
+
 template<class T>
-inline std::string to_str(const T& v) { std::ostringstream os; os << v; return os.str(); }
+inline std::string to_str(const T& v) { typename __ccw_oss<T>::type os; os << v; return os.str(); }
 
 inline std::string vformat(const char* fmt, const std::string* args, int nargs) {
     std::string out;

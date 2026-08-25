@@ -5,7 +5,7 @@
 
 #include_next <cctype>
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 #include <ctype.h>
 namespace std {
     using ::isblank;

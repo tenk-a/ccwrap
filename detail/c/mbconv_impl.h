@@ -151,7 +151,7 @@ static inline int __ccw_mb_put(char *__buf, unsigned long __cp)
 {
     unsigned __page = _ccw_locale_codepage();
     wchar_t  __w[2];
-    int      __wn, __r, __used = 0;
+    int      __wn, __r, __ccw_usedn = 0;
 
     if (_ccw_locale_is_utf8()) {
         if (__cp >= 0xD800uL && __cp <= 0xDFFFuL) return 0;
@@ -172,11 +172,11 @@ static inline int __ccw_mb_put(char *__buf, unsigned long __cp)
         __r = WideCharToMultiByte(__page, 0, __w, __wn, __buf, _CCW_MB_MAX_BYTES, 0, 0);
         return __r > 0 ? __r : 0;
     }
-    __r = WideCharToMultiByte(__page, 0, __w, __wn, __buf, _CCW_MB_MAX_BYTES, 0, &__used);
-    if (__r <= 0 || __used) return 0;
+    __r = WideCharToMultiByte(__page, 0, __w, __wn, __buf, _CCW_MB_MAX_BYTES, 0, &__ccw_usedn);
+    if (__r <= 0 || __ccw_usedn) return 0;
     return __r;
 #else
-    (void)__w; (void)__wn; (void)__r; (void)__used;
+    (void)__w; (void)__wn; (void)__r; (void)__ccw_usedn;
     if (__cp <= 0xFFuL) { __buf[0] = (char)(unsigned char)__cp; return 1; }
     if (__cp <= 0xFFFFuL) {
         unsigned char __lead = (unsigned char)(__cp >> 8);

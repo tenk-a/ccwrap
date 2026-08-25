@@ -9,6 +9,7 @@
 #include "../__functional/invoke.h"
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
+#if !defined(_CCW_STD_LIB_LIBCXX)
 namespace placeholders {
 template <int _Np> struct __ph {};
 _ccw_inline_const __ph<1> _1 = __ph<1>();
@@ -26,6 +27,7 @@ template <class _Tp> struct is_placeholder : public integral_constant<int, 0> {}
 template <int _Np> struct is_placeholder<placeholders::__ph<_Np> > : public integral_constant<int, _Np> {};
 
 template <class _Tp> struct is_bind_expression : public false_type {};
+#endif  // !_CCW_STD_LIB_LIBCXX
 
 template <class _Ap> struct __bind_mu {
     template <class _Ca1, class _Ca2, class _Ca3>

@@ -229,7 +229,13 @@
 #endif
 
 
-#if defined(_LIBCPP_VERSION) && !defined(_CCW_TARGET_CXX)
+#if defined(_LIBCPP_VERSION)
+#  define _TST_LIBCXX_GAP 1
+#else
+#  define _TST_LIBCXX_GAP 0
+#endif
+
+#if _TST_LIBCXX_GAP
 #  define _TST_LIB_HONOURS_REMOVAL 1
 #else
 #  define _TST_LIB_HONOURS_REMOVAL 0
@@ -257,7 +263,7 @@
 #  define _TST_HAS_ATOMIC_SHARED_PTR 0
 #endif
 
-#if TEST_TARGET_CXX >= 2020 && (_CCW_TARGET_CXX >= 2020 || (defined(__cpp_lib_chrono) && (__cpp_lib_chrono) >= 201907L))
+#if TEST_TARGET_CXX >= 2020 && ((_CCW_TARGET_CXX >= 2020 && !_TST_LIBCXX_GAP) || (defined(__cpp_lib_chrono) && (__cpp_lib_chrono) >= 201907L))
 #  define _TST_HAS_CHRONO_CXX20 1
 #else
 #  define _TST_HAS_CHRONO_CXX20 0
@@ -289,13 +295,13 @@
 #  define _TST_HAS_SPECIAL_MATH 0
 #endif
 
-#if TEST_TARGET_CXX >= 2011 && !(defined(_LIBCPP_VERSION) && !defined(_CCW_TARGET_CXX))
+#if TEST_TARGET_CXX >= 2011 && !_TST_LIBCXX_GAP
 #  define _TST_HAS_MUTEX_NATIVE_HANDLE 1
 #else
 #  define _TST_HAS_MUTEX_NATIVE_HANDLE 0
 #endif
 
-#if TEST_TARGET_CXX >= 2017 && !(defined(_LIBCPP_VERSION) && !defined(_CCW_TARGET_CXX))
+#if TEST_TARGET_CXX >= 2017 && !_TST_LIBCXX_GAP
 #  define _TST_HAS_FROM_CHARS_LONG_DOUBLE 1
 #else
 #  define _TST_HAS_FROM_CHARS_LONG_DOUBLE 0
@@ -354,7 +360,7 @@ template <class _Want, class _Got>
 bool tst_type_is(const _Got&) { return _tst_ty::same_<_Want, _Got>::value != 0; }
 
 
-#if defined(_LIBCPP_VERSION) && !defined(_CCW_TARGET_CXX)
+#if _TST_LIBCXX_GAP
 #  define TEST_SKIP_LIBCXX(...)  do { TEST_NOTE("" __VA_ARGS__); TEST_SKIP1(); } while (0)
 #else
 #  define TEST_SKIP_LIBCXX(...)  ((void)sizeof("" __VA_ARGS__))

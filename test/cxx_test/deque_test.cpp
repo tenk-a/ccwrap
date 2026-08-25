@@ -3,6 +3,11 @@
 
 TEST_CASE(deque, header_compiles) { test_true( true ); test_pass("cxx03:deque#header"); }
 
+#include <type_traits>
+
+template <class _Want, class _Got>
+bool same_type(const _Got&) { return STD::is_same<_Want, _Got>::value; }
+
 #if TEST_TARGET_CXX >= 2011
 #include <deque>
 #include <memory_resource>
@@ -66,9 +71,6 @@ STD::string join(const D& d) {
     }
     return s;
 }
-
-template <class _Want, class _Got>
-bool same_type(const _Got&) { return STD::is_same<_Want, _Got>::value; }
 
 inline bool is_even_i(int x)                  { return x % 2 == 0; }
 inline bool always_true_i(int)                { return true; }

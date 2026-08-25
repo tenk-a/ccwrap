@@ -30,7 +30,7 @@ template <unsigned _Sz> struct __ccw_bit_ops;
         static unsigned __clz(__u __v)       { return _ccw_stdbit_countl_zero_##SFX(__v); } \
         static unsigned __clo(__u __v)       { return _ccw_stdbit_countl_one_##SFX(__v); }  \
         static unsigned __width(__u __v)     { return _ccw_stdbit_bit_width_##SFX(__v); }   \
-        static bool     __single(__u __v)    { return _ccw_stdbit_has_single_bit_##SFX(__v); } \
+        static bool     __has1bit(__u __v)   { return _ccw_stdbit_has_single_bit_##SFX(__v); } \
         static __u      __floor(__u __v)     { return _ccw_stdbit_bit_floor_##SFX(__v); }   \
         static __u      __ceil(__u __v)      { return _ccw_stdbit_bit_ceil_##SFX(__v); }    \
     }
@@ -59,7 +59,7 @@ template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI int bit_width(_Tp __x) {
     return (int)__ccw_bit_ops<sizeof(_Tp)>::__width(__x);
 }
 template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI bool has_single_bit(_Tp __x) {
-    return __ccw_bit_ops<sizeof(_Tp)>::__single(__x);
+    return __ccw_bit_ops<sizeof(_Tp)>::__has1bit(__x);
 }
 template <class _Tp> _CCW_LIBCPP_HIDE_FROM_ABI _Tp bit_floor(_Tp __x) {
     return (_Tp)__ccw_bit_ops<sizeof(_Tp)>::__floor(__x);

@@ -1655,6 +1655,7 @@ TEST_CASE(filesystem, feature_test_macros) {
 #endif
 }
 
+#if TEST_TARGET_CXX >= 2017
 TEST_CASE(filesystem, iterator_and_container_lifetime) {
     fs::path base = fs::temp_directory_path() / "ccw_life";
     fs::remove_all(base);
@@ -1803,3 +1804,7 @@ TEST_CASE(filesystem, error_code_overloads) {
     test_true( fs::file_size(missing, ec) == (STD::uintmax_t)-1 );
     test_true( (bool)ec );
 }
+#else   // TEST_TARGET_CXX < 2017
+TEST_CASE_SKIP(filesystem, iterator_and_container_lifetime)
+TEST_CASE_SKIP(filesystem, error_code_overloads)
+#endif  // TEST_TARGET_CXX >= 2017

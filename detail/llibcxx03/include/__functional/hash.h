@@ -8,7 +8,11 @@
 #include "../__config"
 #include <cstddef>
 #if _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
-#  include <functional>
+#  if defined(_LIBCPP_VERSION)
+#    include <type_traits>
+#  else
+#    include <functional>
+#  endif
 #else
 
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD

@@ -7,11 +7,12 @@
 
 #include <../../detail/cxx/memory.hpp>
 
-#if defined(__cplusplus) && __cplusplus < 201103L
+#if defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 #include <../../detail/llibcxx03/include/__memory/allocator_arg_t.h>
 #endif
 
-#if defined(__cplusplus) && !defined(__cpp_lib_smart_ptr_for_overwrite)
+#if defined(__cplusplus) && !defined(__cpp_lib_smart_ptr_for_overwrite) && \
+    !(defined(_LIBCPP_VERSION) && __cplusplus >= 202002L)
 namespace _CCW_STD20 {
 template <class _Tp>
 inline std::unique_ptr<_Tp> make_unique_for_overwrite() {

@@ -56,6 +56,16 @@ public:
         return _CCW_STD::span<_CharT>(this->eback(), this->egptr());
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sp_ = __s; __init_ptrs(); }
+#if defined(__cpp_rvalue_references)
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf(basic_spanbuf&& __o)
+        : __sp_(__o.__sp_), __mode_(__o.__mode_) {
+        const off_type __g = (__mode_ & ios_base::in)  ? (off_type)(__o.gptr() - __o.eback()) : (off_type)0;
+        const off_type __p = (__mode_ & ios_base::out) ? (off_type)(__o.pptr() - __o.pbase()) : (off_type)0;
+        __init_ptrs(); __seek_to(__g, __p);
+        __o.span(_CCW_STD::span<_CharT>());
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf& operator=(basic_spanbuf&& __o) { this->swap(__o); return *this; }
+#endif
 
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_spanbuf& __o) {
         const _CCW_STD::span<_CharT> __s = __sp_;
@@ -113,6 +123,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
     _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+#if defined(__cpp_rvalue_references)
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ispanstream(basic_ispanstream&& __o)
+        : basic_istream<_CharT, _Traits>(&__sb_), __sb_() { this->swap(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ispanstream& operator=(basic_ispanstream&& __o) { this->swap(__o); return *this; }
+#endif
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ispanstream& __o) { __sb_.swap(__o.__sb_); }
 };
 
@@ -128,6 +143,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
     _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+#if defined(__cpp_rvalue_references)
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ospanstream(basic_ospanstream&& __o)
+        : basic_ostream<_CharT, _Traits>(&__sb_), __sb_() { this->swap(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_ospanstream& operator=(basic_ospanstream&& __o) { this->swap(__o); return *this; }
+#endif
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_ospanstream& __o) { __sb_.swap(__o.__sb_); }
 };
 
@@ -143,6 +163,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_spanbuf<_CharT, _Traits>* rdbuf() const { return const_cast<basic_spanbuf<_CharT, _Traits>*>(&__sb_); }
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::span<_CharT> span() const { return __sb_.span(); }
     _CCW_LIBCPP_HIDE_FROM_ABI void span(_CCW_STD::span<_CharT> __s) { __sb_.span(__s); }
+#if defined(__cpp_rvalue_references)
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanstream(basic_spanstream&& __o)
+        : basic_iostream<_CharT, _Traits>(&__sb_), __sb_() { this->swap(__o); }
+    _CCW_LIBCPP_HIDE_FROM_ABI basic_spanstream& operator=(basic_spanstream&& __o) { this->swap(__o); return *this; }
+#endif
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_spanstream& __o) { __sb_.swap(__o.__sb_); }
 };
 

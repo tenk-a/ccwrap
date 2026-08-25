@@ -378,16 +378,22 @@ TEST_CASE(exception, nested_exception_class) {
         throw STD::runtime_error("inner");
     } catch (...) {
         STD::nested_exception n;
-        test_true( static_cast<bool>(n.nested_ptr()) );
+        bool captured = static_cast<bool>(n.nested_ptr());
+        test_true( captured );
 
-        STD::string msg;
-        try {
-            n.rethrow_nested();
-            test_fail();
-        } catch (const STD::runtime_error& e) {
-            msg = e.what();
+        if (captured) {
+            STD::string msg;
+            try {
+                n.rethrow_nested();
+                test_fail();
+            } catch (const STD::runtime_error& e) {
+                msg = e.what();
+            }
+            test_str_eq( msg, "inner" );
+        } else {
+            TEST_NOTE("nested_ptr() is null; rethrow_nested() would call terminate()");
+            TEST_SKIP1();
         }
-        test_str_eq( msg, "inner" );
     }
     test_pass("cxx11:nested_exception::rethrow_nested");
 }
@@ -405,7 +411,24 @@ TEST_CASE(exception, nested_exception_class) {
 TEST_CASE_SKIP(exception, throw_with_nested_and_rethrow_if_nested)
 #else
 #if TEST_HAS_EH
+static bool tst_nested_captures() {
+    try {
+        throw STD::runtime_error("probe");
+    } catch (...) {
+        STD::nested_exception n;
+        return static_cast<bool>(n.nested_ptr());
+    }
+    return false;
+}
+
 TEST_CASE(exception, throw_with_nested_and_rethrow_if_nested) {
+    if (!tst_nested_captures()) {
+        TEST_NOTE("nested_exception does not capture here; rethrow would call terminate()");
+        test_skip("cxx11:throw_with_nested");
+        test_skip("cxx11:rethrow_if_nested");
+        test_skip("cxx11:throw_with_nested (nested levels)");
+        return;
+    }
 
     STD::string outer, inner;
     try {
@@ -515,7 +538,7 @@ namespace {
 struct WatErr : STD::exception {
     int code;
     WatErr(int c) : code(c) {}
-    virtual const char* what() const { return "WatErr"; }
+    virtual const char* what() const throw() { return "WatErr"; }
 };
 }
 

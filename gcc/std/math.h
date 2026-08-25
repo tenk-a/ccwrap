@@ -15,6 +15,6 @@
 # include "../../detail/c/math_c23.h"
 #endif
 
-#if defined(__cplusplus) && __cplusplus < 201103L
+#if defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 # include "../../detail/cxx/math_c99_ovl.hpp"
 #endif

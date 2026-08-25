@@ -219,8 +219,13 @@ TEST_CASE(limits, all_members_double) {
     TEST_SKIP_VC090("MSVC 9 reports traps=true for double");
     test_true( !L::traps );
     test_pass("cxx03:numeric_limits::traps#double");
+#if defined(_LIBCPP_VERSION) && (defined(__aarch64__) || defined(__arm__))
+    TEST_NOTE("ARM detects tininess before rounding, so libc++ reports true here");
+    test_true( L::tinyness_before );
+#else
     TEST_SKIP_VC120("MSVC before VS2015 reports tinyness_before=true for double");
     test_true( !L::tinyness_before );
+#endif
     test_pass("cxx03:numeric_limits::tinyness_before#double");
 
     test_true( L::infinity() > DBL_MAX );

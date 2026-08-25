@@ -192,11 +192,13 @@
 
 #if defined(_MSC_VER)
  #define _CCW_STD_LIB_LT(vcver, cxxstd) (_MSC_VER < (vcver))
+#elif defined(_CCW_STD_LIB_LIBCXX)
+ #define _CCW_STD_LIB_LT(vcver, cxxstd) ((__cplusplus > 201103L ? __cplusplus : 201103L) < (cxxstd))
 #else
  #define _CCW_STD_LIB_LT(vcver, cxxstd) (__cplusplus < (cxxstd))
 #endif
 
-#if defined(__GNUC__) && defined(__ELF__)
+#if defined(__GNUC__) && (defined(__ELF__) || defined(__APPLE__))
 #define _CCW_VIS_HIDDEN_BEGIN   _Pragma("GCC visibility push(hidden)")
 #define _CCW_VIS_HIDDEN_END     _Pragma("GCC visibility pop")
 #else

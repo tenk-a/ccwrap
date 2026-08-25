@@ -436,13 +436,13 @@ template<class T, class D> struct hash< unique_ptr<T, D> > {
 #if _CCW_STD_LIB_LT(1800, 201402L) && _CCW_HAS_REAL_RVALUE_REF
 #include "fnctmpl.hpp"
 namespace _CCW_STD14 {
-template<class T>           struct __ccw_mkuniq       { typedef unique_ptr<T>   __single; };
+template<class T>           struct __ccw_mkuniq       { typedef unique_ptr<T>   __single_t; };
 template<class T>           struct __ccw_mkuniq<T[]>  { typedef unique_ptr<T[]> __array;  };
 template<class T, size_t N> struct __ccw_mkuniq<T[N]> { };   // make_unique<T[N]> is ill-formed
 
 #define _CCW_GEN_MAKE_UNIQUE(N)                                              \
     template<class T _CCW_FNCTMPL_CM_TMPLARG(N)>                             \
-    inline typename __ccw_mkuniq<T>::__single                                \
+    inline typename __ccw_mkuniq<T>::__single_t                              \
     make_unique(_CCW_FNCTMPL_DECLARG(N)) {                                   \
         return unique_ptr<T>(new T(_CCW_FNCTMPL_FNCARG(N)));                 \
     }

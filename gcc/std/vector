@@ -4,5 +4,10 @@
 #include <ccwrap_common.h>
 
 #include_next <vector>
+#define _CCW_VECTOR_DONE 1
 
 #include <../../detail/cxx/erase_if_vector.hpp>
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#include <../../detail/cxx/ranges_algo_pack.hpp>
+#endif

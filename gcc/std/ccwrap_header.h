@@ -46,6 +46,14 @@
 #define _CCW_CONFIG_DIR                 ../gcc
 #define _CCW_CONFIG_PATH(x)             <_CCW_CONFIG_DIR/x>
 
+#if defined(__cplusplus) && defined(__clang__) && !defined(_CCW_STD_LIB_LIBCXX)
+ #if defined(__has_include)
+  #if __has_include(<__config>)
+   #define _CCW_STD_LIB_LIBCXX   1
+  #endif
+ #endif
+#endif
+
 
 #if defined(__cplusplus)
  #ifndef _CCW_TARGET_CXX
@@ -120,6 +128,9 @@ typedef unsigned long long      _ccw_ullong;
 #if __cplusplus >= 201103L
 typedef char16_t                _ccw_char16;
 typedef char32_t                _ccw_char32;
+#elif defined(__cplusplus) && defined(__clang__)
+typedef __char16_t              _ccw_char16;
+typedef __char32_t              _ccw_char32;
 #else
 typedef _ccw_uint16             _ccw_char16;
 typedef _ccw_uint32             _ccw_char32;
@@ -183,8 +194,13 @@ typedef _ccw_uint32             _ccw_char32;
 
  // char16_t/char32_t are C++11; at -std=c++03 g++ does not provide them.
  #if !defined(__cpp_unicode_characters) && !defined(_CHAR16T)
+  #if defined(__clang__)
+  typedef __char16_t                char16_t;
+  typedef __char32_t                char32_t;
+  #else
   typedef unsigned short            char16_t;
   typedef unsigned int              char32_t;
+  #endif
   #define _CHAR16T
  #endif
 
@@ -324,6 +340,8 @@ typedef _ccw_uint32             _ccw_char32;
   #define _ccw_inline_const         inline const
  #elif defined(_WIN32) || defined(__CYGWIN__)
   #define _ccw_inline_const         extern __attribute__((selectany)) const
+ #elif defined(__MACH__)
+  #define _ccw_inline_const         static const
  #else
   #define _ccw_inline_const         extern __attribute__((weak)) const
  #endif
@@ -416,7 +434,8 @@ namespace __ccw { namespace detail {} }
  #endif
 #endif
 
-#if defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_NO_MOVE03)
+#if defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_NO_MOVE03) && \
+    !defined(_CCW_STD_LIB_LIBCXX)
 #include <../../detail/cxx/move03.hpp>
 namespace std {
     using ::_ccw::move;

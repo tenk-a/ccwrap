@@ -10,12 +10,12 @@
 #endif
 
 #include <ccwrap_common.h>
-#include <utility>    /* std::pair */
 #include <iterator>
-#include <functional> /* std::less (is_heap default) */
 #include "move03.hpp" /* _ccw::move -- real move on C++11, emulation before it */
 
 #if _CCW_STD_LIB_LT(1600, 201103L)
+#include <utility>    /* std::pair */
+#include <functional> /* std::less (is_heap default) */
 
 namespace std {
 

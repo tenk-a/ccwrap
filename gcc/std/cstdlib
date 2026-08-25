@@ -5,7 +5,7 @@
 
 #include_next <cstdlib>
 
-#if !defined(__MINGW32__) && defined(__cplusplus) && __cplusplus < 201103L
+#if !defined(__MINGW32__) && defined(__cplusplus) && __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 #include <stdlib.h>
 namespace std {
     using ::lldiv_t;

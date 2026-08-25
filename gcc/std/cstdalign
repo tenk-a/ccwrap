@@ -3,13 +3,19 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201103L
- #include_next <cstdalign>
-#else
- #ifndef __alignas_is_defined
- #define __alignas_is_defined 1
+#if __cplusplus >= 201103L || defined(_CCW_STD_LIB_LIBCXX)
+ #if defined(__has_include_next)
+  #if __has_include_next(<cstdalign>)
+   #include_next <cstdalign>
+  #endif
+ #else
+  #include_next <cstdalign>
  #endif
- #ifndef __alignof_is_defined
- #define __alignof_is_defined 1
- #endif
+#endif
+
+#ifndef __alignas_is_defined
+#define __alignas_is_defined 1
+#endif
+#ifndef __alignof_is_defined
+#define __alignof_is_defined 1
 #endif

@@ -36,6 +36,8 @@
 #  endif
 #elif defined(__cplusplus) && __cplusplus >= 201103L
 #  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 1
+#elif defined(_CCW_STD_LIB_LIBCXX)
+#  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 1
 #else
 #  define _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB 0
 #endif

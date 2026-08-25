@@ -178,7 +178,8 @@ TEST_CASE(set, iterators_and_compare) {
     test_pass("cxx11:set::cend");
 #else
     long cf = 0;
-    for (STD::set<int>::const_iterator it = STD::cbegin(s); it != STD::cend(s); ++it) cf = cf * 10 + *it;
+    const STD::set<int>& csf = s;
+    for (STD::set<int>::const_iterator it = csf.begin(); it != csf.end(); ++it) cf = cf * 10 + *it;
     test_eq( cf, 12345L );
     test_skip("cxx11:set::cbegin");
     test_true( 1 );
@@ -201,7 +202,8 @@ TEST_CASE(set, iterators_and_compare) {
     test_pass("cxx11:set::crend");
 #else
     long cr = 0;
-    for (STD::set<int>::const_reverse_iterator it = STD::crbegin(s); it != STD::crend(s); ++it) cr = cr * 10 + *it;
+    const STD::set<int>& csr = s;
+    for (STD::set<int>::const_reverse_iterator it = csr.rbegin(); it != csr.rend(); ++it) cr = cr * 10 + *it;
     test_eq( cr, 54321L );
     test_skip("cxx11:set::crbegin");
     test_true( 1 );

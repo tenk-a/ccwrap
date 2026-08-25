@@ -3,8 +3,16 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_CCW_STD_LIB_LIBCXX)
  #include_next <atomic>
 #else
  #include <../../detail/llibcxx03/include/atomic>
+#endif
+
+#if __cplusplus >= 202002L
+ #include <version>
+#endif
+
+#if _CCW_TARGET_CXX >= 2020
+ #include <../../detail/cxx/atomic_shared_ptr.hpp>
 #endif

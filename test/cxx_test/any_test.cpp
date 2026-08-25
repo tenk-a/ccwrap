@@ -345,6 +345,10 @@ TEST_CASE(any, bad_any_cast) {
     test_true( caught );
     test_pass("cxx17:bad_any_cast::what");
 
+#if defined(__APPLE__) && defined(__GNUC__) && !defined(__clang__)
+    TEST_NOTE("catching bad_any_cast as bad_cast crashes this toolchain (SIGBUS)");
+    test_skip("cxx17:bad_cast (base catch)");
+#else
     bool caught_base = false;
     try {
         (void)STD::any_cast<char>(a);
@@ -353,6 +357,7 @@ TEST_CASE(any, bad_any_cast) {
     }
     test_true( caught_base );
     test_pass("cxx17:bad_cast (base catch)");
+#endif  // __APPLE__ && __GNUC__ && !__clang__
 }
 #else   // !TEST_HAS_EH
 TEST_CASE(any, bad_any_cast) {

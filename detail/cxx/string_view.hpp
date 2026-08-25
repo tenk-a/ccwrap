@@ -976,19 +976,21 @@ namespace _ccw {
 
 //  -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
+namespace _CCW_STD17 {
 #if !defined(__WATCOMC__)
 // ostream << basic_string_view
 template<typename C, class T>
-std::basic_ostream<C,T>& operator<<(std::basic_ostream<C,T>& os, const _CCW_STD17::basic_string_view<C,T>& str) {
+std::basic_ostream<C,T>& operator<<(std::basic_ostream<C,T>& os, const basic_string_view<C,T>& str) {
     os << std::basic_string<C>(str.data(), str.size());
     return os;
 }
 #else
 // ostream << basic_string_view
-inline std::ostream& operator<<(std::ostream& os, const _CCW_STD17::string_view& str) {
+inline std::ostream& operator<<(std::ostream& os, const string_view& str) {
     os << std::string(str.data(), str.size());
     return os;
 }
 #endif
+}   // _CCW_STD17
 
 #endif      //  CCWRAP_STRING_VIEW_HPP_INCLUDED

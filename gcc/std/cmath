@@ -27,7 +27,7 @@ using ::lroundf;  using ::lroundl;  using ::llroundf; using ::llroundl;
 using ::lrintf;   using ::lrintl;
 }   // namespace std
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 #include <math.h>
 namespace std {
 #define _X(_N) using ::_N;

@@ -14,6 +14,7 @@
 
 #if _CCW_STD_LIB_LT(1600, 201103L)
 #include <string>
+#include <cstring>     // strerror, for the errno-backed category messages
 #include <stdexcept>   // runtime_error (system_error derives from it)
 #include <cerrno>      // the E* macros the errc enumerators are defined from
 #include <iosfwd>      // basic_ostream, for the error_code inserter below
@@ -43,8 +44,19 @@ private:
     error_category(const error_category&);
     error_category& operator=(const error_category&);
 };
-inline const error_category& generic_category() { static error_category c; return c; }
-inline const error_category& system_category()  { static error_category c; return c; }
+class __ccw_errno_category : public error_category {
+public:
+    __ccw_errno_category(const char* __n) : n_(__n) {}
+    virtual const char* name() const { return n_; }
+    virtual std::string message(int __v) const {
+        const char* __m = strerror(__v);
+        return (__m && *__m) ? std::string(__m) : std::string("unknown error");
+    }
+private:
+    const char* n_;
+};
+inline const error_category& generic_category() { static __ccw_errno_category c("generic"); return c; }
+inline const error_category& system_category()  { static __ccw_errno_category c("system"); return c; }
 
 class error_code {
     int                   v_;
@@ -128,6 +140,7 @@ basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os,
 }
 
 }   // namespace std
+_CCW_VIS_HIDDEN_END
 #endif  // _CCW_SYSERR_MIN_DEFINED
 #endif  // _CCW_STD_LIB_LT(1600, 201103L)
 
@@ -320,7 +333,9 @@ template <> struct hash< ::std::error_code> {
 };
 }
 #endif
-#if defined(__GLIBCXX__) || defined(_LIBCPP_VERSION)
+#if defined(_LIBCPP_VERSION)
+#  define _CCW_HAS_HASH_ERROR_CONDITION 1
+#elif defined(__GLIBCXX__)
 #  define _CCW_HAS_HASH_ERROR_CONDITION (__cplusplus >= 201703L)
 #elif defined(_MSC_VER) && _MSC_VER == 1600
 #  define _CCW_HAS_HASH_ERROR_CONDITION 1
@@ -331,7 +346,9 @@ template <> struct hash< ::std::error_code> {
 #endif
 #if !_CCW_HAS_HASH_ERROR_CONDITION
 namespace std {
+#if !defined(_LIBCPP_VERSION)
 template <class _Tp> struct hash;
+#endif  // !_LIBCPP_VERSION
 template <> struct hash< ::std::error_condition> {
     typedef ::std::error_condition argument_type;
     typedef ::std::size_t          result_type;
@@ -349,7 +366,6 @@ inline bool operator> (const ::std::error_condition& __a, const ::std::error_con
 inline bool operator<=(const ::std::error_condition& __a, const ::std::error_condition& __b) { return !(__b < __a); }
 inline bool operator>=(const ::std::error_condition& __a, const ::std::error_condition& __b) { return !(__a < __b); }
 }
-_CCW_VIS_HIDDEN_END
 #endif
 
 #endif  // _CCW_DETAIL_SYSTEM_ERROR_HPP

@@ -3,7 +3,7 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_CCW_STD_LIB_LIBCXX)
  #include_next <ratio>
 #else
  #include <../../detail/llibcxx03/include/ratio>

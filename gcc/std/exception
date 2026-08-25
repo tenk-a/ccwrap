@@ -9,7 +9,7 @@
 #include <bits/exception_ptr.h>
 #endif
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 namespace std {
 inline terminate_handler get_terminate() {
     terminate_handler __h = set_terminate(0);

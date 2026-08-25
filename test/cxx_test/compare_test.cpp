@@ -444,19 +444,22 @@ TEST_CASE(compare, order_fallbacks) {
     test_true( STD::compare_strong_order_fallback(a, b) < 0 );
     test_true( STD::compare_strong_order_fallback(b, a) > 0 );
     test_true( STD::compare_strong_order_fallback(a, c) == 0 );
-    test_true( (STD::is_same<decltype(STD::compare_strong_order_fallback(a, b)),
+    test_true( (STD::is_same<STD::remove_cv<STD::remove_reference<
+                                 decltype(STD::compare_strong_order_fallback(a, b))>::type>::type,
                              STD::strong_ordering>::value) );
     test_pass("cxx20:compare_strong_order_fallback");
 
     test_true( STD::compare_weak_order_fallback(a, b) < 0 );
     test_true( STD::compare_weak_order_fallback(a, c) == 0 );
-    test_true( (STD::is_same<decltype(STD::compare_weak_order_fallback(a, b)),
+    test_true( (STD::is_same<STD::remove_cv<STD::remove_reference<
+                                 decltype(STD::compare_weak_order_fallback(a, b))>::type>::type,
                              STD::weak_ordering>::value) );
     test_pass("cxx20:compare_weak_order_fallback");
 
     test_true( STD::compare_partial_order_fallback(a, b) < 0 );
     test_true( STD::compare_partial_order_fallback(a, c) == 0 );
-    test_true( (STD::is_same<decltype(STD::compare_partial_order_fallback(a, b)),
+    test_true( (STD::is_same<STD::remove_cv<STD::remove_reference<
+                                 decltype(STD::compare_partial_order_fallback(a, b))>::type>::type,
                              STD::partial_ordering>::value) );
     test_pass("cxx20:compare_partial_order_fallback");
 
@@ -482,13 +485,13 @@ TEST_CASE(compare, order_fallbacks) {
 
 TEST_CASE(compare, type_order_cxx26) {
 #if defined(__cpp_lib_type_order)
-    test_true( STD::type_order<int, int>::value == STD::strong_ordering::equal );
+    test_true( (STD::type_order<int, int>::value == STD::strong_ordering::equal) );
     test_true( (STD::type_order<int, long>::value < 0) !=
                (STD::type_order<long, int>::value < 0) );
     test_pass("cxx26:type_order");
 
-    test_true( STD::type_order_v<char, char> == STD::strong_ordering::equal );
-    test_true( STD::type_order_v<int, long> == STD::type_order<int, long>::value );
+    test_true( (STD::type_order_v<char, char> == STD::strong_ordering::equal) );
+    test_true( (STD::type_order_v<int, long> == STD::type_order<int, long>::value) );
     test_pass("cxx26:type_order_v");
 #else
     TEST_NOTE("type_order is C++26 (P2830); no library here defines it yet");

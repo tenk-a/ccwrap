@@ -4,6 +4,10 @@
 #include <ccwrap_common.h>
 
 #if __cplusplus >= 201703L
+ #include <version>
+#endif
+
+#if defined(__cpp_lib_execution) || (__cplusplus >= 201703L && !defined(_LIBCPP_VERSION))
  #include_next <execution>
 #else
  #include <../../detail/llibcxx03/include/execution>

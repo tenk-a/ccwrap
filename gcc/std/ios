@@ -5,7 +5,7 @@
 
 #include_next <ios>
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 namespace std {
 inline ios_base& defaultfloat(ios_base& __s) { __s.unsetf(ios_base::floatfield); return __s; }
 inline ios_base& hexfloat(ios_base& __s) {

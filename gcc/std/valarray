@@ -5,7 +5,7 @@
 
 #include_next <valarray>
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 namespace std {
 template <class _Tp> inline _Tp* begin(valarray<_Tp>& __v) { return __v.size() ? &__v[0] : (_Tp*)0; }
 template <class _Tp> inline _Tp* end(valarray<_Tp>& __v)   { return __v.size() ? &__v[0] + __v.size() : (_Tp*)0; }

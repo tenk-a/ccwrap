@@ -7,7 +7,12 @@
 
 #include <../../detail/cxx/numeric.hpp>
 
-#if defined(__cplusplus) && !defined(__cpp_lib_parallel_algorithm)
-#include <execution>
-#include <../../detail/llibcxx03/include/__numeric/execution_overloads.h>
+#if __cplusplus >= 201703L
+ #include <version>
+#endif
+
+#if _CCW_TARGET_CXX >= 2017 && !defined(__cpp_lib_execution) && \
+    !(__cplusplus >= 201703L && !defined(_LIBCPP_VERSION))
+ #include <execution>
+ #include <../../detail/llibcxx03/include/__numeric/execution_overloads.h>
 #endif

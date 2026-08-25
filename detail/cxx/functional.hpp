@@ -74,15 +74,25 @@ template<class T> struct bit_xor { T operator()(const T& a, const T& b) const { 
 }   // namespace std
 #endif
 
-#if defined(__cplusplus) && \
-    !defined(_CCW_LIBCPP___FUNCTIONAL_OPERATIONS_H) && \
-    (defined(_MSC_VER) ? _MSC_VER < 1800 : (!defined(__GLIBCXX__) && !defined(_LIBCPP_VERSION)))
+#if defined(_MSC_VER)
+#  define _CCW_NATIVE_HAS_BIT_NOT (_MSC_VER >= 1800)
+#elif defined(_LIBCPP_VERSION)
+#  define _CCW_NATIVE_HAS_BIT_NOT (__cplusplus >= 201402L)
+#elif defined(__GLIBCXX__)
+#  define _CCW_NATIVE_HAS_BIT_NOT 1
+#else
+#  define _CCW_NATIVE_HAS_BIT_NOT 0
+#endif
+
+#if defined(__cplusplus) && !defined(_CCW_LIBCPP___FUNCTIONAL_OPERATIONS_H) && \
+    !_CCW_NATIVE_HAS_BIT_NOT
 namespace std {
 template<class T> struct bit_not { T operator()(const T& a) const { return ~a; } };
 }   // namespace std
 #endif
 
-#if defined(__GLIBCXX__) && defined(__cplusplus) && __cplusplus >= 201402L
+#if defined(__GLIBCXX__) && defined(__cplusplus) && \
+    (__cplusplus >= 201402L || (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 16))
 #  if defined(__has_include)
 #    if __has_include(<bits/predefined_ops.h>)
 #      define _CCW_NATIVE_HAS_EQ_LT_VOID 1

@@ -15,6 +15,49 @@
 #include <memory>
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
+#if defined(_CCW_LIBCPP_IOS)
+#  define _CCW_SYNC_MOVE_IOS(dst, src)  (dst)->__ccw_move_ios(src)
+#  define _CCW_SYNC_SWAP_IOS(dst, src)  (dst)->__ccw_swap_ios(src)
+#else
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI void __ccw_sync_move_ios(basic_ios<_CharT, _Traits>* __d,
+                                                   basic_ios<_CharT, _Traits>& __s) {
+    __d->tie(__s.tie());        __s.tie(0);
+    __d->fill(__s.fill());
+    __d->flags(__s.flags());
+    __d->precision(__s.precision());
+    __d->width(__s.width());
+    __d->imbue(__s.getloc());
+    __d->clear(__s.rdstate());
+    __d->exceptions(__s.exceptions());
+}
+template <class _CharT, class _Traits>
+_CCW_LIBCPP_HIDE_FROM_ABI void __ccw_sync_swap_ios(basic_ios<_CharT, _Traits>* __d,
+                                                   basic_ios<_CharT, _Traits>& __s) {
+    basic_ios<_CharT, _Traits>*  __t = __d->tie();
+    _CharT                       __f = __d->fill();
+    ios_base::fmtflags           __g = __d->flags();
+    streamsize                   __p = __d->precision();
+    streamsize                   __w = __d->width();
+    locale                       __l = __d->getloc();
+    ios_base::iostate            __r = __d->rdstate();
+    ios_base::iostate            __e = __d->exceptions();
+    __d->exceptions(ios_base::goodbit);
+    __s.exceptions(ios_base::goodbit);
+    __d->tie(__s.tie());        __s.tie(__t);
+    __d->fill(__s.fill());      __s.fill(__f);
+    __d->flags(__s.flags());    __s.flags(__g);
+    __d->precision(__s.precision()); __s.precision(__p);
+    __d->width(__s.width());    __s.width(__w);
+    { locale __l2 = __s.getloc(); __d->imbue(__l2); __s.imbue(__l); }
+    { ios_base::iostate __r2 = __s.rdstate(); __d->clear(__r2); __s.clear(__r); }
+    __d->exceptions(__s.exceptions());
+    __s.exceptions(__e);
+}
+#  define _CCW_SYNC_MOVE_IOS(dst, src)  ::_CCW_STD::__ccw_sync_move_ios(dst, src)
+#  define _CCW_SYNC_SWAP_IOS(dst, src)  ::_CCW_STD::__ccw_sync_swap_ios(dst, src)
+#endif  // _CCW_LIBCPP_IOS
+
 template <class _CharT, class _Traits, class _Alloc>
 class basic_syncbuf : public basic_streambuf<_CharT, _Traits> {
 public:
@@ -103,15 +146,15 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_osyncstream(_CCW_RV_REF_BEG basic_osyncstream _CCW_RV_REF_END __rr)
         : basic_ostream<_CharT, _Traits>(&__sb_), __sb_(_CCW_MOVE(_CCW_MOVED_OBJ(__rr).__sb_)) {
         this->set_rdbuf(&__sb_);
-        this->__ccw_move_ios(_CCW_MOVED_OBJ(__rr));
+        _CCW_SYNC_MOVE_IOS(this, _CCW_MOVED_OBJ(__rr));
     }
     _CCW_LIBCPP_HIDE_FROM_ABI basic_osyncstream& operator=(_CCW_RV_REF_BEG basic_osyncstream _CCW_RV_REF_END __rr) {
         basic_osyncstream& __s = _CCW_MOVED_OBJ(__rr);
         __sb_ = _CCW_MOVE(__s.__sb_);
-        this->__ccw_move_ios(__s);
+        _CCW_SYNC_MOVE_IOS(this, __s);
         return *this;
     }
-    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_osyncstream& __r) { __sb_.swap(__r.__sb_); this->__ccw_swap_ios(__r); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void swap(basic_osyncstream& __r) { __sb_.swap(__r.__sb_); _CCW_SYNC_SWAP_IOS(this, __r); }
     _CCW_LIBCPP_HIDE_FROM_ABI ~basic_osyncstream() {}
 
     _CCW_LIBCPP_HIDE_FROM_ABI void            emit() { __sb_.emit(); }

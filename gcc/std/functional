@@ -11,7 +11,9 @@
 #include <../../detail/llibcxx03/include/__functional/bad_function_call.h>
 #include <../../detail/llibcxx03/include/__functional/function.h>
 #include <../../detail/llibcxx03/include/__functional/bind.h>
+#if !defined(_CCW_STD_LIB_LIBCXX)
 #include <../../detail/llibcxx03/include/__functional/mem_fn.h>
+#endif
 #endif
 
 #if defined(__cplusplus) && !defined(__cpp_lib_ranges)

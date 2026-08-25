@@ -4,10 +4,11 @@
 #include <ccwrap_common.h>
 
 #include_next <string>
+#define _CCW_STRING_DONE 1
 
 #include <../../detail/cxx/string.hpp>
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 #include <../../detail/llibcxx03/include/__functional/hash_string.h>
 #endif
 #include <stdexcept>   // brings the sto* family (see detail/cxx/string_stox.hpp)
@@ -19,3 +20,7 @@ namespace std {
 #endif
 
 #include <../../detail/cxx/iterator.hpp>
+
+#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#include <../../detail/cxx/ranges_algo_pack.hpp>
+#endif

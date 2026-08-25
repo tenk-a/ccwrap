@@ -324,6 +324,8 @@ TEST_CASE(span, at_cxx26) {
 }
 #endif  // TEST_HAS_EH
 
+#if TEST_TARGET_CXX >= 2020
+
 static int g_sp_live = 0;
 
 struct SpLive {
@@ -375,3 +377,12 @@ TEST_CASE(span, class_elements_non_owning) {
     }
     test_eq( g_sp_live, 0 );
 }
+
+#else   // TEST_TARGET_CXX < 2020
+
+TEST_CASE(span, class_elements_non_owning) {
+    TEST_NOTE("span is C++20; nothing to view here");
+    TEST_SKIP1();
+}
+
+#endif  // TEST_TARGET_CXX >= 2020

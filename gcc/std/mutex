@@ -3,8 +3,15 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_CCW_STD_LIB_LIBCXX)
  #include_next <mutex>
+ #if __cplusplus < 201103L
+namespace std {
+_ccw_inline_constant adopt_lock_t  adopt_lock  = adopt_lock_t();
+_ccw_inline_constant defer_lock_t  defer_lock  = defer_lock_t();
+_ccw_inline_constant try_to_lock_t try_to_lock = try_to_lock_t();
+}
+ #endif
 #else
 #if defined(_WIN32)
  #include <../../detail/cxx/win/mutex.hpp>

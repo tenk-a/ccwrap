@@ -18,7 +18,8 @@ const _CCW_STD::size_t hardware_constructive_interference_size = 64;
 }
 #endif
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
+_CCW_VIS_HIDDEN_BEGIN
 namespace std {
 inline new_handler get_new_handler() {
     new_handler __h = set_new_handler(0);
@@ -32,6 +33,7 @@ public:
     virtual const char* what() const throw() { return "bad array new length"; }
 };
 }
+_CCW_VIS_HIDDEN_END
 #endif
 
 #if !defined(__cpp_lib_destroying_delete)

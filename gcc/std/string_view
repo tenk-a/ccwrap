@@ -3,12 +3,19 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201703L
- #include_next <string_view>
+#if defined(__has_include_next)
+# if __has_include_next(<string_view>)
+#  include_next <string_view>
+# endif
+#endif
+
+#if __cplusplus >= 201703L || defined(_LIBCPP_VERSION)
+ #if _CCW_TARGET_CXX >= 2017
  namespace _ccw {
      using std::basic_string_view; using std::string_view; using std::wstring_view;
      using std::u16string_view; using std::u32string_view;
  }
+ #endif
 #else
  #include <../../detail/llibcxx03/include/string_view>
 #endif

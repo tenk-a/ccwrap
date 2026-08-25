@@ -16,6 +16,10 @@
 #include <cstddef>
 #include <stdexcept>
 #include <iterator>
+#include <ranges>   // from_range_t
+#if _CCW_HAS_INIT_LIST
+#  include <initializer_list>
+#endif
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp, size_t _Np>
@@ -48,9 +52,56 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(size_type __n, const _Tp& __v) : __size_(0) { for (size_type __i = 0; __i < __n; ++__i) push_back(__v); }
     template <class _InputIt>
     _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(_InputIt __f, _InputIt __l) : __size_(0) {
-        __init_disp(__f, __l, __ccw_dispatch_is_int<_InputIt>::_Tag());
+        __init_disp(__f, __l, typename __ccw_dispatch_is_int<_InputIt>::_Tag());
     }
     _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(const inplace_vector& __o) : __size_(0) { for (size_type __i = 0; __i < __o.__size_; ++__i) push_back(__o.__data()[__i]); }
+#if _CCW_HAS_INIT_LIST
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(_CCW_STD::initializer_list<_Tp> __il) : __size_(0) {
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p) push_back(*__p);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector& operator=(_CCW_STD::initializer_list<_Tp> __il) {
+        clear();
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p) push_back(*__p);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_CCW_STD::initializer_list<_Tp> __il) { *this = __il; }
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert(const_iterator __pos, _CCW_STD::initializer_list<_Tp> __il) {
+        size_type __i = (size_type)(__pos - __data());
+        size_type __k = __i;
+        for (const _Tp* __p = __il.begin(); __p != __il.end(); ++__p, ++__k) insert(__data() + __k, *__p);
+        return __data() + __i;
+    }
+#endif
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector(from_range_t, const _Range& __r) : __size_(0) {
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) push_back(*__it);
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign_range(const _Range& __r) {
+        clear();
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) push_back(*__it);
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI void append_range(const _Range& __r) {
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it) push_back(*__it);
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI typename _Range::iterator try_append_range(_Range& __r) {
+        typename _Range::iterator __it = __r.begin();
+        for (; __it != __r.end(); ++__it) {
+            if (__size_ >= _Np) break;
+            push_back(*__it);
+        }
+        return __it;
+    }
+    template <class _Range>
+    _CCW_LIBCPP_HIDE_FROM_ABI iterator insert_range(const_iterator __pos, const _Range& __r) {
+        size_type __i = (size_type)(__pos - __data());
+        size_type __k = __i;
+        for (typename _Range::const_iterator __it = __r.begin(); __it != __r.end(); ++__it, ++__k)
+            insert(__data() + __k, *__it);
+        return __data() + __i;
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI ~inplace_vector() { clear(); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI inplace_vector& operator=(const inplace_vector& __o) {
@@ -157,7 +208,7 @@ public:
         return __data() + __i;
     }
     template <class _A1, class _A2>
-    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_A1 __a, _A2 __b) { clear(); __init_disp(__a, __b, __ccw_dispatch_is_int<_A1>::_Tag()); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(_A1 __a, _A2 __b) { clear(); __init_disp(__a, __b, typename __ccw_dispatch_is_int<_A1>::_Tag()); }
     _CCW_LIBCPP_HIDE_FROM_ABI void swap(inplace_vector& __o) { inplace_vector __t(*this); *this = __o; __o = __t; }
 };
 

@@ -437,6 +437,7 @@ TEST_CASE(string_view, feature_test_macros) {
 #endif
 }
 
+#if TEST_TARGET_CXX >= 2017
 TEST_CASE(string_view, compare_and_find_overloads) {
     typedef STD::string_view sv;
     sv a("abcdefabc");
@@ -502,3 +503,6 @@ TEST_CASE(string_view, compare_and_find_overloads) {
     TEST_SKIP_N(1);
 #endif
 }
+#else   // TEST_TARGET_CXX < 2017
+TEST_CASE_SKIP(string_view, compare_and_find_overloads)
+#endif  // TEST_TARGET_CXX >= 2017

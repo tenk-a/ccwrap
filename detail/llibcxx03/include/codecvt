@@ -220,7 +220,7 @@ protected:
                 return codecvt_base::partial;
             unsigned long __u = __ccw_u16_get(__frm_nxt, __little());
             unsigned long __wc;
-            int           __used;
+            int           __nused;
             if (__ccw_is_hi_surrogate(__u)) {
                 if (__frm_end - __frm_nxt < 4)
                     return codecvt_base::partial;      // the pair is cut short
@@ -228,19 +228,19 @@ protected:
                 if (!__ccw_is_lo_surrogate(__lo))
                     return codecvt_base::error;
                 __wc = __ccw_surrogate_join(__u, __lo);
-                __used = 4;
+                __nused = 4;
             } else if (__ccw_is_lo_surrogate(__u)) {
                 return codecvt_base::error;            // an unpaired low surrogate
             } else {
                 __wc = __u;
-                __used = 2;
+                __nused = 2;
             }
             if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (sizeof(_Elem) < 4 && __wc > 0xFFFF)
                 return codecvt_base::error;
             *__to_nxt++ = (_Elem)__wc;
-            __frm_nxt += __used;
+            __frm_nxt += __nused;
         }
         return __frm_nxt == __frm_end ? codecvt_base::ok : codecvt_base::partial;
     }
@@ -256,13 +256,13 @@ protected:
         size_t __cnt = 0;
         while (__end - __p >= 2 && __cnt < __mx) {
             unsigned long __u = __ccw_u16_get(__p, __little());
-            int __used = 2;
+            int __nused = 2;
             if (__ccw_is_hi_surrogate(__u)) {
                 if (__end - __p < 4)
                     break;
-                __used = 4;
+                __nused = 4;
             }
-            __p += __used; ++__cnt;
+            __p += __nused; ++__cnt;
         }
         return (int)(__p - __frm);
     }
@@ -290,7 +290,7 @@ protected:
         while (__frm_nxt < __frm_end) {
             unsigned long __u = (unsigned long)(_Elem)*__frm_nxt & 0xFFFFUL;
             unsigned long __wc;
-            int           __used;
+            int           __nused;
             if (__ccw_is_hi_surrogate(__u)) {
                 if (__frm_end - __frm_nxt < 2)
                     return codecvt_base::partial;      // wait for the low surrogate
@@ -298,19 +298,19 @@ protected:
                 if (!__ccw_is_lo_surrogate(__lo))
                     return codecvt_base::error;
                 __wc = __ccw_surrogate_join(__u, __lo);
-                __used = 2;
+                __nused = 2;
             } else if (__ccw_is_lo_surrogate(__u)) {
                 return codecvt_base::error;            // an unpaired low surrogate
             } else {
                 __wc = __u;
-                __used = 1;
+                __nused = 1;
             }
             if (__wc > _MaxCode)
                 return codecvt_base::error;
             if (__to_end - __to_nxt < __ccw_u8_enclen(__wc))
                 return codecvt_base::partial;
             __to_nxt = __ccw_u8_encode(__to_nxt, __wc);
-            __frm_nxt += __used;
+            __frm_nxt += __nused;
         }
         return codecvt_base::ok;
     }

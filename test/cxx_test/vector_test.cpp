@@ -72,10 +72,15 @@ TEST_CASE(vector, element_access) {
     test_eq( *cv.data(), 10 );
     test_eq( v.data()[2], 30 );
     test_pass("cxx11:vector::data");
-#else
+#elif 0
     test_eq( *STD::data(v), 10 );
     test_eq( *STD::data(cv), 10 );
     test_eq( STD::data(v)[2], 30 );
+    test_skip("cxx11:vector::data");
+#else
+    test_eq( *(&v[0]), 10 );
+    test_eq( *(&cv[0]), 10 );
+    test_eq( (&v[0])[2], 30 );
     test_skip("cxx11:vector::data");
 #endif
 

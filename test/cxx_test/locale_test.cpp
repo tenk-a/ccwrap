@@ -81,12 +81,22 @@ TEST_CASE(locale, ctype_facet) {
 #if _TST_HAS_CXX11_LIB_MEMBERS
     const STD::ctype_base::mask* tab = ct.table();
     test_ptr( (void*)tab );
-    test_true( (tab[(unsigned char)'x'] & STD::ctype_base::alpha) != 0 );
-    test_true( (tab[(unsigned char)'5'] & STD::ctype_base::digit) != 0 );
+    if (tab) {
+        test_true( (tab[(unsigned char)'x'] & STD::ctype_base::alpha) != 0 );
+        test_true( (tab[(unsigned char)'5'] & STD::ctype_base::digit) != 0 );
+    } else {
+        TEST_NOTE("table() returned null; the entries cannot be read");
+        TEST_SKIP_N(2);
+    }
     test_pass("cxx03:ctype<char>::table");
     const STD::ctype_base::mask* ctab = STD::ctype<char>::classic_table();
     test_ptr( (void*)ctab );
-    test_true( (ctab[(unsigned char)'x'] & STD::ctype_base::alpha) != 0 );
+    if (ctab) {
+        test_true( (ctab[(unsigned char)'x'] & STD::ctype_base::alpha) != 0 );
+    } else {
+        TEST_NOTE("classic_table() returned null; the entries cannot be read");
+        TEST_SKIP1();
+    }
     test_pass("cxx03:ctype<char>::classic_table");
 #else
     test_skip("cxx03:ctype<char>::table");

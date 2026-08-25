@@ -443,9 +443,9 @@ private:
 
     _CCW_LIBCPP_HIDE_FROM_ABI bool __m(const __cont* __k, const _CharT* __sp, __state& __st) const {
         if (++__st.__steps > 20000000L) return false;   // runaway guard (total work)
-        { _CharT __probe; long __used = (long)(__st.__sbase - &__probe);
-          if (__used < 0) __used = -__used;
-          if (__used > 600000L) return false; }
+        { _CharT __probe; long __stk_used = (long)(__st.__sbase - &__probe);
+          if (__stk_used < 0) __stk_used = -__stk_used;
+          if (__stk_used > 600000L) return false; }
         if (!__k) { __st.__matchend = __sp; return true; }
         if (__k->__closegrp >= 0) { const _CharT* __o = __st.__caps[2 * __k->__closegrp + 1]; __st.__caps[2 * __k->__closegrp + 1] = __sp;
             if (__m(__k->__next, __sp, __st)) return true; __st.__caps[2 * __k->__closegrp + 1] = __o; return false; }

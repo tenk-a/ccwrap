@@ -1,0 +1,8 @@
+// ccwrap <cstdarg>
+#pragma once
+
+#include <ccwrap_common.h>
+
+#include_next <cstdarg>
+
+#include <stdarg.h>

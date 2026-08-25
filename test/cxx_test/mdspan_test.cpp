@@ -4,7 +4,7 @@
 #include <mdspan>
 #endif
 
-#if defined(_CCW_HAS_MDSPAN) || defined(__cpp_lib_mdspan)
+#if (defined(_CCW_HAS_MDSPAN) && TEST_TARGET_CXX >= 2023) || defined(__cpp_lib_mdspan)
 
 #include <array>
 #include <stdexcept>

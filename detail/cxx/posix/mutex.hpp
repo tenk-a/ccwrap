@@ -26,6 +26,25 @@ inline void __px_abstime(unsigned long __ms, ::timespec* __ts) {
     if (__ts->tv_nsec >= 1000000000L) { __ts->tv_nsec -= 1000000000L; ++__ts->tv_sec; }
 }
 
+inline int __px_timedlock(::pthread_mutex_t* __m, const ::timespec* __ts) {
+#if defined(__APPLE__)
+    for (;;) {
+        int __r = ::pthread_mutex_trylock(__m);
+        if (__r == 0)
+            return 0;
+        ::timespec __now;
+        ::clock_gettime(CLOCK_REALTIME, &__now);
+        if (__now.tv_sec > __ts->tv_sec ||
+            (__now.tv_sec == __ts->tv_sec && __now.tv_nsec >= __ts->tv_nsec))
+            return ETIMEDOUT;
+        ::timespec __nap; __nap.tv_sec = 0; __nap.tv_nsec = 1000000L;   // 1ms
+        ::nanosleep(&__nap, 0);
+    }
+#else
+    return ::pthread_mutex_timedlock(__m, __ts);
+#endif  // __APPLE__
+}
+
 inline void __px_init(::pthread_mutex_t* __m, int __recursive) {
     if (!__recursive) { ::pthread_mutex_init(__m, 0); return; }
     ::pthread_mutexattr_t __a;
@@ -87,7 +106,7 @@ class timed_mutex {
     bool __wait(unsigned long __ms) {
         ::timespec __ts;
         ::__ccw::__px_abstime(__ms, &__ts);
-        return ::pthread_mutex_timedlock(&m_, &__ts) == 0;
+        return ::__ccw::__px_timedlock(&m_, &__ts) == 0;
     }
 public:
     typedef ::pthread_mutex_t* native_handle_type;
@@ -114,7 +133,7 @@ class recursive_timed_mutex {
     bool __wait(unsigned long __ms) {
         ::timespec __ts;
         ::__ccw::__px_abstime(__ms, &__ts);
-        return ::pthread_mutex_timedlock(&m_, &__ts) == 0;
+        return ::__ccw::__px_timedlock(&m_, &__ts) == 0;
     }
 public:
     typedef ::pthread_mutex_t* native_handle_type;

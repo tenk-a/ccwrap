@@ -284,6 +284,79 @@
       }
     },
     {
+      "name": "gcc-ccw",
+      "hidden": true,
+      "inherits": "gcc",
+      "displayName": "g++ + ccwrap -- base for the per-standard sweep",
+      "cacheVariables": {
+        "TEST_TARGET_C": "",
+        "TST_SUITES": "cxx_test"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx03",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++98 + ccwrap (_CCW_TARGET_CXX=2003)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "98",
+        "TEST_TARGET_CXX": "2003"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx11",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++11 + ccwrap (_CCW_TARGET_CXX=2011)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "11",
+        "TEST_TARGET_CXX": "2011"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx14",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++14 + ccwrap (_CCW_TARGET_CXX=2014)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "14",
+        "TEST_TARGET_CXX": "2014"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx17",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++17 + ccwrap (_CCW_TARGET_CXX=2017)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "TEST_TARGET_CXX": "2017"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx20",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++20 + ccwrap (_CCW_TARGET_CXX=2020)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "TEST_TARGET_CXX": "2020"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx23",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++23 + ccwrap (_CCW_TARGET_CXX=2023)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23",
+        "TEST_TARGET_CXX": "2023"
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx26",
+      "inherits": "gcc-ccw",
+      "displayName": "g++ -std=c++26 + ccwrap (_CCW_TARGET_CXX=2026)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26",
+        "TEST_TARGET_CXX": "2026"
+      }
+    },
+    {
       "name": "gcc-cstd",
       "hidden": true,
       "inherits": "gcc",
@@ -401,6 +474,78 @@
       "displayName": "clang++ -std=c++26 -stdlib=libc++",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "26"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw",
+      "hidden": true,
+      "inherits": "clang-libcxx",
+      "displayName": "clang++ -stdlib=libc++ + ccwrap -- base for the per-standard sweep",
+      "cacheVariables": {
+        "TST_STDLIB": "libcxx"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx03",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++98 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2003)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "98",
+        "TEST_TARGET_CXX": "2003"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx11",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++11 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2011)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "11",
+        "TEST_TARGET_CXX": "2011"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx14",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++14 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2014)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "14",
+        "TEST_TARGET_CXX": "2014"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx17",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++17 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2017)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "TEST_TARGET_CXX": "2017"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx20",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++20 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2020)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "TEST_TARGET_CXX": "2020"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx23",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++23 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2023)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "23",
+        "TEST_TARGET_CXX": "2023"
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx26",
+      "inherits": "clang-libcxx-ccw",
+      "displayName": "clang++ -std=c++26 -stdlib=libc++ + ccwrap (_CCW_TARGET_CXX=2026)",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "26",
+        "TEST_TARGET_CXX": "2026"
       }
     },
     {
@@ -563,6 +708,34 @@
       "configurePreset": "gcc-std-cxx26"
     },
     {
+      "name": "gcc-ccw-cxx03",
+      "configurePreset": "gcc-ccw-cxx03"
+    },
+    {
+      "name": "gcc-ccw-cxx11",
+      "configurePreset": "gcc-ccw-cxx11"
+    },
+    {
+      "name": "gcc-ccw-cxx14",
+      "configurePreset": "gcc-ccw-cxx14"
+    },
+    {
+      "name": "gcc-ccw-cxx17",
+      "configurePreset": "gcc-ccw-cxx17"
+    },
+    {
+      "name": "gcc-ccw-cxx20",
+      "configurePreset": "gcc-ccw-cxx20"
+    },
+    {
+      "name": "gcc-ccw-cxx23",
+      "configurePreset": "gcc-ccw-cxx23"
+    },
+    {
+      "name": "gcc-ccw-cxx26",
+      "configurePreset": "gcc-ccw-cxx26"
+    },
+    {
       "name": "gcc-std-c90",
       "configurePreset": "gcc-std-c90"
     },
@@ -609,6 +782,34 @@
     {
       "name": "clang-libcxx-cxx26",
       "configurePreset": "clang-libcxx-cxx26"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx03",
+      "configurePreset": "clang-libcxx-ccw-cxx03"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx11",
+      "configurePreset": "clang-libcxx-ccw-cxx11"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx14",
+      "configurePreset": "clang-libcxx-ccw-cxx14"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx17",
+      "configurePreset": "clang-libcxx-ccw-cxx17"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx20",
+      "configurePreset": "clang-libcxx-ccw-cxx20"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx23",
+      "configurePreset": "clang-libcxx-ccw-cxx23"
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx26",
+      "configurePreset": "clang-libcxx-ccw-cxx26"
     },
     {
       "name": "clang-std-c90",
@@ -817,6 +1018,55 @@
       }
     },
     {
+      "name": "gcc-ccw-cxx03",
+      "configurePreset": "gcc-ccw-cxx03",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx11",
+      "configurePreset": "gcc-ccw-cxx11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx14",
+      "configurePreset": "gcc-ccw-cxx14",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx17",
+      "configurePreset": "gcc-ccw-cxx17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx20",
+      "configurePreset": "gcc-ccw-cxx20",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx23",
+      "configurePreset": "gcc-ccw-cxx23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ccw-cxx26",
+      "configurePreset": "gcc-ccw-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "gcc-std-c90",
       "configurePreset": "gcc-std-c90",
       "output": {
@@ -896,6 +1146,55 @@
     {
       "name": "clang-libcxx-cxx26",
       "configurePreset": "clang-libcxx-cxx26",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx03",
+      "configurePreset": "clang-libcxx-ccw-cxx03",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx11",
+      "configurePreset": "clang-libcxx-ccw-cxx11",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx14",
+      "configurePreset": "clang-libcxx-ccw-cxx14",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx17",
+      "configurePreset": "clang-libcxx-ccw-cxx17",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx20",
+      "configurePreset": "clang-libcxx-ccw-cxx20",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx23",
+      "configurePreset": "clang-libcxx-ccw-cxx23",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ccw-cxx26",
+      "configurePreset": "clang-libcxx-ccw-cxx26",
       "output": {
         "outputOnFailure": true
       }

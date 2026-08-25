@@ -3,8 +3,11 @@
 
 #include <ccwrap_common.h>
 
-#if __cplusplus >= 201703L && __cplusplus >= 201703L
+#if __cplusplus >= 201703L
  #include_next <filesystem>
 #else
- #include <../../detail/llibcxx03/include/filesystem>
+ #include <cstddef>
+ #if !defined(_LIBCPP_VERSION)
+  #include <../../detail/llibcxx03/include/filesystem>
+ #endif
 #endif

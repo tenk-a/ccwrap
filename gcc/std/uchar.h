@@ -5,7 +5,18 @@
 
 #if defined(__cplusplus)
 
-#include_next <uchar.h>
+#if defined(__has_include_next)
+ #if __has_include_next(<uchar.h>)
+  #include_next <uchar.h>
+ #endif
+#else
+ #include_next <uchar.h>
+#endif
+
+#if !defined(__APPLE__) || defined(_UCHAR_H) || defined(_UCHAR_H_) || \
+    defined(_INC_UCHAR) || defined(__STDC_VERSION_UCHAR_H__)
+ #define __CCW_UCHAR_NATIVE_H 1
+#endif
 
 #if !defined(__cpp_char8_t)
  #ifndef __CCW_HAS_CHAR8_T
@@ -15,7 +26,9 @@
 #endif
 
 #ifndef __STDC_VERSION_UCHAR_H__
- #define __CCW_UCHAR_IMPL_C8_ONLY 1
+ #ifdef __CCW_UCHAR_NATIVE_H
+  #define __CCW_UCHAR_IMPL_C8_ONLY 1
+ #endif
  #include <../../detail/c/uchar_impl.h>
 #endif
 

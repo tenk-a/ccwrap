@@ -76,7 +76,9 @@ struct tuple<T0, __ccw_tuple_nil, __ccw_tuple_nil, __ccw_tuple_nil, __ccw_tuple_
     void swap(tuple& r) { T0 t = head; head = r.head; r.head = t; }
 };
 
+#if !defined(_CCW_STD_LIB_LIBCXX)
 template<class Tup> struct tuple_size;
+#endif
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9>
 struct tuple_size<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
     enum { value = 10 - (__ccw_tnil<T0>::v + __ccw_tnil<T1>::v + __ccw_tnil<T2>::v
@@ -85,7 +87,9 @@ struct tuple_size<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
                        + __ccw_tnil<T9>::v) };
 };
 
+#if !defined(_CCW_STD_LIB_LIBCXX)
 template<_CCW_STD::size_t N, class Tup> struct tuple_element;
+#endif
 #if defined(__WATCOMC__)
 template<_CCW_STD::size_t N> struct __ccw_te_pick;
 template<> struct __ccw_te_pick<0> { template<class A0,class A1,class A2,class A3,class A4,class A5,class A6,class A7,class A8,class A9> struct at { typedef A0 type; }; };
@@ -218,7 +222,9 @@ inline const _Tp& get(const _CCW_STD::pair<_T1, _T2>& __p) {
 #endif
 
 #if !(defined(__WATCOMC__) || defined(_CCW_STD_RELOCATED))
+#if !defined(_CCW_STD_LIB_LIBCXX)
 template<class T, class A> struct uses_allocator;
+#endif
 template<class T0, class T1, class T2, class T3, class T4,
          class T5, class T6, class T7, class T8, class T9, class A>
 struct uses_allocator<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>, A> {

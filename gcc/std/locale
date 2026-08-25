@@ -5,11 +5,13 @@
 
 #include_next <locale>
 
-#if defined(__cplusplus) && __cplusplus < 201103L
+#if defined(__cplusplus) && ((__cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)) || \
+    (defined(_LIBCPP_VERSION) && __cplusplus > 202302L && \
+     !defined(_LIBCPP_ENABLE_CXX26_REMOVED_WSTRING_CONVERT)))
 #include <../../detail/llibcxx03/include/__locale_dir/wstring_convert.h>
 #endif
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201103L && !defined(_CCW_STD_LIB_LIBCXX)
 namespace std {
 template <class _CharT>
 inline bool isblank(_CharT __c, const locale& __loc) {
