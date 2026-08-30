@@ -141,23 +141,106 @@ typedef struct utimbuf           __ccw_fs_utimbuf_t;
 
 static int __ccw_stat(const __ccw_fs_c* __p, __ccw_fs_stat_t* __st) { return __ccw_fs_stat(__p, __st); }
 
-bool __fs::exists(const __fs::path& __p) { __ccw_fs_stat_t __st; return __ccw_stat(__p.c_str(), &__st) == 0; }
+#if defined(_WIN32) || defined(__NT__)
+extern "C" __declspec(dllimport) unsigned long __stdcall GetLastError(void);
+static void __ccw_fs_set_win_errno(void) {
+    unsigned long __e = GetLastError();
+    int __v;
+    switch (__e) {
+    case 2UL:  case 3UL:                        __v = ENOENT; break;   // FILE/PATH_NOT_FOUND
+    case 5UL:  case 19UL: case 32UL: case 33UL: __v = EACCES; break;   // ACCESS_DENIED/WRITE_PROTECT/SHARING/LOCK
+    case 80UL: case 183UL:                      __v = EEXIST; break;   // FILE_EXISTS/ALREADY_EXISTS
+    case 123UL: case 161UL:                     __v = EINVAL; break;   // INVALID_NAME/BAD_PATHNAME
+#ifdef ENOSPC
+    case 39UL: case 112UL:                      __v = ENOSPC; break;   // HANDLE_DISK_FULL/DISK_FULL
+#endif
+#ifdef ENOTEMPTY
+    case 145UL:                                 __v = ENOTEMPTY; break; // DIR_NOT_EMPTY
+#endif
+#ifdef EXDEV
+    case 17UL:                                  __v = EXDEV; break;    // NOT_SAME_DEVICE
+#endif
+    default:                                    __v = EINVAL; break;
+    }
+    errno = __v;
+}
+#endif
 
-bool __fs::is_directory(const __fs::path& __p) {
-    __ccw_fs_stat_t __st; if (__ccw_stat(__p.c_str(), &__st) != 0) return false;
+static void __ccw_fs_ec_errno(_CCW_STD::error_code& __ec, int __fallback) {
+    __ec.assign(errno ? errno : __fallback, _CCW_STD::generic_category());
+}
+static bool __ccw_fs_is_missing_errno(void) {
+    if (errno == ENOENT) return true;
+#ifdef ENOTDIR
+    if (errno == ENOTDIR) return true;
+#endif
+    return false;
+}
+
+void __fs::__ccw_fs_throw(const char* __what, const __fs::path* __p1, const __fs::path* __p2,
+                          const _CCW_STD::error_code& __ec) {
+    if (__p1 && __p2) _CCW_THROW(__fs::filesystem_error(__what, *__p1, *__p2, __ec));
+    if (__p1)         _CCW_THROW(__fs::filesystem_error(__what, *__p1, __ec));
+    _CCW_THROW(__fs::filesystem_error(__what, __ec));
+}
+
+bool __fs::exists(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __st;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) == 0) { __ec.clear(); return true; }
+    if (__ccw_fs_is_missing_errno()) { __ec.clear(); return false; }
+    __ccw_fs_ec_errno(__ec, EINVAL);
+    return false;
+}
+bool __fs::is_directory(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __st;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) {
+        if (__ccw_fs_is_missing_errno()) __ec.clear();
+        else                             __ccw_fs_ec_errno(__ec, EINVAL);
+        return false;
+    }
+    __ec.clear();
     return (__st.st_mode & S_IFMT) == S_IFDIR;
 }
-bool __fs::is_regular_file(const __fs::path& __p) {
-    __ccw_fs_stat_t __st; if (__ccw_stat(__p.c_str(), &__st) != 0) return false;
+bool __fs::is_regular_file(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __st;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) {
+        if (__ccw_fs_is_missing_errno()) __ec.clear();
+        else                             __ccw_fs_ec_errno(__ec, EINVAL);
+        return false;
+    }
+    __ec.clear();
     return (__st.st_mode & S_IFMT) == S_IFREG;
 }
-_CCW_STD::uintmax_t __fs::file_size(const __fs::path& __p) {
-    __ccw_fs_stat_t __st; if (__ccw_stat(__p.c_str(), &__st) != 0) return (_CCW_STD::uintmax_t)-1;
+_CCW_STD::uintmax_t __fs::file_size(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __st;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) {
+        __ccw_fs_ec_errno(__ec, ENOENT);
+        return (_CCW_STD::uintmax_t)-1;
+    }
+    if ((__st.st_mode & S_IFMT) != S_IFREG) {
+        int __e = EINVAL;
+#ifdef EISDIR
+        if ((__st.st_mode & S_IFMT) == S_IFDIR) __e = EISDIR;
+#endif
+        __ec.assign(__e, _CCW_STD::generic_category());
+        return (_CCW_STD::uintmax_t)-1;
+    }
+    __ec.clear();
     return (_CCW_STD::uintmax_t)__st.st_size;
 }
-__fs::file_status __fs::status(const __fs::path& __p) {
+__fs::file_status __fs::status(const __fs::path& __p, _CCW_STD::error_code& __ec) {
     __ccw_fs_stat_t __st;
-    if (__ccw_stat(__p.c_str(), &__st) != 0) return __fs::file_status(__fs::file_not_found);
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) {
+        if (__ccw_fs_is_missing_errno()) { __ec.clear(); return __fs::file_status(__fs::file_not_found); }
+        __ccw_fs_ec_errno(__ec, EINVAL);
+        return __fs::file_status(__fs::status_unknown);
+    }
+    __ec.clear();
     int __m = __st.st_mode & S_IFMT;
     __fs::perms __pm = __fs::__ccw_get_perms(__p);
     if (__m == S_IFDIR) return __fs::file_status(__fs::directory_file, __pm);
@@ -173,65 +256,140 @@ __fs::file_status __fs::status(const __fs::path& __p) {
     return __fs::file_status(__fs::other_file, __pm);
 }
 
-__fs::file_status __fs::__ccw_symlink_status(const __fs::path& __p) {
+__fs::file_status __fs::symlink_status(const __fs::path& __p, _CCW_STD::error_code& __ec) {
 #if defined(_CCW_OS_POSIX)
     struct stat __st;
-    if (lstat(__p.c_str(), &__st) != 0) return __fs::file_status(__fs::file_not_found);
-    if ((__st.st_mode & S_IFMT) == S_IFLNK)
+    errno = 0;
+    if (lstat(__p.c_str(), &__st) != 0) {
+        if (__ccw_fs_is_missing_errno()) { __ec.clear(); return __fs::file_status(__fs::file_not_found); }
+        __ccw_fs_ec_errno(__ec, EINVAL);
+        return __fs::file_status(__fs::status_unknown);
+    }
+    if ((__st.st_mode & S_IFMT) == S_IFLNK) {
+        __ec.clear();
         return __fs::file_status(__fs::file_type(__fs::file_type::symlink),
                                  __fs::perms((unsigned)__st.st_mode & 07777u));
-#endif
-    return __fs::status(__p);
-}
-
-bool __fs::create_directory(const __fs::path& __p) { return __ccw_fs_mkdir(__p.c_str()) == 0; }
-
-bool __fs::create_directories(const __fs::path& __p) {
-    if (__p.empty() || __fs::is_directory(__p)) return __fs::is_directory(__p);
-    __fs::path __parent = __p.parent_path();
-    if (!__parent.empty() && !__fs::exists(__parent)) __fs::create_directories(__parent);
-    return __fs::create_directory(__p);
-}
-
-bool __fs::remove(const __fs::path& __p) {
-    __fs::file_status __ls = __fs::__ccw_symlink_status(__p);
-    if (!__fs::exists(__ls)) return false;
-    if (__fs::is_directory(__ls)) return __ccw_fs_rmdir(__p.c_str()) == 0;
-    return __ccw_fs_remove(__p.c_str()) == 0;
-}
-
-bool __fs::rename(const __fs::path& __from, const __fs::path& __to) { return __ccw_fs_rename(__from.c_str(), __to.c_str()) == 0; }
-
-_CCW_STD::uintmax_t __fs::remove_all(const __fs::path& __p) {
-    __fs::file_status __ls = __fs::__ccw_symlink_status(__p);
-    if (!__fs::exists(__ls)) return 0;
-    _CCW_STD::uintmax_t __n = 0;
-    if (__fs::is_directory(__ls)) {          // a symlink to a directory is removed, not descended
-        for (__fs::directory_iterator __it(__p), __e; __it != __e; ++__it)
-            __n += __fs::remove_all(__it->path());
     }
-    if (__fs::remove(__p)) ++__n;
+#endif
+    return __fs::status(__p, __ec);
+}
+
+bool __fs::create_directory(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    if (__ccw_fs_mkdir(__p.c_str()) == 0) { __ec.clear(); return true; }
+    int __e = errno;
+    _CCW_STD::error_code __sec;
+    if (__fs::is_directory(__p, __sec)) { __ec.clear(); return false; }
+    __ec.assign(__e ? __e : EINVAL, _CCW_STD::generic_category());
+    return false;
+}
+
+bool __fs::create_directories(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    if (__p.empty()) { __ec.assign(ENOENT, _CCW_STD::generic_category()); return false; }
+    _CCW_STD::error_code __sec;
+    if (__fs::is_directory(__p, __sec)) { __ec.clear(); return false; }
+    __fs::path __parent = __p.parent_path();
+    if (!__parent.empty() && !__fs::exists(__parent, __sec)) {
+        __fs::create_directories(__parent, __ec);
+        if (__ec) return false;
+    }
+    return __fs::create_directory(__p, __ec);
+}
+
+bool __fs::remove(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __fs::file_status __ls = __fs::symlink_status(__p, __ec);
+    if (__ec) return false;
+    if (!__fs::exists(__ls)) { __ec.clear(); return false; }
+    errno = 0;
+    int __r = __fs::is_directory(__ls) ? __ccw_fs_rmdir(__p.c_str())
+                                       : __ccw_fs_remove(__p.c_str());
+    if (__r == 0) { __ec.clear(); return true; }
+    __ccw_fs_ec_errno(__ec, EINVAL);
+    return false;
+}
+
+void __fs::rename(const __fs::path& __from, const __fs::path& __to, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    if (__ccw_fs_rename(__from.c_str(), __to.c_str()) == 0) { __ec.clear(); return; }
+#if !defined(_CCW_OS_POSIX)
+    _CCW_STD::error_code __sec;
+    if (__fs::is_regular_file(__to, __sec)) {       // POSIX semantics: replace an existing file
+        if (__ccw_fs_remove(__to.c_str()) == 0
+         && __ccw_fs_rename(__from.c_str(), __to.c_str()) == 0) { __ec.clear(); return; }
+    }
+#endif
+    __ccw_fs_ec_errno(__ec, EINVAL);
+}
+
+_CCW_STD::uintmax_t __fs::remove_all(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __fs::file_status __ls = __fs::symlink_status(__p, __ec);
+    if (__ec) return (_CCW_STD::uintmax_t)-1;
+    if (!__fs::exists(__ls)) { __ec.clear(); return 0; }
+    _CCW_STD::uintmax_t __n = 0;
+    _CCW_STD::error_code __sec;
+    if (__fs::is_directory(__ls)) {          // a symlink to a directory is removed, not descended
+        __fs::directory_iterator __it(__p, __sec), __e;
+        if (__sec) { __ec = __sec; return (_CCW_STD::uintmax_t)-1; }
+        while (__it != __e) {
+            _CCW_STD::uintmax_t __k = __fs::remove_all(__it->path(), __ec);
+            if (__ec) return (_CCW_STD::uintmax_t)-1;
+            __n += __k;
+            __it.increment(__sec);
+            if (__sec) { __ec = __sec; return (_CCW_STD::uintmax_t)-1; }
+        }
+    }
+    if (__fs::remove(__p, __ec)) ++__n;
+    else if (__ec) return (_CCW_STD::uintmax_t)-1;
     return __n;
 }
 
-bool __fs::copy_file(const __fs::path& __from, const __fs::path& __to) {
+bool __fs::__ccw_copy_file(const __fs::path& __from, const __fs::path& __to, unsigned __opts,
+                           _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __fst;
+    errno = 0;
+    if (__ccw_stat(__from.c_str(), &__fst) != 0) { __ccw_fs_ec_errno(__ec, ENOENT); return false; }
+    if ((__fst.st_mode & S_IFMT) != S_IFREG) {
+        __ec.assign(EINVAL, _CCW_STD::generic_category());
+        return false;
+    }
+    __ccw_fs_stat_t __tst;
+    if (__ccw_stat(__to.c_str(), &__tst) == 0) {
+        if (__opts & (unsigned)__fs::copy_options::skip_existing) { __ec.clear(); return false; }
+        if (__opts & (unsigned)__fs::copy_options::update_existing) {
+            if (!(__fst.st_mtime > __tst.st_mtime)) { __ec.clear(); return false; }
+        } else if (!(__opts & (unsigned)__fs::copy_options::overwrite_existing)) {
+            __ec.assign(EEXIST, _CCW_STD::generic_category());
+            return false;
+        }
+    }
+    errno = 0;
     _CCW_STD::FILE* __ifp = __ccw_fs_fopen(__from.c_str(), __CCW_FS_S("rb"));
-    if (!__ifp) return false;
+    if (!__ifp) { __ccw_fs_ec_errno(__ec, ENOENT); return false; }
     _CCW_STD::FILE* __ofp = __ccw_fs_fopen(__to.c_str(), __CCW_FS_S("wb"));
-    if (!__ofp) { _CCW_STD::fclose(__ifp); return false; }
+    if (!__ofp) { __ccw_fs_ec_errno(__ec, EACCES); _CCW_STD::fclose(__ifp); return false; }
     char __buf[4096]; _CCW_STD::size_t __r; bool __ok = true;
     while ((__r = _CCW_STD::fread(__buf, 1, sizeof __buf, __ifp)) > 0)
         if (_CCW_STD::fwrite(__buf, 1, __r, __ofp) != __r) { __ok = false; break; }
-    _CCW_STD::fclose(__ifp); _CCW_STD::fclose(__ofp);
+    _CCW_STD::fclose(__ifp);
+    if (_CCW_STD::fclose(__ofp) != 0) __ok = false;
+    if (__ok) __ec.clear();
+    else      __ccw_fs_ec_errno(__ec, EINVAL);
     return __ok;
 }
 
-bool __fs::is_empty(const __fs::path& __p) {
-    if (__fs::is_directory(__p)) { __fs::directory_iterator __it(__p), __e; return __it == __e; }
-    return __fs::file_size(__p) == 0;
+bool __fs::is_empty(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    bool __d = __fs::is_directory(__p, __ec);
+    if (__ec) return false;
+    if (__d) {
+        __fs::directory_iterator __it(__p, __ec), __e;
+        if (__ec) return false;
+        return __it == __e;
+    }
+    _CCW_STD::uintmax_t __n = __fs::file_size(__p, __ec);
+    return !__ec && __n == 0;
 }
 
-__fs::path __fs::temp_directory_path() {
+__fs::path __fs::temp_directory_path(_CCW_STD::error_code& __ec) {
 #if defined(_CCW_OS_POSIX)
     const __ccw_fs_c* __t = __ccw_fs_getenv(__CCW_FS_S("TMPDIR"));
     if (!__t) __t = __ccw_fs_getenv(__CCW_FS_S("TMP"));
@@ -242,7 +400,14 @@ __fs::path __fs::temp_directory_path() {
     if (!__t) __t = __ccw_fs_getenv(__CCW_FS_S("TEMP"));
     if (!__t) __t = __CCW_FS_S(".");
 #endif
-    return __fs::path(__ccw_fs_str(__t));
+    __fs::path __r((__ccw_fs_str(__t)));
+    _CCW_STD::error_code __sec;
+    if (!__fs::is_directory(__r, __sec) || __sec) {
+        __ec.assign(ENOENT, _CCW_STD::generic_category());
+        return __fs::path();
+    }
+    __ec.clear();
+    return __r;
 }
 
 _CCW_STD::time_t __fs::__ccw_mtime(const __fs::path& __p) {
@@ -250,14 +415,28 @@ _CCW_STD::time_t __fs::__ccw_mtime(const __fs::path& __p) {
     if (__ccw_stat(__p.c_str(), &__st) != 0) return (_CCW_STD::time_t)0;
     return __st.st_mtime;
 }
+_CCW_STD::time_t __fs::__ccw_mtime(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    __ccw_fs_stat_t __st;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) { __ccw_fs_ec_errno(__ec, ENOENT); return (_CCW_STD::time_t)0; }
+    __ec.clear();
+    return __st.st_mtime;
+}
 
-bool __fs::__ccw_chdir(const __fs::path& __p) { return __ccw_fs_chdir(__p.c_str()) == 0; }
-
-__fs::path __fs::current_path() {
+__fs::path __fs::current_path(_CCW_STD::error_code& __ec) {
     __ccw_fs_c __buf[1024];
-    if (__ccw_fs_getcwd(__buf, (int)(sizeof(__buf) / sizeof(__buf[0]))))
+    errno = 0;
+    if (__ccw_fs_getcwd(__buf, (int)(sizeof(__buf) / sizeof(__buf[0])))) {
+        __ec.clear();
         return __fs::path(__ccw_fs_str(__buf));
+    }
+    __ccw_fs_ec_errno(__ec, EINVAL);
     return __fs::path();
+}
+void __fs::current_path(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    errno = 0;
+    if (__ccw_fs_chdir(__p.c_str()) == 0) { __ec.clear(); return; }
+    __ccw_fs_ec_errno(__ec, ENOENT);
 }
 
 struct __fs::directory_iterator::__impl {
@@ -325,7 +504,9 @@ void __fs::directory_iterator::__advance() {
     }
 }
 
-__fs::directory_iterator::directory_iterator(const __fs::path& __p) : __i_(0) {
+void __fs::directory_iterator::__open(const __fs::path& __p, unsigned __opts, _CCW_STD::error_code* __ec) {
+    __i_ = 0;
+    if (__ec) __ec->clear();
     __impl* __im = new __impl;
     __im->__ref_ = 1;
     __ccw_fs_str __b = __p.native();
@@ -338,8 +519,13 @@ __fs::directory_iterator::directory_iterator(const __fs::path& __p) : __i_(0) {
 #endif
     }
     __im->__base_ = __b;
+    errno = 0;
 #if defined(_CCW_OS_POSIX)
-    if (!__ccw_dir_start(&__im->__d_, &__im->__e_, __p.c_str())) { delete __im; __i_ = 0; return; }
+    if (!__ccw_dir_start(&__im->__d_, &__im->__e_, __p.c_str())) {
+        delete __im;
+        __fail(__p, __opts, __ec);
+        return;
+    }
 #else
 # if defined(_CCW_OS_DOS)
     __ccw_fs_str __spec = __b + __CCW_FS_S("*.*");
@@ -347,10 +533,37 @@ __fs::directory_iterator::directory_iterator(const __fs::path& __p) : __i_(0) {
     __ccw_fs_str __spec = __b + __CCW_FS_S("*");
 # endif
     __im->__h_ = __ccw_fs_findfirst(__spec.c_str(), &__im->__fd_);
-    if (__im->__h_ == (__ccw_find_handle_t)-1) { delete __im; __i_ = 0; return; }
+    if (__im->__h_ == (__ccw_find_handle_t)-1) {
+        delete __im;
+        __fail(__p, __opts, __ec);
+        return;
+    }
 #endif
     __i_ = __im;
     __advance();
+}
+
+void __fs::directory_iterator::__fail(const __fs::path& __p, unsigned __opts, _CCW_STD::error_code* __ec) {
+    int __e = errno ? errno : ENOENT;
+    if ((__opts & (unsigned)directory_options::skip_permission_denied) && __e == EACCES)
+        return;                                        // end iterator, no error
+    _CCW_STD::error_code __c(__e, _CCW_STD::generic_category());
+    if (__ec) { *__ec = __c; return; }
+    __fs::__ccw_fs_throw("filesystem::directory_iterator::directory_iterator", &__p, 0, __c);
+}
+
+__fs::directory_iterator::directory_iterator(const __fs::path& __p) : __i_(0) {
+    __open(__p, 0u, 0);
+}
+__fs::directory_iterator::directory_iterator(const __fs::path& __p, __fs::directory_options __o) : __i_(0) {
+    __open(__p, (unsigned)__o.__v_, 0);
+}
+__fs::directory_iterator::directory_iterator(const __fs::path& __p, _CCW_STD::error_code& __ec) : __i_(0) {
+    __open(__p, 0u, &__ec);
+}
+__fs::directory_iterator::directory_iterator(const __fs::path& __p, __fs::directory_options __o,
+                                             _CCW_STD::error_code& __ec) : __i_(0) {
+    __open(__p, (unsigned)__o.__v_, &__ec);
 }
 
 __fs::directory_iterator::directory_iterator(const directory_iterator& __o) : __i_(__o.__i_) { if (__i_) ++__i_->__ref_; }
@@ -447,27 +660,36 @@ static bool __ccw_file_info(const __ccw_fs_c* __path, _CCW_BY_HANDLE_FILE_INFORM
 }
 #endif
 
-__fs::space_info __fs::space(const __fs::path& __p) {
+__fs::space_info __fs::space(const __fs::path& __p, _CCW_STD::error_code& __ec) {
     __fs::space_info __r;
     __r.capacity = __r.free = __r.available = (_ccw_ullong)-1;
+    _CCW_STD::error_code __sec;
+    errno = 0;
 #if defined(_WIN32) || defined(__NT__)
     _ccw_ullong __avail = 0, __total = 0, __free = 0;
-    __ccw_fs_str __dir = __fs::is_directory(__p) ? __p.native() : __p.parent_path().native();
+    __ccw_fs_str __dir = __fs::is_directory(__p, __sec) ? __p.native() : __p.parent_path().native();
     if (__dir.empty()) __dir = __CCW_FS_S(".");
     if (__ccw_Win32_GetDiskFreeSpaceEx(__dir.c_str(), &__avail, &__total, &__free)) {
         __r.capacity  = __total;
         __r.free      = __free;
         __r.available = __avail;
+        __ec.clear();
+    } else {
+        __ccw_fs_set_win_errno();
+        __ccw_fs_ec_errno(__ec, EINVAL);
     }
 #elif defined(_CCW_OS_POSIX)
     struct statvfs __sv;
-    __ccw_fs_str __dir = __fs::is_directory(__p) ? __p.native() : __p.parent_path().native();
+    __ccw_fs_str __dir = __fs::is_directory(__p, __sec) ? __p.native() : __p.parent_path().native();
     if (__dir.empty()) __dir = __CCW_FS_S(".");
     if (statvfs(__dir.c_str(), &__sv) == 0) {
         _ccw_ullong __unit = (_ccw_ullong)(__sv.f_frsize ? __sv.f_frsize : __sv.f_bsize);
         __r.capacity  = (_ccw_ullong)__sv.f_blocks * __unit;
         __r.free      = (_ccw_ullong)__sv.f_bfree  * __unit;
         __r.available = (_ccw_ullong)__sv.f_bavail * __unit;
+        __ec.clear();
+    } else {
+        __ccw_fs_ec_errno(__ec, EINVAL);
     }
 #elif defined(_CCW_OS_DOS)
     unsigned __drive = 0;
@@ -483,26 +705,37 @@ __fs::space_info __fs::space(const __fs::path& __p) {
         __r.capacity  = (_ccw_ullong)__df.total_clusters * __unit;
         __r.free      = (_ccw_ullong)__df.avail_clusters * __unit;
         __r.available = __r.free;    // DOS has no per-user quota, so free == available
+        __ec.clear();
+    } else {
+        __ec.assign(ENOENT, _CCW_STD::generic_category());
     }
 #else
     (void)__p;
+    __ec.assign(EINVAL, _CCW_STD::generic_category());
 #endif
     return __r;
 }
 
-void __fs::resize_file(const __fs::path& __p, _ccw_ullong __n) {
+void __fs::resize_file(const __fs::path& __p, _ccw_ullong __n, _CCW_STD::error_code& __ec) {
+    errno = 0;
 #if defined(_CCW_OS_POSIX)
-    truncate(__p.c_str(), (off_t)__n);
+    if (truncate(__p.c_str(), (off_t)__n) == 0) { __ec.clear(); return; }
+    __ccw_fs_ec_errno(__ec, EINVAL);
     return;
 #else
-    if (__n > (_ccw_ullong)0x7FFFFFFFUL) return;   // chsize's length is a signed long
+    if (__n > (_ccw_ullong)0x7FFFFFFFUL) {         // chsize's length is a signed long
+        __ec.assign(EINVAL, _CCW_STD::generic_category());
+        return;
+    }
     __ccw_fs_stat_t __st;
-    if (__ccw_stat(__p.c_str(), &__st) != 0) return;
-    if (__n == (_ccw_ullong)__st.st_size) return;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) { __ccw_fs_ec_errno(__ec, ENOENT); return; }
+    if (__n == (_ccw_ullong)__st.st_size) { __ec.clear(); return; }
     FILE* __f = __ccw_fs_fopen(__p.c_str(), __CCW_FS_S("r+b"));
-    if (!__f) return;
-    __ccw_chsize(__ccw_fileno(__f), (long)__n);
+    if (!__f) { __ccw_fs_ec_errno(__ec, EACCES); return; }
+    int __r = __ccw_chsize(__ccw_fileno(__f), (long)__n);
     fclose(__f);
+    if (__r == 0) __ec.clear();
+    else          __ccw_fs_ec_errno(__ec, EINVAL);
 #endif
 }
 
@@ -519,8 +752,13 @@ static bool __ccw_same_name(const _CCW_STD::string& __a, const _CCW_STD::string&
 }
 #endif
 
-bool __fs::equivalent(const __fs::path& __a, const __fs::path& __b) {
-    if (!__fs::exists(__a) || !__fs::exists(__b)) return false;
+bool __fs::equivalent(const __fs::path& __a, const __fs::path& __b, _CCW_STD::error_code& __ec) {
+    _CCW_STD::error_code __s1, __s2;
+    bool __e1 = __fs::exists(__a, __s1);
+    bool __e2 = __fs::exists(__b, __s2);
+    if (__s1 || __s2) { __ec = __s1 ? __s1 : __s2; return false; }
+    if (!__e1 || !__e2) { __ec.assign(ENOENT, _CCW_STD::generic_category()); return false; }
+    __ec.clear();
 #if defined(_CCW_OS_POSIX)
     __ccw_fs_stat_t __sa, __sb;
     if (__ccw_stat(__a.c_str(), &__sa) == 0 && __ccw_stat(__b.c_str(), &__sb) == 0)
@@ -535,20 +773,22 @@ bool __fs::equivalent(const __fs::path& __a, const __fs::path& __b) {
     }
 #endif
 #if defined(_CCW_OS_DOS)
-    return __ccw_same_name(__fs::canonical(__a).generic_string(),
-                           __fs::canonical(__b).generic_string());
+    return __ccw_same_name(__fs::canonical(__a, __ec).generic_string(),
+                           __fs::canonical(__b, __ec).generic_string());
 #else
-    return __fs::canonical(__a).generic_string() == __fs::canonical(__b).generic_string();
+    return __fs::canonical(__a, __ec).generic_string() == __fs::canonical(__b, __ec).generic_string();
 #endif
 }
 
-_ccw_ullong __fs::hard_link_count(const __fs::path& __p) {
+_ccw_ullong __fs::hard_link_count(const __fs::path& __p, _CCW_STD::error_code& __ec) {
 #if defined(_WIN32) || defined(__NT__)
     _CCW_BY_HANDLE_FILE_INFORMATION __bi;
-    if (__ccw_file_info(__p.c_str(), &__bi)) return (_ccw_ullong)__bi.__links;
+    if (__ccw_file_info(__p.c_str(), &__bi)) { __ec.clear(); return (_ccw_ullong)__bi.__links; }
 #endif
     __ccw_fs_stat_t __st;
-    if (__ccw_stat(__p.c_str(), &__st) != 0) return (_ccw_ullong)-1;
+    errno = 0;
+    if (__ccw_stat(__p.c_str(), &__st) != 0) { __ccw_fs_ec_errno(__ec, ENOENT); return (_ccw_ullong)-1; }
+    __ec.clear();
     return (_ccw_ullong)__st.st_nlink;
 }
 
@@ -577,8 +817,18 @@ bool __fs::__ccw_set_mtime(const __fs::path& __p, _CCW_STD::time_t __t) {
 }
 
 void __fs::create_hard_link(const __fs::path& __to, const __fs::path& __link, _CCW_STD::error_code& __ec) {
-    if (__fs::create_hard_link(__to, __link)) __ec.clear();
-    else __ec = _CCW_STD::make_error_code(_CCW_STD::errc::operation_not_permitted);
+    errno = 0;
+#if defined(_WIN32) || defined(__NT__)
+    if (__ccw_Win32_CreateHardLink(__link.c_str(), __to.c_str(), 0) != 0) { __ec.clear(); return; }
+    __ccw_fs_set_win_errno();
+    __ccw_fs_ec_errno(__ec, EACCES);
+#elif defined(_CCW_OS_POSIX)
+    if (link(__to.c_str(), __link.c_str()) == 0) { __ec.clear(); return; }
+    __ccw_fs_ec_errno(__ec, EACCES);
+#else
+    (void)__to; (void)__link;
+    __ec = _CCW_STD::make_error_code(_CCW_STD::errc::function_not_supported);
+#endif
 }
 
 #if defined(_CCW_OS_POSIX)
@@ -593,18 +843,14 @@ void __fs::create_symlink(const __fs::path& __to, const __fs::path& __link, _CCW
 void __fs::create_directory_symlink(const __fs::path& __to, const __fs::path& __link, _CCW_STD::error_code& __ec) {
     __fs::create_symlink(__to, __link, __ec);
 }
-__fs::path __fs::read_symlink(const __fs::path& __p) {
-    char __buf[4096];
-    long __n = (long)readlink(__p.c_str(), __buf, sizeof(__buf) - 1);
-    if (__n < 0) return __fs::path();
-    __buf[__n] = 0;
-    return __fs::path(_CCW_STD::string(__buf, (_CCW_STD::size_t)__n));
-}
 __fs::path __fs::read_symlink(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    char __buf[4096];
     errno = 0;
-    __fs::path __r = __fs::read_symlink(__p);
-    __ccw_fs_errno(!__r.empty(), __ec);
-    return __r;
+    long __n = (long)readlink(__p.c_str(), __buf, sizeof(__buf) - 1);
+    if (__n < 0) { __ccw_fs_ec_errno(__ec, EINVAL); return __fs::path(); }
+    __buf[__n] = 0;
+    __ec.clear();
+    return __fs::path(_CCW_STD::string(__buf, (_CCW_STD::size_t)__n));
 }
 void __fs::copy_symlink(const __fs::path& __from, const __fs::path& __to, _CCW_STD::error_code& __ec) {
     __fs::path __t = __fs::read_symlink(__from, __ec);
@@ -619,21 +865,14 @@ void __fs::create_symlink(const __fs::path&, const __fs::path&, _CCW_STD::error_
 void __fs::create_directory_symlink(const __fs::path&, const __fs::path&, _CCW_STD::error_code& __ec) { __ccw_fs_no_symlink(__ec); }
 void __fs::copy_symlink(const __fs::path&, const __fs::path&, _CCW_STD::error_code& __ec) { __ccw_fs_no_symlink(__ec); }
 __fs::path __fs::read_symlink(const __fs::path&, _CCW_STD::error_code& __ec) { __ccw_fs_no_symlink(__ec); return __fs::path(); }
-__fs::path __fs::read_symlink(const __fs::path&) { return __fs::path(); }
 #endif
 
-bool __fs::create_hard_link(const __fs::path& __to, const __fs::path& __link) {
-#if defined(_WIN32) || defined(__NT__)
-    return __ccw_Win32_CreateHardLink(__link.c_str(), __to.c_str(), 0) != 0;
-#elif defined(_CCW_OS_POSIX)
-    return link(__to.c_str(), __link.c_str()) == 0;
-#else
-    (void)__to; (void)__link;
-    return false;
-#endif
-}
-
-__fs::path __fs::canonical(const __fs::path& __p) {
+__fs::path __fs::canonical(const __fs::path& __p, _CCW_STD::error_code& __ec) {
+    if (!__fs::exists(__p, __ec)) {
+        if (!__ec) __ec.assign(ENOENT, _CCW_STD::generic_category());
+        return __fs::path();
+    }
+    __ec.clear();
 #if defined(_CCW_OS_POSIX)
     char __rbuf[4096];
     if (realpath(__p.c_str(), __rbuf)) return __fs::path(_CCW_STD::string(__rbuf));
@@ -648,22 +887,29 @@ __fs::path __fs::canonical(const __fs::path& __p) {
     if (__ccw_fs_fullpath(__buf, __p.c_str(), sizeof(__buf) / sizeof(__buf[0])))
         return __fs::path(__ccw_fs_str(__buf));
 #endif
-    return __fs::absolute(__p).lexically_normal();
+    return __fs::absolute(__p, __ec).lexically_normal();
 }
 
-void __fs::permissions(const __fs::path& __p, __fs::perms __prms, __fs::perm_options __opts) {
+void __fs::permissions(const __fs::path& __p, __fs::perms __prms, __fs::perm_options __opts,
+                       _CCW_STD::error_code& __ec) {
+    errno = 0;
 #if defined(_CCW_OS_POSIX)
     unsigned __m = __prms.__v_ & (unsigned)__fs::perms::mask;
     if (__opts.__v_ & ((unsigned)__fs::perm_options::add | (unsigned)__fs::perm_options::remove)) {
         __ccw_fs_stat_t __st;
-        if (__ccw_stat(__p.c_str(), &__st) != 0) return;
+        if (__ccw_stat(__p.c_str(), &__st) != 0) { __ccw_fs_ec_errno(__ec, ENOENT); return; }
         unsigned __cur = (unsigned)__st.st_mode & 07777u;
         __m = (__opts.__v_ & (unsigned)__fs::perm_options::add) ? (__cur | __m) : (__cur & ~__m);
     }
-    __ccw_fs_chmod(__p.c_str(), (mode_t)__m);
+    if (__ccw_fs_chmod(__p.c_str(), (mode_t)__m) == 0) __ec.clear();
+    else                                               __ccw_fs_ec_errno(__ec, EACCES);
 #elif defined(_WIN32) || defined(__NT__)
     unsigned long __attr = __ccw_Win32_GetFileAttributes(__p.c_str());
-    if (__attr == _CCW_INVALID_FILE_ATTRIBUTES) return;
+    if (__attr == _CCW_INVALID_FILE_ATTRIBUTES) {
+        __ccw_fs_set_win_errno();
+        __ccw_fs_ec_errno(__ec, ENOENT);
+        return;
+    }
     bool __writable;
     unsigned __w = (unsigned)__fs::perms::owner_write | (unsigned)__fs::perms::group_write
                  | (unsigned)__fs::perms::others_write;
@@ -673,8 +919,17 @@ void __fs::permissions(const __fs::path& __p, __fs::perms __prms, __fs::perm_opt
     else                                                          __writable = __want_write;
     unsigned long __new = __writable ? (__attr & ~_CCW_FILE_ATTRIBUTE_READONLY)
                                      : (__attr |  _CCW_FILE_ATTRIBUTE_READONLY);
-    if (__new != __attr) __ccw_Win32_SetFileAttributes(__p.c_str(), __new);
+    if (__new != __attr && !__ccw_Win32_SetFileAttributes(__p.c_str(), __new)) {
+        __ccw_fs_set_win_errno();
+        __ccw_fs_ec_errno(__ec, EACCES);
+        return;
+    }
+    __ec.clear();
 #elif defined(_CCW_OS_DOS)
+    if (__ccw_fs_access(__p.c_str(), 0 /* F_OK */) != 0) {
+        __ccw_fs_ec_errno(__ec, ENOENT);
+        return;
+    }
     bool __is_writable = (__ccw_fs_access(__p.c_str(), 2 /* W_OK */) == 0);
     unsigned __w = (unsigned)__fs::perms::owner_write | (unsigned)__fs::perms::group_write
                  | (unsigned)__fs::perms::others_write;
@@ -683,10 +938,15 @@ void __fs::permissions(const __fs::path& __p, __fs::perms __prms, __fs::perm_opt
     if (__opts.__v_ & (unsigned)__fs::perm_options::remove)   __writable = __is_writable && !__want_write;
     else if (__opts.__v_ & (unsigned)__fs::perm_options::add) __writable = __is_writable ||  __want_write;
     else                                                       __writable = __want_write;
-    if (__writable != __is_writable)
-        __ccw_fs_chmod(__p.c_str(), __writable ? (S_IREAD | S_IWRITE) : S_IREAD);
+    if (__writable != __is_writable
+     && __ccw_fs_chmod(__p.c_str(), __writable ? (S_IREAD | S_IWRITE) : S_IREAD) != 0) {
+        __ccw_fs_ec_errno(__ec, EACCES);
+        return;
+    }
+    __ec.clear();
 #else
     (void)__p; (void)__prms; (void)__opts;
+    __ec.assign(EINVAL, _CCW_STD::generic_category());
 #endif
 }
 

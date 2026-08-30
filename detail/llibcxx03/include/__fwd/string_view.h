@@ -8,5 +8,6 @@
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
 template <class _CharT, class _Traits = char_traits<_CharT> > class basic_string_view;
 typedef basic_string_view<char> string_view;
+template <class _Str> struct __ccw_sv_not_ccw_string { typedef void type; };
 _CCW_LIBCPP_END_NAMESPACE_STD
 #endif

@@ -43,7 +43,8 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const basic_string_view& __o) : __data_(__o.__data_), __size_(__o.__size_) {}
     template <class _Str>
     _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _Str& __s, void (_Str::*)() = 0,
-                                                typename _Str::allocator_type* = 0)
+                                                typename _Str::allocator_type* = 0,
+                                                typename __ccw_sv_not_ccw_string<_Str>::type* = 0)
         : __data_(__s.data()), __size_(__s.size()) {}
 
     _CCW_LIBCPP_HIDE_FROM_ABI basic_string_view(const _CharT* __first, const _CharT* __last)

@@ -41,3 +41,6 @@ using ::_ccw_wctomb;     using ::_ccw_mbstowcs; using ::_ccw_wcstombs;
 #define mbstowcs    _ccw_mbstowcs
 #define wcstombs    _ccw_wcstombs
 #endif
+
+#define _CCW_WCRT_WANT_INT64
+#include "../../detail/c/win/wide_crt_vc.h"

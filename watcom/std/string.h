@@ -25,3 +25,6 @@ static _ccw_forceinline size_t strnlen(const char* s, size_t n) {
 #endif  /* _CCW_STRING_STRNLEN_DEFINED */
 
 #endif  /* __cplusplus */
+
+#define _CCW_WCRT_WANT_WCSTOK
+#include "../../detail/c/win/wide_crt_vc.h"

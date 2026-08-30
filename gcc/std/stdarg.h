@@ -1,4 +1,7 @@
 // ccwrap <stdarg.h>
+#if defined(__need___va_list) || defined(__need_va_list) || defined(__need_va_arg)
+#include_next <stdarg.h>
+#else
 #pragma once
 
 #include <ccwrap_common.h>
@@ -15,3 +18,4 @@
 #ifndef __va_copy
  #define __va_copy(dst, src)    va_copy((dst), (src))
 #endif
+#endif // __need___va_list

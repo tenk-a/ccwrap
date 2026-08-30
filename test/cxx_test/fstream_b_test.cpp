@@ -1186,7 +1186,7 @@ TEST_CASE(fstream, cxx11_moves_and_swaps) {
 }
 
 TEST_CASE(fstream, filesystem_path_overloads_cxx17) {
-#if !defined(__WATCOMC__) && TEST_TARGET_CXX >= 2017 && defined(__cpp_lib_filesystem)
+#if TEST_TARGET_CXX >= 2017 && defined(__cpp_lib_filesystem)
     typedef STD::ios_base io;
     namespace fs = STD::filesystem;
     fb_write(FB_FILE, "pathy");

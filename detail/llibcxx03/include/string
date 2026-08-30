@@ -25,7 +25,11 @@
 #include <cstdlib>
 #include <cwchar>
 #include <climits>
+#include <cerrno>
 _CCW_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits, class _Alloc>
+struct __ccw_sv_not_ccw_string<basic_string<_CharT, _Traits, _Alloc> > { };
 
 template <class _CharT, class _Traits, class _Alloc>
 class _CCW_LIBCPP_TEMPLATE_VIS basic_string {
@@ -101,6 +105,7 @@ private:
         }
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __reserve_exact(size_type __nc) {
+        if (__nc > max_size()) _CCW_THROW(_CCW_STD::length_error("basic_string"));
         size_type __sz  = __z();
         pointer   __old = __p();
         bool      __was_long   = __is_long();
@@ -626,23 +631,46 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline wstring to_wstring(long long __v)          { wc
 _CCW_LIBCPP_HIDE_FROM_ABI inline wstring to_wstring(unsigned long long __v) { wchar_t __b[32]; _CCW_STD::swprintf(__b, 32, L"%llu", __v);      return wstring(__b); }
 #endif
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_sto_prep(const char* __what, const string& __s, char* __e,
+                                                      _CCW_STD::size_t* __pos) {
+    if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument(__what));
+    if (errno == ERANGE)    _CCW_THROW(_CCW_STD::out_of_range(__what));
+    if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str());
+}
 _CCW_LIBCPP_HIDE_FROM_ABI inline int stoi(const string& __s, _CCW_STD::size_t* __pos = 0, int __base = 10) {
-    char* __e; long __r = _CCW_STD::strtol(__s.c_str(), &__e, __base); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return static_cast<int>(__r); }
+    char* __e; errno = 0; long __r = _CCW_STD::strtol(__s.c_str(), &__e, __base);
+    __ccw_sto_prep("stoi", __s, __e, __pos);
+    if (__r > INT_MAX || __r < INT_MIN) _CCW_THROW(_CCW_STD::out_of_range("stoi"));
+    return static_cast<int>(__r); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline long stol(const string& __s, _CCW_STD::size_t* __pos = 0, int __base = 10) {
-    char* __e; long __r = _CCW_STD::strtol(__s.c_str(), &__e, __base); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; long __r = _CCW_STD::strtol(__s.c_str(), &__e, __base);
+    __ccw_sto_prep("stol", __s, __e, __pos);
+    return __r; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline unsigned long stoul(const string& __s, _CCW_STD::size_t* __pos = 0, int __base = 10) {
-    char* __e; unsigned long __r = _CCW_STD::strtoul(__s.c_str(), &__e, __base); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; unsigned long __r = _CCW_STD::strtoul(__s.c_str(), &__e, __base);
+    __ccw_sto_prep("stoul", __s, __e, __pos);
+    return __r; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline float stof(const string& __s, _CCW_STD::size_t* __pos = 0) {
-    char* __e; double __r = _CCW_STD::strtod(__s.c_str(), &__e); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return static_cast<float>(__r); }
+    char* __e; errno = 0; double __r = _CCW_STD::strtod(__s.c_str(), &__e);
+    __ccw_sto_prep("stof", __s, __e, __pos);
+    return static_cast<float>(__r); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline double stod(const string& __s, _CCW_STD::size_t* __pos = 0) {
-    char* __e; double __r = _CCW_STD::strtod(__s.c_str(), &__e); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; double __r = _CCW_STD::strtod(__s.c_str(), &__e);
+    __ccw_sto_prep("stod", __s, __e, __pos);
+    return __r; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline long double stold(const string& __s, _CCW_STD::size_t* __pos = 0) {
-    char* __e; long double __r = _CCW_STD::strtod(__s.c_str(), &__e); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; long double __r = _CCW_STD::strtod(__s.c_str(), &__e);
+    __ccw_sto_prep("stold", __s, __e, __pos);
+    return __r; }
 #ifdef LLONG_MAX
 _CCW_LIBCPP_HIDE_FROM_ABI inline long long stoll(const string& __s, _CCW_STD::size_t* __pos = 0, int __base = 10) {
-    char* __e; long long __r = _CCW_STD::strtoll(__s.c_str(), &__e, __base); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; long long __r = _CCW_STD::strtoll(__s.c_str(), &__e, __base);
+    __ccw_sto_prep("stoll", __s, __e, __pos);
+    return __r; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline unsigned long long stoull(const string& __s, _CCW_STD::size_t* __pos = 0, int __base = 10) {
-    char* __e; unsigned long long __r = _CCW_STD::strtoull(__s.c_str(), &__e, __base); if (__e == __s.c_str()) _CCW_THROW(_CCW_STD::invalid_argument("stoi")); if (__pos) *__pos = (_CCW_STD::size_t)(__e - __s.c_str()); return __r; }
+    char* __e; errno = 0; unsigned long long __r = _CCW_STD::strtoull(__s.c_str(), &__e, __base);
+    __ccw_sto_prep("stoull", __s, __e, __pos);
+    return __r; }
 #endif
 
 template <class _CharT, class _Traits, class _Alloc>

@@ -156,6 +156,17 @@ TEST_CASE(vector, capacity) {
     v.reserve(32);
     test_true( v.capacity() >= 32u );
     test_true( v.empty() );
+    test_throw( v.reserve(v.max_size() + 1u) );
+#if TEST_HAS_EH
+    {
+        bool lng = false;
+        try { v.reserve(v.max_size() + 1u); } catch (STD::length_error&) { lng = true; } catch (...) {}
+        test_true( lng );
+    }
+#else
+    TEST_SKIP1();
+    test_true( true );
+#endif
     test_pass("cxx03:vector::reserve");
 
     for (int i = 0; i < 5; ++i) v.push_back(i);

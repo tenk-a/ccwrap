@@ -120,11 +120,21 @@ struct __future_state {
         if (__del) delete this;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __set(const _Tp& __v) {
-        { lock_guard<mutex> __g(__m_); __value_ = __v; __ready_ = true; }
+        {
+            lock_guard<mutex> __g(__m_);
+            if (__ready_) _CCW_THROW(future_error(future_errc::promise_already_satisfied));
+            __value_ = __v;
+            __ready_ = true;
+        }
         __cv_.notify_all();
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __set_exception(exception_ptr __e) {
-        { lock_guard<mutex> __g(__m_); if (!__ready_) { __eptr_ = __e; __ready_ = true; } }
+        {
+            lock_guard<mutex> __g(__m_);
+            if (__ready_) _CCW_THROW(future_error(future_errc::promise_already_satisfied));
+            __eptr_ = __e;
+            __ready_ = true;
+        }
         __cv_.notify_all();
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void __break() {

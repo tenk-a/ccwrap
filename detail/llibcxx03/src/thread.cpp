@@ -6,6 +6,7 @@
 #if defined(__WATCOMC__) && __WATCOMC__ >= 1300
 
 #include <thread>
+#include <system_error>
 #include <cstdlib>   // getenv / atoi for hardware_concurrency
 
 extern "C" {
@@ -40,15 +41,23 @@ _CCW_STD::thread::~thread() {
 }
 
 void _CCW_STD::thread::join() {
-    if (__h_) {
-        WaitForSingleObject(__h_, 0xFFFFFFFFUL);   // INFINITE
-        CloseHandle(__h_);
-        __h_ = 0; __id_ = 0;
-    }
+    if (!__h_)
+        _CCW_THROW(_CCW_STD::system_error(_CCW_STD::make_error_code(_CCW_STD::errc::invalid_argument),
+                                          "thread::join"));
+    if (__id_ == (unsigned long)GetCurrentThreadId())
+        _CCW_THROW(_CCW_STD::system_error(
+            _CCW_STD::make_error_code(_CCW_STD::errc::resource_deadlock_would_occur), "thread::join"));
+    WaitForSingleObject(__h_, 0xFFFFFFFFUL);       // INFINITE
+    CloseHandle(__h_);
+    __h_ = 0; __id_ = 0;
 }
 
 void _CCW_STD::thread::detach() {
-    if (__h_) { CloseHandle(__h_); __h_ = 0; __id_ = 0; }
+    if (!__h_)
+        _CCW_THROW(_CCW_STD::system_error(_CCW_STD::make_error_code(_CCW_STD::errc::invalid_argument),
+                                          "thread::detach"));
+    CloseHandle(__h_);
+    __h_ = 0; __id_ = 0;
 }
 
 unsigned _CCW_STD::thread::hardware_concurrency() {

@@ -71,14 +71,9 @@ TEST_CASE(version, subset_macros_absent) {
 #  else
     test_true( false );
 #  endif
-#  ifndef __cpp_lib_filesystem
-    test_true( true );
-#  else
-    test_true( false );
-#  endif
     test_pass("cxx20:unimplemented feature macros absent");
 #else
-    TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1();
+    TEST_SKIP1(); TEST_SKIP1(); TEST_SKIP1();
     test_skip("cxx20:unimplemented feature macros absent");
 #endif
 }

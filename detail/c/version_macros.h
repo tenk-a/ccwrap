@@ -34,6 +34,11 @@
 #endif
 #endif
 #if _CCW_TARGET_CXX >= 2017
+#if defined(_CCW_LIBCXX03)
+#ifndef __cpp_lib_filesystem
+#  define __cpp_lib_filesystem 201703L
+#endif
+#endif
 #ifndef __cpp_lib_as_const
 #  define __cpp_lib_as_const 201510L
 #endif

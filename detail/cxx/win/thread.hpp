@@ -13,6 +13,7 @@
 #include <process.h>
 #include <exception>
 #include <chrono>
+#include <system_error>
 #include <iosfwd>   /* basic_ostream, for operator<<(thread::id) */
 #include <cstddef>
 #include <cstdlib>  /* getenv / atoi -- hardware_concurrency */
@@ -83,8 +84,21 @@ public:
     }
 
     bool joinable() const { return h_ != 0; }
-    void join()   { if (h_) { __ccw::WaitForSingleObject(h_, 0xFFFFFFFFul); __ccw::CloseHandle(h_); h_ = 0; id_ = 0; } }
-    void detach() { if (h_) { __ccw::CloseHandle(h_); h_ = 0; id_ = 0; } }
+    void join() {
+        if (!h_)
+            _CCW_THROW(system_error(make_error_code(errc::invalid_argument), "thread::join"));
+        if (id_ == __ccw::GetCurrentThreadId())
+            _CCW_THROW(system_error(make_error_code(errc::resource_deadlock_would_occur), "thread::join"));
+        __ccw::WaitForSingleObject(h_, 0xFFFFFFFFul);
+        __ccw::CloseHandle(h_);
+        h_ = 0; id_ = 0;
+    }
+    void detach() {
+        if (!h_)
+            _CCW_THROW(system_error(make_error_code(errc::invalid_argument), "thread::detach"));
+        __ccw::CloseHandle(h_);
+        h_ = 0; id_ = 0;
+    }
     id   get_id() const { return id(id_); }
     native_handle_type native_handle() { return h_; }
     void swap(thread& o) {

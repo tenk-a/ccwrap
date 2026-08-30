@@ -16,6 +16,7 @@
 
 #include <ccwrap_common.h>
 #include "fnctmpl.hpp"
+#include <system_error>
 
 namespace std {
 
@@ -58,9 +59,23 @@ public:
     unique_lock(M& m, const chrono::time_point<_Clock, _Duration>& __tp) : m_(&m), owns_(false) { owns_ = m_->try_lock_until(__tp); }
     ~unique_lock() { if (owns_ && m_) m_->unlock(); }
 
-    void lock()     { m_->lock(); owns_ = true; }
-    bool try_lock() { owns_ = m_->try_lock(); return owns_; }
-    void unlock()   { m_->unlock(); owns_ = false; }
+    void lock() {
+        if (!m_)   _CCW_THROW(system_error(make_error_code(errc::operation_not_permitted), "unique_lock::lock"));
+        if (owns_) _CCW_THROW(system_error(make_error_code(errc::resource_deadlock_would_occur), "unique_lock::lock"));
+        m_->lock();
+        owns_ = true;
+    }
+    bool try_lock() {
+        if (!m_)   _CCW_THROW(system_error(make_error_code(errc::operation_not_permitted), "unique_lock::try_lock"));
+        if (owns_) _CCW_THROW(system_error(make_error_code(errc::resource_deadlock_would_occur), "unique_lock::try_lock"));
+        owns_ = m_->try_lock();
+        return owns_;
+    }
+    void unlock() {
+        if (!owns_) _CCW_THROW(system_error(make_error_code(errc::operation_not_permitted), "unique_lock::unlock"));
+        m_->unlock();
+        owns_ = false;
+    }
     bool owns_lock() const { return owns_; }
     M*   mutex() const { return m_; }
     M*   release() { M* r = m_; m_ = 0; owns_ = false; return r; }

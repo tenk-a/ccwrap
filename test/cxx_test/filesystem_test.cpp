@@ -1801,10 +1801,143 @@ TEST_CASE(filesystem, error_code_overloads) {
     fs::path missing = base / "no_such_dir" / "no_such_file";
     ec.clear();
     test_true( !fs::exists(missing, ec) );
+    test_true( !ec );
     test_true( fs::file_size(missing, ec) == (STD::uintmax_t)-1 );
     test_true( (bool)ec );
+}
+
+TEST_CASE(filesystem, error_reporting) {
+    STD::error_code ec;
+    fs::path base = fs::temp_directory_path() / "ccw_err";
+    fs::remove_all(base);
+    fs::create_directories(base);
+    fs::path missing = base / "no_such_dir";
+    fs::path f = base / "f.txt";
+    { STD::FILE* fp = STD::fopen(f.string().c_str(), "w"); if (fp) { STD::fputs("x", fp); STD::fclose(fp); } }
+
+    fs::directory_iterator dend;
+    ec.clear();
+    fs::directory_iterator di(missing, ec);
+    test_true( (bool)ec );
+    test_true( di == dend );
+    ec.clear();
+    fs::directory_iterator di2(missing, fs::directory_options(fs::directory_options::skip_permission_denied), ec);
+    test_true( (bool)ec );
+    test_true( di2 == dend );
+    ec.clear();
+    fs::directory_iterator di3(base, ec);
+    test_true( !ec );
+    test_true( di3 != dend );
+    di3.increment(ec);
+    test_true( !ec );
+
+    fs::recursive_directory_iterator rend;
+    ec.clear();
+    fs::recursive_directory_iterator ri(missing, ec);
+    test_true( (bool)ec );
+    test_true( ri == rend );
+    ec.clear();
+    fs::recursive_directory_iterator ri2(base, fs::directory_options(fs::directory_options::skip_permission_denied), ec);
+    test_true( !ec );
+    int rcount = 0;
+    for (; ri2 != rend; ri2.increment(ec)) {
+        if (ec) break;
+        if (ri2->is_regular_file(ec) && !ec) ++rcount;
+    }
+    test_true( !ec );
+    test_eq( rcount, 1 );
+    ec.clear();
+    fs::recursive_directory_iterator ri3(base, ec);
+    test_true( !ec );
+    test_true( ri3 != rend );
+    ri3.pop(ec);
+    test_true( !ec );
+    test_true( ri3 == rend );
+
+    fs::directory_entry de(f);
+    test_true( de.exists(ec) );      test_true( !ec );
+    test_true( de.is_regular_file(ec) );
+    test_true( !de.is_directory(ec) );
+    test_true( de.file_size(ec) == 1u );
+    de.refresh(ec);
+    test_true( !ec );
+    fs::directory_entry dm(missing);
+    test_true( !dm.exists(ec) );
+    dm.assign(f, ec);
+    test_true( !ec );
+    test_true( dm.path() == f );
+
+    ec.clear();
+    test_true( fs::canonical(missing, ec).empty() );
+    test_true( (bool)ec );
+    ec.clear();
+    fs::rename(missing, base / "x", ec);
+    test_true( (bool)ec );
+    ec.clear();
+    test_true( !fs::copy_file(missing, base / "x", ec) );
+    test_true( (bool)ec );
+    ec.clear();
+    test_true( !fs::copy_file(f, f, ec) );
+    test_true( (bool)ec );
+    ec.clear();
+    test_true( !fs::equivalent(missing, f, ec) );
+    test_true( (bool)ec );
+    ec.clear();
+    fs::copy(missing, base / "x", ec);
+    test_true( (bool)ec );
+    ec.clear();
+    fs::hard_link_count(missing, ec);
+    test_true( (bool)ec );
+    ec.clear();
+    fs::last_write_time(missing, ec);
+    test_true( (bool)ec );
+    ec.clear();
+    fs::resize_file(missing, 1u, ec);
+    test_true( (bool)ec );
+    ec.clear();
+    fs::permissions(missing, fs::perms(fs::perms::owner_all), ec);
+    test_true( (bool)ec );
+    ec.clear();
+    test_true( !fs::is_empty(missing, ec) );
+    test_true( (bool)ec );
+    ec.clear();
+    test_true( !fs::remove(missing, ec) );
+    test_true( !ec );
+    ec.clear();
+    test_true( fs::remove_all(missing, ec) == 0u );
+    test_true( !ec );
+
+    test_throw( (fs::file_size(missing)) );
+    test_throw( (fs::canonical(missing)) );
+    test_throw( fs::directory_iterator __tdi(missing) );
+    test_throw( fs::recursive_directory_iterator __tri(missing) );
+    test_throw( (fs::rename(missing, base / "y")) );
+    test_throw( (fs::copy(missing, base / "y")) );
+    test_throw( (fs::hard_link_count(missing)) );
+    test_throw( (fs::last_write_time(missing)) );
+    test_throw( (fs::is_empty(missing)) );
+#if TEST_HAS_EH
+    {
+        bool caught = false;
+        try { fs::file_size(missing); }
+        catch (fs::filesystem_error& fe) {
+            caught = true;
+            test_true( (bool)fe.code() );
+            test_true( fe.path1() == missing );
+        }
+        test_true( caught );
+    }
+#else
+    TEST_SKIP_N(3);
+    test_true( true ); test_true( true ); test_true( true );
+#endif
+
+    fs::remove(f);
+    fs::remove_all(base);
+    test_true( !fs::exists(base) );
 }
 #else   // TEST_TARGET_CXX < 2017
 TEST_CASE_SKIP(filesystem, iterator_and_container_lifetime)
 TEST_CASE_SKIP(filesystem, error_code_overloads)
+TEST_CASE_SKIP(filesystem, error_reporting)
 #endif  // TEST_TARGET_CXX >= 2017

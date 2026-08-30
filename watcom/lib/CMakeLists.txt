@@ -13,6 +13,7 @@ get_filename_component(CCWRAP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
 set(LLIBCXX03_SRCS
     "${CCWRAP_ROOT}/detail/llibcxx03/src/locale.cpp"
+    "${CCWRAP_ROOT}/detail/llibcxx03/src/new.cpp"
     "${CCWRAP_ROOT}/detail/llibcxx03/src/filesystem.cpp")
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "DOS")

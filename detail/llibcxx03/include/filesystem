@@ -757,18 +757,47 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void permissions(perms __p) { __p_ = __p; }
 };
 
-bool          exists(const path& __p);
-bool          is_directory(const path& __p);
-bool          is_regular_file(const path& __p);
-_CCW_STD::uintmax_t file_size(const path& __p);
-bool          create_directory(const path& __p);
-bool          create_directories(const path& __p);
-bool          remove(const path& __p);
-bool          rename(const path& __from, const path& __to);   // returns success
-path          current_path();
-bool          __ccw_chdir(const path& __p);
-file_status   status(const path& __p);
-file_status   __ccw_symlink_status(const path& __p);   // lstat where the OS has it
+void __ccw_fs_throw(const char* __what, const path* __p1, const path* __p2,
+                    const _CCW_STD::error_code& __ec);   // src -- the one non-inline throw site (A55)
+
+file_status   status(const path& __p, _CCW_STD::error_code& __ec);            // src
+file_status   symlink_status(const path& __p, _CCW_STD::error_code& __ec);    // src
+bool          exists(const path& __p, _CCW_STD::error_code& __ec);            // src
+bool          is_directory(const path& __p, _CCW_STD::error_code& __ec);      // src
+bool          is_regular_file(const path& __p, _CCW_STD::error_code& __ec);   // src
+_CCW_STD::uintmax_t file_size(const path& __p, _CCW_STD::error_code& __ec);   // src
+bool          create_directory(const path& __p, _CCW_STD::error_code& __ec);  // src
+bool          create_directories(const path& __p, _CCW_STD::error_code& __ec);   // src
+bool          remove(const path& __p, _CCW_STD::error_code& __ec);            // src
+_CCW_STD::uintmax_t remove_all(const path& __p, _CCW_STD::error_code& __ec);  // src
+void          rename(const path& __from, const path& __to, _CCW_STD::error_code& __ec);   // src
+bool          __ccw_copy_file(const path& __from, const path& __to, unsigned __opts,
+                              _CCW_STD::error_code& __ec);                    // src
+bool          is_empty(const path& __p, _CCW_STD::error_code& __ec);          // src
+path          current_path(_CCW_STD::error_code& __ec);                       // src
+void          current_path(const path& __p, _CCW_STD::error_code& __ec);      // src
+path          temp_directory_path(_CCW_STD::error_code& __ec);                // src
+space_info    space(const path& __p, _CCW_STD::error_code& __ec);             // src
+void          resize_file(const path& __p, _ccw_ullong __n, _CCW_STD::error_code& __ec);  // src
+bool          equivalent(const path& __a, const path& __b, _CCW_STD::error_code& __ec);   // src
+_ccw_ullong   hard_link_count(const path& __p, _CCW_STD::error_code& __ec);   // src
+void          create_hard_link(const path& __to, const path& __link, _CCW_STD::error_code& __ec);  // src
+void          create_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);    // src
+void          create_directory_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);  // src
+void          copy_symlink(const path& __from, const path& __to, _CCW_STD::error_code& __ec);      // src
+path          read_symlink(const path& __p, _CCW_STD::error_code& __ec);      // src
+path          canonical(const path& __p, _CCW_STD::error_code& __ec);         // src
+void          permissions(const path& __p, perms __prms, perm_options __opts,
+                          _CCW_STD::error_code& __ec);                        // src
+_CCW_STD::time_t __ccw_mtime(const path& __p);                                // src; 0 if unreadable
+_CCW_STD::time_t __ccw_mtime(const path& __p, _CCW_STD::error_code& __ec);    // src
+bool          __ccw_set_mtime(const path& __p, _CCW_STD::time_t __t);         // src
+perms         __ccw_get_perms(const path& __p);                               // src; used by status()
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_ec_set(bool __ok, _CCW_STD::error_code& __ec) {
+    if (__ok) __ec.clear();
+    else      __ec.assign(errno ? errno : 5, _CCW_STD::generic_category());
+}
 
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool status_known(file_status __s) { return __s.type() != status_unknown; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(file_status __s)     { return __s.type() == file_type(file_type::block); }
@@ -783,27 +812,70 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(file_status __s) {
     return exists(__s) && !is_regular_file(__s) && !is_directory(__s) && !is_symlink(__s);
 }
 
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_status status(const path& __p) {
+    _CCW_STD::error_code __ec;
+    file_status __s = status(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::status", &__p, 0, __ec);
+    return __s;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_status symlink_status(const path& __p) {
+    _CCW_STD::error_code __ec;
+    file_status __s = symlink_status(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::symlink_status", &__p, 0, __ec);
+    return __s;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool exists(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = exists(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::exists", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_directory(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = is_directory(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::is_directory", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_regular_file(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = is_regular_file(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::is_regular_file", &__p, 0, __ec);
+    return __r;
+}
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(const path& __p)     { return is_block_file(status(__p)); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(const path& __p) { return is_character_file(status(__p)); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(const path& __p)           { return is_fifo(status(__p)); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(const path& __p)         { return is_socket(status(__p)); }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(const path& __p)          { return is_other(status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p)        { return is_symlink(symlink_status(__p)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(const path& __p, _CCW_STD::error_code& __ec)     { return is_block_file(status(__p, __ec)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(const path& __p, _CCW_STD::error_code& __ec) { return is_character_file(status(__p, __ec)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(const path& __p, _CCW_STD::error_code& __ec)           { return is_fifo(status(__p, __ec)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(const path& __p, _CCW_STD::error_code& __ec)         { return is_socket(status(__p, __ec)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(const path& __p, _CCW_STD::error_code& __ec)          { return is_other(status(__p, __ec)); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p, _CCW_STD::error_code& __ec)        { return is_symlink(symlink_status(__p, __ec)); }
 
-_CCW_LIBCPP_HIDE_FROM_ABI inline file_status status(const path& __p, _CCW_STD::error_code& __ec) {
-    __ec.clear();
-    return status(__p);
+_CCW_LIBCPP_HIDE_FROM_ABI inline path current_path() {
+    _CCW_STD::error_code __ec;
+    path __r = current_path(__ec);
+    if (__ec) __ccw_fs_throw("filesystem::current_path", 0, 0, __ec);
+    return __r;
 }
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline file_status symlink_status(const path& __p) { return __ccw_symlink_status(__p); }
-_CCW_LIBCPP_HIDE_FROM_ABI inline file_status symlink_status(const path& __p, _CCW_STD::error_code& __ec) {
-    __ec.clear();
-    return __ccw_symlink_status(__p);
+_CCW_LIBCPP_HIDE_FROM_ABI inline void current_path(const path& __p) {
+    _CCW_STD::error_code __ec;
+    current_path(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::current_path", &__p, 0, __ec);
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p) { return is_symlink(symlink_status(__p)); }
 
 _CCW_LIBCPP_HIDE_FROM_ABI inline path absolute(const path& __p) {
     if (__p.is_absolute() || __p.empty()) return __p;
     return current_path() / __p;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path absolute(const path& __p, _CCW_STD::error_code& __ec) {
+    if (__p.is_absolute() || __p.empty()) { __ec.clear(); return __p; }
+    path __b = current_path(__ec);
+    if (__ec) return path();
+    return __b / __p;
 }
 
 #if _CCW_LIBCPP_NATIVE_STD && (!defined(_ccw_cplusplus) || _ccw_cplusplus < 202002L)
@@ -811,120 +883,17 @@ typedef _CCW_STD::chrono::system_clock::time_point file_time_type;
 #else
 typedef _CCW_STD::chrono::file_clock::time_point file_time_type;
 #endif
-_CCW_STD::uintmax_t remove_all(const path& __p);       // recursively delete; returns count
-bool           copy_file(const path& __from, const path& __to);
-bool           is_empty(const path& __p);              // empty dir or zero-length file
-path           temp_directory_path();
 
-_CCW_STD::time_t __ccw_mtime(const path& __p);         // 0 if it cannot be read
-bool             __ccw_set_mtime(const path& __p, _CCW_STD::time_t __t);
-_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::time_t __ccw_to_time_t(file_time_type __t) {
-    return (_CCW_STD::time_t)_CCW_STD::chrono::duration_cast<_CCW_STD::chrono::seconds>(
-                                 __t.time_since_epoch()).count();
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p) {
-    return file_time_type(_CCW_STD::chrono::seconds((long long)__ccw_mtime(__p)));
-}
-
-space_info     space(const path& __p);                     // free/total bytes
-void           resize_file(const path& __p, _ccw_ullong __n);
-bool           equivalent(const path& __a, const path& __b);
-_ccw_ullong    hard_link_count(const path& __p);
-bool           create_hard_link(const path& __to, const path& __link);
-void           create_hard_link(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
-_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t) {
-    if (!__ccw_set_mtime(__p, __ccw_to_time_t(__t)))
-        _CCW_THROW(filesystem_error("filesystem::last_write_time", __p,
-                                    _CCW_STD::make_error_code(
-                                        _CCW_STD::errc::no_such_file_or_directory)));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p, _CCW_STD::error_code& __ec) {
-    _CCW_STD::time_t __t = __ccw_mtime(__p);
-    if (__t == (_CCW_STD::time_t)0) {
-        __ec = _CCW_STD::make_error_code(_CCW_STD::errc::no_such_file_or_directory);
-        return file_time_type();
-    }
-    __ec.clear();
-    return file_time_type(_CCW_STD::chrono::seconds((long long)__t));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t,
-                                                      _CCW_STD::error_code& __ec) {
-    if (__ccw_set_mtime(__p, __ccw_to_time_t(__t))) __ec.clear();
-    else __ec = _CCW_STD::make_error_code(_CCW_STD::errc::no_such_file_or_directory);
-}
-void           create_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
-void           create_directory_symlink(const path& __to, const path& __link, _CCW_STD::error_code& __ec);
-void           copy_symlink(const path& __from, const path& __to, _CCW_STD::error_code& __ec);
-path           read_symlink(const path& __p);
-path           read_symlink(const path& __p, _CCW_STD::error_code& __ec);
-path           canonical(const path& __p);                 // absolute + '.'/'..' folded
-void           permissions(const path& __p, perms __prms, perm_options __opts);
-perms          __ccw_get_perms(const path& __p);           // used by status()
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __prms) {
-    permissions(__p, __prms, perm_options(perm_options::replace));
-}
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline path weakly_canonical(const path& __p) {
-    if (exists(__p)) return canonical(__p);
-    path __head = __p.parent_path();
-    if (__head.empty() || !exists(__head)) return absolute(__p).lexically_normal();
-    return canonical(__head) / __p.filename();
-}
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __base) {
-    return weakly_canonical(__p).lexically_relative(weakly_canonical(__base));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p) { return relative(__p, current_path()); }
-_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __base) {
-    return weakly_canonical(__p).lexically_proximate(weakly_canonical(__base));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p) { return proximate(__p, current_path()); }
-
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_ec_ok(_CCW_STD::error_code& __ec) { __ec.clear(); }
-_CCW_LIBCPP_HIDE_FROM_ABI inline void __ccw_fs_ec_set(bool __ok, _CCW_STD::error_code& __ec) {
-    if (__ok) __ec.clear();
-    else      __ec.assign(errno ? errno : 5, _CCW_STD::generic_category());
-}
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool exists(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return exists(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_directory(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_directory(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_regular_file(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_regular_file(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_block_file(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_block_file(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_character_file(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_character_file(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_fifo(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_fifo(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_socket(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_socket(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_other(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_other(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_symlink(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return is_symlink(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::uintmax_t file_size(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    _CCW_STD::uintmax_t __r = file_size(__p);
-    __ccw_fs_ec_set(exists(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::uintmax_t file_size(const path& __p) {
+    _CCW_STD::error_code __ec;
+    _CCW_STD::uintmax_t __r = file_size(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::file_size", &__p, 0, __ec);
     return __r;
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = create_directory(__p);
-    __ccw_fs_ec_set(__r || is_directory(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = create_directory(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::create_directory", &__p, 0, __ec);
     return __r;
 }
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, const path&) {
@@ -933,111 +902,204 @@ _CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, const pa
 _CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directory(const path& __p, const path&, _CCW_STD::error_code& __ec) {
     return create_directory(__p, __ec);
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directories(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = create_directories(__p);
-    __ccw_fs_ec_set(__r || is_directory(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool create_directories(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = create_directories(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::create_directories", &__p, 0, __ec);
     return __r;
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool remove(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = remove(__p);
-    __ccw_fs_ec_set(__r || !exists(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool remove(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = remove(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::remove", &__p, 0, __ec);
     return __r;
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::uintmax_t remove_all(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    _CCW_STD::uintmax_t __n = remove_all(__p);
-    __ccw_fs_ec_set(!exists(__p), __ec);
-    return __n;
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void rename(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    __ccw_fs_ec_set(rename(__f, __t), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = copy_file(__f, __t);
-    __ccw_fs_ec_set(__r, __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::uintmax_t remove_all(const path& __p) {
+    _CCW_STD::error_code __ec;
+    _CCW_STD::uintmax_t __r = remove_all(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::remove_all", &__p, 0, __ec);
     return __r;
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_empty(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = is_empty(__p);
-    __ccw_fs_ec_set(exists(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline void rename(const path& __from, const path& __to) {
+    _CCW_STD::error_code __ec;
+    rename(__from, __to, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::rename", &__from, &__to, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __from, const path& __to, copy_options __o,
+                                                _CCW_STD::error_code& __ec) {
+    return __ccw_copy_file(__from, __to, __o.__v_, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __from, const path& __to, _CCW_STD::error_code& __ec) {
+    return __ccw_copy_file(__from, __to, 0u, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __from, const path& __to, copy_options __o) {
+    _CCW_STD::error_code __ec;
+    bool __r = __ccw_copy_file(__from, __to, __o.__v_, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::copy_file", &__from, &__to, __ec);
     return __r;
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline path current_path(_CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return current_path();
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __from, const path& __to) {
+    return copy_file(__from, __to, copy_options());
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline void current_path(const path& __p) {
-    errno = 0;
-    if (!__ccw_chdir(__p))
-        _CCW_THROW(filesystem_error("filesystem::current_path", __p,
-                                    _CCW_STD::error_code(errno ? errno : 5,
-                                                         _CCW_STD::generic_category())));
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void current_path(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    __ccw_fs_ec_set(__ccw_chdir(__p), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path temp_directory_path(_CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return temp_directory_path();
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path absolute(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return absolute(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path canonical(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    path __r = canonical(__p);
-    __ccw_fs_ec_set(exists(__p), __ec);
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool is_empty(const path& __p) {
+    _CCW_STD::error_code __ec;
+    bool __r = is_empty(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::is_empty", &__p, 0, __ec);
     return __r;
 }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path temp_directory_path() {
+    _CCW_STD::error_code __ec;
+    path __r = temp_directory_path(__ec);
+    if (__ec) __ccw_fs_throw("filesystem::temp_directory_path", 0, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline space_info space(const path& __p) {
+    _CCW_STD::error_code __ec;
+    space_info __r = space(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::space", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void resize_file(const path& __p, _ccw_ullong __n) {
+    _CCW_STD::error_code __ec;
+    resize_file(__p, __n, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::resize_file", &__p, 0, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline bool equivalent(const path& __a, const path& __b) {
+    _CCW_STD::error_code __ec;
+    bool __r = equivalent(__a, __b, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::equivalent", &__a, &__b, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline _ccw_ullong hard_link_count(const path& __p) {
+    _CCW_STD::error_code __ec;
+    _ccw_ullong __r = hard_link_count(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::hard_link_count", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void create_hard_link(const path& __to, const path& __link) {
+    _CCW_STD::error_code __ec;
+    create_hard_link(__to, __link, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::create_hard_link", &__to, &__link, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void create_symlink(const path& __to, const path& __link) {
+    _CCW_STD::error_code __ec;
+    create_symlink(__to, __link, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::create_symlink", &__to, &__link, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void create_directory_symlink(const path& __to, const path& __link) {
+    _CCW_STD::error_code __ec;
+    create_directory_symlink(__to, __link, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::create_directory_symlink", &__to, &__link, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy_symlink(const path& __from, const path& __to) {
+    _CCW_STD::error_code __ec;
+    copy_symlink(__from, __to, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::copy_symlink", &__from, &__to, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path read_symlink(const path& __p) {
+    _CCW_STD::error_code __ec;
+    path __r = read_symlink(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::read_symlink", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path canonical(const path& __p) {
+    _CCW_STD::error_code __ec;
+    path __r = canonical(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::canonical", &__p, 0, __ec);
+    return __r;
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __prms, perm_options __opts) {
+    _CCW_STD::error_code __ec;
+    permissions(__p, __prms, __opts, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::permissions", &__p, 0, __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __prms) {
+    permissions(__p, __prms, perm_options(perm_options::replace));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __prms, _CCW_STD::error_code& __ec) {
+    permissions(__p, __prms, perm_options(perm_options::replace), __ec);
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline _CCW_STD::time_t __ccw_to_time_t(file_time_type __t) {
+    return (_CCW_STD::time_t)_CCW_STD::chrono::duration_cast<_CCW_STD::chrono::seconds>(
+                                 __t.time_since_epoch()).count();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p) {
+    _CCW_STD::error_code __ec;
+    _CCW_STD::time_t __t = __ccw_mtime(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::last_write_time", &__p, 0, __ec);
+    return file_time_type(_CCW_STD::chrono::seconds((long long)__t));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline file_time_type last_write_time(const path& __p, _CCW_STD::error_code& __ec) {
+    _CCW_STD::time_t __t = __ccw_mtime(__p, __ec);
+    if (__ec) return file_time_type();
+    return file_time_type(_CCW_STD::chrono::seconds((long long)__t));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t,
+                                                      _CCW_STD::error_code& __ec) {
+    errno = 0;
+    __ccw_fs_ec_set(__ccw_set_mtime(__p, __ccw_to_time_t(__t)), __ec);
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void last_write_time(const path& __p, file_time_type __t) {
+    _CCW_STD::error_code __ec;
+    last_write_time(__p, __t, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::last_write_time", &__p, 0, __ec);
+}
+
 _CCW_LIBCPP_HIDE_FROM_ABI inline path weakly_canonical(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return weakly_canonical(__p);
+    bool __e = exists(__p, __ec);
+    if (__ec) return path();
+    if (__e) return canonical(__p, __ec);
+    path __head = __p.parent_path();
+    bool __he = !__head.empty() && exists(__head, __ec);
+    if (__ec) return path();
+    if (!__he) {
+        path __a = absolute(__p, __ec);
+        if (__ec) return path();
+        return __a.lexically_normal();
+    }
+    path __c = canonical(__head, __ec);
+    if (__ec) return path();
+    return __c / __p.filename();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path weakly_canonical(const path& __p) {
+    _CCW_STD::error_code __ec;
+    path __r = weakly_canonical(__p, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::weakly_canonical", &__p, 0, __ec);
+    return __r;
+}
+
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __base) {
+    return weakly_canonical(__p).lexically_relative(weakly_canonical(__base));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p) { return relative(__p, current_path()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __base, _CCW_STD::error_code& __ec) {
+    path __a = weakly_canonical(__p, __ec);
+    if (__ec) return path();
+    path __b = weakly_canonical(__base, __ec);
+    if (__ec) return path();
+    return __a.lexically_relative(__b);
 }
 _CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return relative(__p);
+    path __b = current_path(__ec);
+    if (__ec) return path();
+    return relative(__p, __b, __ec);
 }
-_CCW_LIBCPP_HIDE_FROM_ABI inline path relative(const path& __p, const path& __b, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return relative(__p, __b);
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __base) {
+    return weakly_canonical(__p).lexically_proximate(weakly_canonical(__base));
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p) { return proximate(__p, current_path()); }
+_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __base, _CCW_STD::error_code& __ec) {
+    path __a = weakly_canonical(__p, __ec);
+    if (__ec) return path();
+    path __b = weakly_canonical(__base, __ec);
+    if (__ec) return path();
+    return __a.lexically_proximate(__b);
 }
 _CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return proximate(__p);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline path proximate(const path& __p, const path& __b, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return proximate(__p, __b);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool equivalent(const path& __a, const path& __b, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = equivalent(__a, __b);
-    __ccw_fs_ec_set(exists(__a) && exists(__b), __ec);
-    return __r;
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline _ccw_ullong hard_link_count(const path& __p, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    _ccw_ullong __r = hard_link_count(__p);
-    __ccw_fs_ec_set(exists(__p), __ec);
-    return __r;
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void resize_file(const path& __p, _ccw_ullong __n, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    resize_file(__p, __n);
-    __ccw_fs_ec_set(exists(__p), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __pm, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    permissions(__p, __pm);
-    __ccw_fs_ec_set(exists(__p), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void permissions(const path& __p, perms __pm, perm_options __o,
-                                                  _CCW_STD::error_code& __ec) {
-    errno = 0;
-    permissions(__p, __pm, __o);
-    __ccw_fs_ec_set(exists(__p), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline space_info space(const path& __p, _CCW_STD::error_code& __ec) {
-    __ccw_fs_ec_ok(__ec); return space(__p);
+    path __b = current_path(__ec);
+    if (__ec) return path();
+    return proximate(__p, __b, __ec);
 }
 class directory_entry {
     filesystem::path __p_;
@@ -1063,6 +1125,15 @@ public:
         __p_ = __p_.parent_path() / __p;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void refresh() {}
+    _CCW_LIBCPP_HIDE_FROM_ABI void refresh(_CCW_STD::error_code& __ec) { __ec.clear(); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void assign(const filesystem::path& __p, _CCW_STD::error_code& __ec) {
+        __p_ = __p;
+        __ec.clear();
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI void replace_filename(const filesystem::path& __p, _CCW_STD::error_code& __ec) {
+        __p_ = __p_.parent_path() / __p;
+        __ec.clear();
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI bool exists() const           { return filesystem::exists(__p_); }
     _CCW_LIBCPP_HIDE_FROM_ABI bool is_block_file() const     { return filesystem::is_block_file(__p_); }
     _CCW_LIBCPP_HIDE_FROM_ABI bool is_character_file() const { return filesystem::is_character_file(__p_); }
@@ -1075,6 +1146,20 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::uintmax_t file_size() const { return filesystem::file_size(__p_); }
     _CCW_LIBCPP_HIDE_FROM_ABI file_time_type last_write_time() const { return filesystem::last_write_time(__p_); }
     _CCW_LIBCPP_HIDE_FROM_ABI _ccw_ullong hard_link_count() const { return filesystem::hard_link_count(__p_); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool exists(_CCW_STD::error_code& __ec) const           { return filesystem::exists(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_directory(_CCW_STD::error_code& __ec) const     { return filesystem::is_directory(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_regular_file(_CCW_STD::error_code& __ec) const  { return filesystem::is_regular_file(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_block_file(_CCW_STD::error_code& __ec) const     { return filesystem::is_block_file(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_character_file(_CCW_STD::error_code& __ec) const { return filesystem::is_character_file(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_fifo(_CCW_STD::error_code& __ec) const           { return filesystem::is_fifo(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_other(_CCW_STD::error_code& __ec) const          { return filesystem::is_other(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_socket(_CCW_STD::error_code& __ec) const         { return filesystem::is_socket(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI bool is_symlink(_CCW_STD::error_code& __ec) const        { return filesystem::is_symlink(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status status(_CCW_STD::error_code& __ec) const          { return filesystem::status(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_status symlink_status(_CCW_STD::error_code& __ec) const  { return filesystem::symlink_status(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _CCW_STD::uintmax_t file_size(_CCW_STD::error_code& __ec) const { return filesystem::file_size(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI file_time_type last_write_time(_CCW_STD::error_code& __ec) const { return filesystem::last_write_time(__p_, __ec); }
+    _CCW_LIBCPP_HIDE_FROM_ABI _ccw_ullong hard_link_count(_CCW_STD::error_code& __ec) const { return filesystem::hard_link_count(__p_, __ec); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const directory_entry& __o) const { return __p_ == __o.__p_; }
     _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const directory_entry& __o) const { return __p_ != __o.__p_; }
@@ -1084,6 +1169,8 @@ public:
 class directory_iterator {
     struct __impl;
     __impl* __i_;
+    void __open(const path& __p, unsigned __opts, _CCW_STD::error_code* __ec);   // src
+    void __fail(const path& __p, unsigned __opts, _CCW_STD::error_code* __ec);   // src
     void __advance();   // src
     void __release();   // src -- the only place the shared state is let go of
 public:
@@ -1095,6 +1182,9 @@ public:
 
     _CCW_LIBCPP_HIDE_FROM_ABI directory_iterator() : __i_(0) {}
     explicit directory_iterator(const path& __p);   // src
+    directory_iterator(const path& __p, directory_options __o);            // src
+    directory_iterator(const path& __p, _CCW_STD::error_code& __ec);       // src
+    directory_iterator(const path& __p, directory_options __o, _CCW_STD::error_code& __ec);   // src
     directory_iterator(const directory_iterator& __o);   // src
     directory_iterator& operator=(const directory_iterator& __o);   // src
 #if !_CCW_HAS_REAL_RVALUE_REF
@@ -1112,6 +1202,10 @@ public:
     const directory_entry& operator*() const;   // src
     const directory_entry* operator->() const;  // src
     directory_iterator& operator++();           // src
+    _CCW_LIBCPP_HIDE_FROM_ABI directory_iterator& increment(_CCW_STD::error_code& __ec) {
+        __ec.clear();
+        return ++*this;
+    }
     bool operator==(const directory_iterator& __o) const { return __i_ == __o.__i_; }
     bool operator!=(const directory_iterator& __o) const { return __i_ != __o.__i_; }
 };
@@ -1122,6 +1216,28 @@ class recursive_directory_iterator {
     _CCW_STD::vector<directory_iterator> __stk_;
     bool                            __pending_;
     directory_options               __opt_;
+    _CCW_LIBCPP_HIDE_FROM_ABI void __adv(_CCW_STD::error_code* __ec) {
+        if (!__stk_.empty() && __pending_) {
+            const path& __cp = (*__stk_.back()).path();
+            _CCW_STD::error_code __sec;
+            bool __isdir = filesystem::is_directory(__cp, __sec);
+            if (!__sec && __isdir) {
+                directory_iterator __sub(__cp, __opt_, __sec);
+                if (__sec) {
+                    __stk_.clear();
+                    if (__ec) { *__ec = __sec; return; }
+                    __ccw_fs_throw("filesystem::recursive_directory_iterator::operator++", &__cp, 0, __sec);
+                }
+                if (__sub != directory_iterator()) { __stk_.push_back(__sub); __pending_ = true; return; }
+            }
+        }
+        __pending_ = true;
+        while (!__stk_.empty()) {
+            ++__stk_.back();
+            if (__stk_.back() != directory_iterator()) break;
+            __stk_.pop_back();
+        }
+    }
 public:
     typedef directory_entry            value_type;
     typedef const directory_entry&     reference;
@@ -1135,8 +1251,19 @@ public:
     }
     _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator(const path& __p, directory_options __o)
         : __pending_(true), __opt_(__o) {
-        directory_iterator __it(__p);
+        directory_iterator __it(__p, __o);
         if (__it != directory_iterator()) __stk_.push_back(__it);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator(const path& __p, _CCW_STD::error_code& __ec)
+        : __pending_(true) {
+        directory_iterator __it(__p, __ec);
+        if (!__ec && __it != directory_iterator()) __stk_.push_back(__it);
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator(const path& __p, directory_options __o,
+                                                           _CCW_STD::error_code& __ec)
+        : __pending_(true), __opt_(__o) {
+        directory_iterator __it(__p, __o, __ec);
+        if (!__ec && __it != directory_iterator()) __stk_.push_back(__it);
     }
     _CCW_LIBCPP_HIDE_FROM_ABI directory_options options() const { return __opt_; }
     _CCW_LIBCPP_HIDE_FROM_ABI const directory_entry& operator*() const { return *__stk_.back(); }
@@ -1146,16 +1273,12 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI void disable_recursion_pending() { __pending_ = false; }
 
     _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator& operator++() {
-        if (!__stk_.empty() && __pending_ && is_directory((*__stk_.back()).path())) {
-            directory_iterator __sub((*__stk_.back()).path());
-            if (__sub != directory_iterator()) { __stk_.push_back(__sub); __pending_ = true; return *this; }
-        }
-        __pending_ = true;
-        while (!__stk_.empty()) {
-            ++__stk_.back();
-            if (__stk_.back() != directory_iterator()) break;
-            __stk_.pop_back();
-        }
+        __adv(0);
+        return *this;
+    }
+    _CCW_LIBCPP_HIDE_FROM_ABI recursive_directory_iterator& increment(_CCW_STD::error_code& __ec) {
+        __ec.clear();
+        __adv(&__ec);
         return *this;
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void pop() {
@@ -1163,73 +1286,65 @@ public:
         while (!__stk_.empty()) { ++__stk_.back(); if (__stk_.back() != directory_iterator()) break; __stk_.pop_back(); }
         __pending_ = true;
     }
+    _CCW_LIBCPP_HIDE_FROM_ABI void pop(_CCW_STD::error_code& __ec) {
+        __ec.clear();
+        pop();
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI bool operator==(const recursive_directory_iterator& __o) const { return __stk_.empty() && __o.__stk_.empty(); }
     _CCW_LIBCPP_HIDE_FROM_ABI bool operator!=(const recursive_directory_iterator& __o) const { return !(*this == __o); }
 };
 _CCW_LIBCPP_HIDE_FROM_ABI inline recursive_directory_iterator begin(recursive_directory_iterator __it) { return __it; }
 _CCW_LIBCPP_HIDE_FROM_ABI inline recursive_directory_iterator end(recursive_directory_iterator) { return recursive_directory_iterator(); }
 
-_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to, copy_options __o) {
-    if (!exists(__from))
-        return;
-    if (!is_directory(__from)) {
-        if (exists(__to)) {
-            if ((__o & copy_options(copy_options::skip_existing)) != copy_options(copy_options::none))
-                return;
-            if ((__o & copy_options(copy_options::overwrite_existing)) == copy_options(copy_options::none))
-                return;                  // no option says what to do: leave the target alone
-        }
-        copy_file(__from, __to);
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to, copy_options __o,
+                                           _CCW_STD::error_code& __ec) {
+    bool __fe = exists(__from, __ec);
+    if (__ec) return;
+    if (!__fe) { __ec.assign(ENOENT, _CCW_STD::generic_category()); return; }
+    bool __fd = is_directory(__from, __ec);
+    if (__ec) return;
+    if (!__fd) {
+        __ccw_copy_file(__from, __to, __o.__v_, __ec);
         return;
     }
-    if (!exists(__to))
-        create_directory(__to);
-    bool __rec = (__o & copy_options(copy_options::recursive)) != copy_options(copy_options::none);
-    bool __dirs_only = (__o & copy_options(copy_options::directories_only)) != copy_options(copy_options::none);
-    for (directory_iterator __it(__from), __en; __it != __en; ++__it) {
+    bool __te = exists(__to, __ec);
+    if (__ec) return;
+    if (!__te) {
+        create_directory(__to, __ec);
+        if (__ec) return;
+    }
+    bool __rec = (__o.__v_ & copy_options::recursive) != 0;
+    bool __dirs_only = (__o.__v_ & copy_options::directories_only) != 0;
+    directory_iterator __it(__from, __ec), __en;
+    if (__ec) return;
+    while (__it != __en) {
         const path& __src = __it->path();
         path __dst = __to / __src.filename();
-        if (is_directory(__src)) {
-            if (__rec) copy(__src, __dst, __o);
-            else       create_directory(__dst);
+        bool __sd = is_directory(__src, __ec);
+        if (__ec) return;
+        if (__sd) {
+            if (__rec) copy(__src, __dst, __o, __ec);
+            else       create_directory(__dst, __ec);
+            if (__ec) return;
         } else if (!__dirs_only) {
-            copy(__src, __dst, __o);
+            copy(__src, __dst, __o, __ec);
+            if (__ec) return;
         }
+        __it.increment(__ec);
+        if (__ec) return;
     }
+    __ec.clear();
+}
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to, copy_options __o) {
+    _CCW_STD::error_code __ec;
+    copy(__from, __to, __o, __ec);
+    if (__ec) __ccw_fs_throw("filesystem::copy", &__from, &__to, __ec);
 }
 _CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to) {
     copy(__from, __to, copy_options());
 }
-
-_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __f, const path& __t, _CCW_STD::error_code& __ec) {
-    errno = 0;
-    copy(__f, __t);
-    __ccw_fs_ec_set(exists(__f), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __f, const path& __t, copy_options __o,
-                                           _CCW_STD::error_code& __ec) {
-    errno = 0;
-    copy(__f, __t, __o);
-    __ccw_fs_ec_set(exists(__f), __ec);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, copy_options __o) {
-    if (exists(__t)) {
-        if (__o.__v_ & copy_options::skip_existing) return false;
-        if (__o.__v_ & copy_options::update_existing) {
-            if (!(__ccw_mtime(__f) > __ccw_mtime(__t))) return false;
-        } else if (!(__o.__v_ & copy_options::overwrite_existing)) {
-            return false;
-        }
-    }
-    return copy_file(__f, __t);
-}
-_CCW_LIBCPP_HIDE_FROM_ABI inline bool copy_file(const path& __f, const path& __t, copy_options __o,
-                                                _CCW_STD::error_code& __ec) {
-    errno = 0;
-    bool __r = copy_file(__f, __t, __o);
-    __ccw_fs_ec_set(__r || (exists(__t) && (__o.__v_ & (copy_options::skip_existing
-                                                       | copy_options::update_existing))), __ec);
-    return __r;
+_CCW_LIBCPP_HIDE_FROM_ABI inline void copy(const path& __from, const path& __to, _CCW_STD::error_code& __ec) {
+    copy(__from, __to, copy_options(), __ec);
 }
 
 template <class _Cp> struct __ccw_fs_io;

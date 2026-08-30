@@ -408,7 +408,7 @@ TEST_CASE_SKIP(fstream, filebuf_swap)
 
 
 TEST_CASE(fstream, filesystem_path_openers) {
-#if !defined(__WATCOMC__) && TEST_TARGET_CXX >= 2017 && _TST_HAS_CXX17_LIB_MEMBERS
+#if TEST_TARGET_CXX >= 2017 && _TST_HAS_CXX17_LIB_MEMBERS
     STD::filesystem::path p("ccwfsfsp.txt");
     {
         STD::ofstream o(p);

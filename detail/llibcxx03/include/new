@@ -25,7 +25,13 @@ public:
 };
 
 typedef void (*new_handler)();
+#if defined(__WATCOMC__)
+new_handler& __ccw_new_handler_slot();                             // src/new.cpp; one per program (A54)
+void*        __ccw_new_nothrow(_CCW_STD::size_t) _CCW_LIBCPP_NOEXCEPT;  // src/new.cpp
+void         __ccw_throw_bad_array_new_length();                   // src/new.cpp; non-inline (A1c/A55)
+#else
 _CCW_LIBCPP_HIDE_FROM_ABI inline new_handler& __ccw_new_handler_slot() { static new_handler __h = 0; return __h; }
+#endif
 _CCW_LIBCPP_HIDE_FROM_ABI inline new_handler set_new_handler(new_handler __f) _CCW_LIBCPP_NOEXCEPT {
     new_handler __old = __ccw_new_handler_slot(); __ccw_new_handler_slot() = __f; return __old;
 }
@@ -49,7 +55,10 @@ extern void  operator delete[](void*);
 inline void* operator new(_CCW_STD::size_t, void* __p)   { return __p; }
 inline void* operator new[](_CCW_STD::size_t, void* __p) { return __p; }
 
-#if _CCW_HAS_EXCEPTIONS
+#if defined(__WATCOMC__)
+inline void* operator new(_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&)   { return _CCW_STD::__ccw_new_nothrow(__n); }
+inline void* operator new[](_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&) { return _CCW_STD::__ccw_new_nothrow(__n); }
+#elif _CCW_HAS_EXCEPTIONS
 inline void* operator new(_CCW_STD::size_t __n, const _CCW_STD::nothrow_t&) {
     try { return ::operator new(__n); } catch (...) { return 0; }
 }

@@ -3,6 +3,7 @@
 #if TEST_TARGET_CXX >= 2011
 #include <thread>
 #include <mutex>
+#include <system_error>
 #include <shared_mutex>
 #include <condition_variable>
 #include <future>
@@ -85,6 +86,20 @@ TEST_CASE(thread, join_and_args) {
     t.join();
     test_eq( counter, 1000 );
     test_true( !t.joinable() );
+    test_throw( t.join() );
+#if TEST_HAS_EH
+    {
+        bool sys = false;
+        try { t.join(); } catch (STD::system_error&) { sys = true; } catch (...) {}
+        test_true( sys );
+        bool sysd = false;
+        try { t.detach(); } catch (STD::system_error&) { sysd = true; } catch (...) {}
+        test_true( sysd );
+    }
+#else
+    TEST_SKIP_N(2);
+    test_true( true ); test_true( true );
+#endif
     test_pass("cxx11:thread::join");
 
     int acc = 5;

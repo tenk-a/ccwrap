@@ -1,5 +1,6 @@
 #include "test_cxx.hpp"
 #include <mutex>
+#include <system_error>
 #include <chrono>
 #include <type_traits>
 
@@ -112,12 +113,27 @@ TEST_CASE(mutex, unique_lock) {
     test_pass("cxx11:unique_lock::unlock");
     u.lock();
     test_true( u.owns_lock() );
-    test_pass("cxx11:unique_lock::lock");
+    test_throw( u.lock() );
     u.unlock();
+    test_throw( u.unlock() );
 
     STD::unique_lock<STD::mutex> empty;
     test_true( !empty.owns_lock() );
     test_true( empty.mutex() == 0 );
+    test_throw( empty.lock() );
+#if TEST_HAS_EH
+    {
+        bool got = false;
+        try { empty.lock(); }
+        catch (STD::system_error& se) { got = (se.code() == STD::make_error_code(STD::errc::operation_not_permitted)); }
+        catch (...) {}
+        test_true( got );
+    }
+#else
+    TEST_SKIP1();
+    test_true( true );
+#endif
+    test_pass("cxx11:unique_lock::lock");
     test_pass("cxx11:unique_lock");
 
     STD::unique_lock<STD::mutex> d(m, STD::defer_lock);

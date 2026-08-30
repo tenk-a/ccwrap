@@ -76,6 +76,11 @@ TEST_CASE(new_hdr, destroying_delete_tag) {
 #endif
 }
 
+namespace {
+bool g_ccw_nh_hit = false;
+void ccw_nh_once() { g_ccw_nh_hit = true; STD::set_new_handler(0); }
+}
+
 #if TEST_HAS_EH
 TEST_CASE(new_hdr, operators_and_bad_alloc) {
 
@@ -150,6 +155,21 @@ TEST_CASE(new_hdr, operators_and_bad_alloc) {
     test_skip("cxx03:placement operator delete[](void*,void*)");
 #endif
 
+    {
+        bool oomt = false;
+        try { void* ph = ::operator new((STD::size_t)-1 / 2); ::operator delete(ph); }
+        catch (STD::bad_alloc&) { oomt = true; }
+        test_true( oomt );
+        test_true( ::operator new((STD::size_t)-1 / 2, STD::nothrow) == 0 );
+        g_ccw_nh_hit = false;
+        STD::new_handler pv = STD::set_new_handler(&ccw_nh_once);
+        bool oomh = false;
+        try { void* ph2 = ::operator new((STD::size_t)-1 / 2); ::operator delete(ph2); }
+        catch (STD::bad_alloc&) { oomh = true; }
+        STD::set_new_handler(pv);
+        test_true( oomh );
+        test_true( g_ccw_nh_hit );
+    }
     bool threw = false;
     try { throw STD::bad_alloc(); }
     catch (const STD::bad_alloc& e) { threw = true; test_true( STD::string(e.what()).size() > 0 ); }

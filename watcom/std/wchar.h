@@ -35,3 +35,7 @@ using ::_ccw_mbsrtowcs; using ::_ccw_wcsrtombs; using ::_ccw_btowc;   using ::_c
 #define btowc       _ccw_btowc
 #define wctob       _ccw_wctob
 #endif
+
+#define _CCW_WCRT_WANT_INT64
+#define _CCW_WCRT_WANT_WCSTOK
+#include "../../detail/c/win/wide_crt_vc.h"

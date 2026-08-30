@@ -34,6 +34,11 @@ public:
     _CCW_LIBCPP_HIDE_FROM_ABI const_pointer address(const_reference __x) const { return _CCW_STD::addressof(__x); }
 
     _CCW_LIBCPP_HIDE_FROM_ABI pointer allocate(size_type __n, const void* = 0) {
+#if defined(__WATCOMC__)
+        if (__n > max_size()) _CCW_STD::__ccw_throw_bad_array_new_length();
+#else
+        if (__n > max_size()) _CCW_THROW(_CCW_STD::bad_array_new_length());
+#endif
         return static_cast<pointer>(::operator new(__n * sizeof(_Tp)));
     }
     _CCW_LIBCPP_HIDE_FROM_ABI void deallocate(pointer __p, size_type) {

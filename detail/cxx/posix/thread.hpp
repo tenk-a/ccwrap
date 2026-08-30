@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <exception>
 #include <chrono>
+#include <system_error>
 #include <iosfwd>   /* basic_ostream, for operator<<(thread::id) */
 #include <cstddef>
 #include "../move03.hpp"   /* _CCW_RV_REF -- thread is movable, never copyable */
@@ -87,8 +88,20 @@ public:
     }
 
     bool joinable() const { return started_; }
-    void join()   { if (started_) { ::pthread_join(h_, 0); started_ = false; } }
-    void detach() { if (started_) { ::pthread_detach(h_); started_ = false; } }
+    void join() {
+        if (!started_)
+            _CCW_THROW(system_error(make_error_code(errc::invalid_argument), "thread::join"));
+        if (::pthread_equal(h_, ::pthread_self()))
+            _CCW_THROW(system_error(make_error_code(errc::resource_deadlock_would_occur), "thread::join"));
+        ::pthread_join(h_, 0);
+        started_ = false;
+    }
+    void detach() {
+        if (!started_)
+            _CCW_THROW(system_error(make_error_code(errc::invalid_argument), "thread::detach"));
+        ::pthread_detach(h_);
+        started_ = false;
+    }
     id   get_id() const { return started_ ? id(h_) : id(); }
     native_handle_type native_handle() { return h_; }
     void swap(thread& o) {

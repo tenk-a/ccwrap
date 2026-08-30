@@ -306,6 +306,25 @@ TEST_CASE(string, to_string_sto) {
     test_true( STD::stold("2.5") == 2.5L );
     test_pass("cxx11:stold");
     test_throw( (void)STD::stoi("xyz") );
+#if TEST_HAS_EH
+    {
+        bool ivt = false;
+        try { (void)STD::stoi("xyz"); } catch (STD::invalid_argument&) { ivt = true; } catch (...) {}
+        test_true( ivt );
+        bool oor = false;
+        try { (void)STD::stoi("99999999999999999999"); } catch (STD::out_of_range&) { oor = true; } catch (...) {}
+        test_true( oor );
+        bool oorl = false;
+        try { (void)STD::stol("99999999999999999999"); } catch (STD::out_of_range&) { oorl = true; } catch (...) {}
+        test_true( oorl );
+        bool oord = false;
+        try { (void)STD::stod("1e999999"); } catch (STD::out_of_range&) { oord = true; } catch (...) {}
+        test_true( oord );
+    }
+#else
+    TEST_SKIP_N(4);
+    test_true( true ); test_true( true ); test_true( true ); test_true( true );
+#endif
     test_pass("cxx11:stoi (invalid_argument)");
 }
 

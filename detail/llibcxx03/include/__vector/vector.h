@@ -213,7 +213,10 @@ public:
         __cap_alloc __t = __ca_; __ca_ = __o.__ca_; __o.__ca_ = __t;   // cap + allocator together
     }
 
-    _CCW_LIBCPP_HIDE_FROM_ABI void reserve(size_type __n) { if (__n > capacity()) __reallocate(__n); }
+    _CCW_LIBCPP_HIDE_FROM_ABI void reserve(size_type __n) {
+        if (__n > max_size()) _CCW_THROW(_CCW_STD::length_error("vector::reserve"));
+        if (__n > capacity()) __reallocate(__n);
+    }
     _CCW_LIBCPP_HIDE_FROM_ABI void shrink_to_fit()        { if (__ca_.__cap_ != __end_ && __begin_) __reallocate(size()); }
     _CCW_LIBCPP_HIDE_FROM_ABI void push_back(const _Tp& __v) {
         if (__end_ == __ca_.__cap_) { __reallocate_with(capacity() ? capacity() * 2 : 1, __v); return; }

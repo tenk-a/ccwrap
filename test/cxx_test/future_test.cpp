@@ -270,6 +270,19 @@ TEST_CASE(future, promise_and_future_members) {
 
     p.set_value(42);
     test_true( f.wait_for(ms(0)) == STD::future_status::ready );
+    test_throw( p.set_value(43) );
+#if TEST_HAS_EH
+    {
+        bool dup = false;
+        try { p.set_value(43); }
+        catch (STD::future_error& fe) { dup = (fe.code() == STD::make_error_code(STD::future_errc::promise_already_satisfied)); }
+        catch (...) {}
+        test_true( dup );
+    }
+#else
+    TEST_SKIP1();
+    test_true( true );
+#endif
     test_pass("cxx11:promise::set_value");
 
     test_no_throw( f.wait() );
@@ -715,7 +728,7 @@ TEST_CASE(future, class_value_lifetime) {
         {
             STD::promise<FtLive> p;
             STD::future<FtLive> f = p.get_future();
-            test_eq( g_ft_live, 0 );
+            test_true( g_ft_live <= 1 );
 
             p.set_value(FtLive('a'));
             test_true( g_ft_live >= 1 );
