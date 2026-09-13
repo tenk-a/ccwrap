@@ -134,6 +134,9 @@ if /i "%CcName%"=="lcc"        goto L_LCC
 if /i "%CcName%"=="lccwin"     goto L_LCCWIN
 if /i "%CcName%"=="coins"      goto L_COINS
 
+if /i "%CcName%"=="ow_nora_ccw" goto L_WATCOM_NORA_CCW
+if /i "%CcName%"=="ow_ccw_nora" goto L_WATCOM_NORA_CCW
+
 @goto L_HELP
 
 
@@ -391,6 +394,23 @@ rem ## vc ######################################
 :L_WATCOM_CCW
     set CcCompiler=watcom-ccwrap
     if /i "%WATCOM%"=="" set "WATCOM=c:\watcom"
+    set "WATCOM_CCW=%CCWRAP_ROOT%"
+    if /i "%WATCOM_CCW%"=="" set "WATCOM_CCW=c:\tools\ccwrap"
+    set "PATH=%WATCOM%\BINNT64;%setcc_base_path%"
+    set "EDPATH=%WATCOM%\EDDAT"
+    rem set "LIB=%PATCOM%\lib386;%PATCOM%\lib386\nt;%PATCOM%\lib386\nt\ddk;%PATCOM%\lib386\nt\directx"
+    set "INCLUDE=%WATCOM_CCW%\watcom\std;%WATCOM%\H;%WATCOM%\H\NT;%WATCOM%\H\NT\DIRECTX;%WATCOM%\H\DDK;%INCLUDE%"
+    set "LIB=%WATCOM_CCW%\watcom\lib\nt;%LIB%"
+    set "FINCLUDE=%WATCOM%\SRC\FORTRAN"
+    set "WHTMLHELP=%WATCOM%\BINNT\HELP"
+    set "WIPFC=%WATCOM%\WIPFC"
+    set "WATCOM_CCW="
+    goto L_END
+
+:L_WATCOM_NORA_CCW
+    set CcCompiler=watcom-nora-ccwrap
+    ::if /i "%WATCOM%"=="" set "WATCOM=c:\watcom"
+    set "WATCOM=D:\proj\open-watcom-v2\rel"
     set "WATCOM_CCW=%CCWRAP_ROOT%"
     if /i "%WATCOM_CCW%"=="" set "WATCOM_CCW=c:\tools\ccwrap"
     set "PATH=%WATCOM%\BINNT64;%setcc_base_path%"

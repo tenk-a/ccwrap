@@ -1,13 +1,13 @@
 # ccwrap v3
 
 ccwrap  は 古いc/c++コンパイラ用に、c11/c++11 以降の規格の一部を真似てみる
-ラッパー・ライブラリ。  
+ラッパー・ライブラリ。
 実験物。
 
 コンパイラ・オプションの暗黙 include と include パス指定での標準ライブラリ
 パス乗っ取りで実装する。
 
-2026-8 v3: AI (主に Claude Code) 利用で、再構築中。  
+2026-8 v3: AI (主に Claude Code) 利用で、再構築中。
 llvm libc++ を元に、多くのものを追加。
 
 ※ Open Watcom C++ 公式の標準ライブラリは基本的なモノが結構欠けていて、
@@ -17,10 +17,10 @@ llvm libc++ を元に、多くのものを追加。
 ## 対象 コンパイラ
 
 - Open Watcom C/C++ 2.0(beta) win/dos4g
-- VC: MS Visual C/C++ 8～12(2005-2013)系、14.x(2015～2026)系 
+- VC: MS Visual C/C++ 8～12(2005-2013)系、14.x(2015～2026)系
 - gcc, clang (c++11 対応以降での c++03 モード利用して確認)
 
-※ 以前試していた borland c5.5.1, dmc は etc/ フォルダ下に残している。(が未確認)  
+※ 以前試していた borland c5.5.1, dmc は etc/ フォルダ下に残している。(が未確認)
 ※ boost を用いたお試しは削除。
 
 
@@ -30,16 +30,16 @@ llvm libc++ を元に、多くのものを追加。
 実装可能なら代用品を用意(static_assert等)、機能無くとも大半を誤魔化
 せるならば空定義を行う。
 
-- c++用:  
+- c++用:
     `alignas`, `alignof`, `char8_t`, `char16_t`, `char32_t`, `constexpr`, `final`,
     `__func__`, `noexcept`, `nullptr`, `override`, `static_assert`, `thread_local`
 
-- c 用:  
+- c 用:
     `_Alignas`, `_Alignof`, `_Bool`, `inline`, `_Noreturn`, `_Pragma`, `restrict`,
-    `_Static_assert`, `_Thread_local`  
+    `_Static_assert`, `_Thread_local`
     (※vc では `__restrict` を `restrict` に #define すると問題有で未定義)
 
-コンパイラ別に ccwrap_header.h に実装している。  
+コンパイラ別に ccwrap_header.h に実装している。
 コンパイラの暗黙の include を使うことで、これらについては標準ライブラリ・パス
 を小細工しなくても試すことができる。
 
@@ -48,12 +48,12 @@ llvm libc++ を元に、多くのものを追加。
 
 ## 標準 c/c++ ヘッダ乗っ取り
 
-システム include パスを追加するコンパイラ・オプション( vc/gcc/clang/watcom で `-I` ) 
+システム include パスを追加するコンパイラ・オプション( vc/gcc/clang/watcom で `-I` )
 を用いることで、本来の標準ライブラリより先に ccwrap の置換ヘッダ・ファイルを
 読み込まれるようにし、標準ヘッダを置き換えたり不足の追加を行ったりしている。
 
 c90 コンパイラに c99 ～ c23、c++03 コンパイラに c++11 ～ c++26 の
-可能そうなライブラリを追加している。  
+可能そうなライブラリを追加している。
 
 当然、言語仕様的に実装不可能(cのcomplexやtgmath, c++ constexpr,auto,ラムダ等)
 なものは未実装だが、可変引数 template もどきや enum class もどき、
@@ -62,7 +62,7 @@ c90 コンパイラに c99 ～ c23、c++03 コンパイラに c++11 ～ c++26 �
 一応 modern c++ での機能追加もあるが、基本 c++03 ベースなので modern c++ 用
 としては足りてなかったり効率のよい実装になっていないことも多い。
 
-watcom 以外は現状、ヘッダーオンリー。  
+watcom 以外は現状、ヘッダーオンリー。
 （ただ、本来実体ファイルに置くべき関数もinlineで無理やり対応した状態）
 
 どのc/c++規格までのモノを利用可能にするか、を、以下のマクロで指定可能、かもしれない。
@@ -75,11 +75,11 @@ _CCW_TARGET_CXX = 2011 ～ 2026
 デフォルトは _CCW_TARGET_C=2023、_CCW_TARGET_CXX=2026。
 
 
-## Visual C/C++ 
+## Visual C/C++
 
 vc 8.0(2005) - vc 14.5(2026) 用。
 
-vc に関しては、vc付属の c/c++ 標準ライブラリに対する抜けの追加のみにしている。  
+vc に関しては、vc付属の c/c++ 標準ライブラリに対する抜けの追加のみにしている。
 既存の class 等を乗っ取らないので、新しい規格の追加メンバーの類は増やせない。
 
 ※ vc 用にライブラリ乗っ取りをやるならば、MS STL をベースにするのがベターだとは思う…
@@ -104,8 +104,8 @@ cl -I%CCWAP_ROOT%/vc/std -FIccwrap_header.h hello.c
 
 ## gcc clang
 
-gcc や clang は 正確な c++03 として、実装確認用に用意。  
-既存 c++03 ライブラリに足りていないものを補う構成。  
+gcc や clang は 正確な c++03 として、実装確認用に用意。
+既存 c++03 ライブラリに足りていないものを補う構成。
 
 msys2(mingw) と wsl(ubuntu) でお試し。
 
@@ -129,14 +129,14 @@ gcc -I %CCWAP_ROOT%/vc/std -include ccwrap_header.h hello.c
 
 ## Open Watcom C/C++
 
-Open Watcom v2.0(beta) 系を対象。 新し目のものを使っている。(2026-7頃の Releaseを仕様)
+Open Watcom v2.0(beta) 系を対象。 新し目のものを使っている。(2026-8頃の Releaseを使用)
 
 c90(c99)/c++03 コンパイラで、c 標準ライブラリについては不足を補充、
 c++ 標準ライブラリの c++専用ヘッダについては watcom 付属のものは使わず、
 LLVM libc++ 改造のものを使うように置き換えている。
 
 公式 c++ ライブラリとは互換性がないので、既存の Watcom 用 c++ライブラリ(.lib, .dll)
-等との併用は不可。  
+等との併用は不可。
 watcom の DLL ランタイム も不可なので、実質 static ランタイム用。
 
 c言語で _CCW_TARGET_C >= 1999 以上に設定する場合は、
@@ -144,7 +144,7 @@ c99 の一部機能(c++ と互換性のある機能) をサポートする -Za99
 を指定する必要があるかもしれない。
 
 locale、filesystem、thread は実装の都合、ヘッダオンリーというわけにもいかず、
-ライブラリのリンクが必要になる。  
+ライブラリのリンクが必要になる。
 locale は他ライブラリで下請け的に利用されることもあり、
 結局 c++ では、デフォルトでライブラリをリンクする #pragma library 指定をしている。
 
@@ -152,12 +152,12 @@ locale は他ライブラリで下請け的に利用されることもあり、
 ### Watcom C++ のバグ
 
 Watcom の C++ はコンパイラ側バグが結構あり、
-特に template まわりは、使えない SFINAE 技が多い状態。  
+特に template まわりは、使えない SFINAE 技が多い状態。
 (でも SFINAE に関しては、他の同世代のc++03 コンパイラとしてはまだマシなほうかもしれない)
 
 また、例外処理生成にバグを抱えていて、例外利用の -xs や -xss を指定するとかなりバグを踏みやすい。
 
-ただ -xst という 時間優先 指定にすると、頻出したハングはおきなくる。  
+ただ -xst という 時間優先 指定にすると、頻出したハングはおきなくる。
 ので例外を使う場合は -xs(-xss) でなく -xst を指定のこと。
 
 例外を使わないプログラムの場合は、-xd で例外無しで運用するほうがよいかもしれない。
@@ -179,13 +179,13 @@ wcl386  -fi=%CCWAP_ROOT%/watcom/std/ccwrap_header.h  hello.c
 wcl386  -i=%CCWAP_ROOT%/watcom/std  -fi=%CCWAP_ROOT%/watcom/std/ccwrap_header.h  hello.c
 ```
 
--fi=フルパス。  
+-fi=フルパス。
 
 すべてのソースが標準ヘッダ/watcom ヘッダの何れかをincludeしているなら -fi=ccwrap_header.h は無くても可。
 
 以後の例では省略する。（が、付けたほうが安心）
 
-`・`c++ の場合は予め  
+`・`c++ の場合は予め
 ```batch
  %CCWAP_ROOT%/watcom/lib/gen.bat
 ```
@@ -203,7 +203,7 @@ win32（-bt=nt -l=nt）、multithread用（-bm）、RTTI有（-xr）、例外有
 wcl386 -bt=nt -l=nt -bm -xr -xst -ot -xm -xv -DNDEBUG -i=%CCWAP_ROOT%/watcom/std hello.cpp -"LIBPATH %CCWAP_ROOT%/watcom/lib/nt option eliminate option vfremoval"
 ```
 
-Releaseビルド（NDEBUG）、時間優先最適化（-ot）、未使用ルーチン削除されやすく（-xm -xv）、未使用ルーチン削除（-"option eliminate option vfremoval"）  
+Releaseビルド（NDEBUG）、時間優先最適化（-ot）、未使用ルーチン削除されやすく（-xm -xv）、未使用ルーチン削除（-"option eliminate option vfremoval"）
 ついでに ライブラリ指定を、ライブラリ検索パス指定（-"LIBPATH %CCWAP_ROOT%/watcom/lib/nt"） に変更。（ライブラリ名自体は ccwrap ヘッダ内で #pragma library で指定済）
 
 ※最適化オプションはお好みで -ot でなく -os にするなり -ox 追加するなり。
@@ -266,9 +266,9 @@ wcl386 -bt=dos -l=dos4g -xr -xst -ot -xm -xv -D__WATCOM_LFN__ -DNDEBUG -i=%CCWAP
 | dos/ccw-lfn-ne3r.lib   | dos32 LFN対応 例外&rtti 無        | -bt=dos -l=dos4g -D__WATCOM_LFN__ -xd       |
 | debug/nt/ccw-…….lib  | 上の debug 版                     | release版から NDEBUG を外し -d1 を足す      |
 
-3r を 3s にした -3s オプション版も同時に生成。  
+3r を 3s にした -3s オプション版も同時に生成。
 
-その他ビルド共通オプションは、  
+その他ビルド共通オプションは、
 コンパイラ： `-3r` or `-3s` `-DNDEBUG` `-ot` `-zm` `-zv`
 リンカー　： -"option eliminate   option vfremoval"
 
@@ -322,7 +322,7 @@ test/ フォルダは主に ccwrap のテスト用。
 だいたい、標準ヘッダファイル単位でのテストになっている。
 
 ただ test 自体のチェック用として、ccwrap を使わずコンパイラ付属の
-c/c++ ライブラリのチェックも行えるようにしている。  
+c/c++ ライブラリのチェックも行えるようにしている。
 ※ gcc, clang, vc の最新で test がある程度通ることを確認。
 
 未知のコンパイラの自動テスト用にはなっていないので、新規コンパイラを対象にしたときは、調整が必要。
@@ -335,8 +335,8 @@ TEST_TARGET_C     1990 - 2023
 TEST_TARGET_CXX   2003 - 2026
 ```
 
-で指定できる(はず)。  
-指定がなければ、`__STC_VERSION__` や `__cplusplus` の値から決定。  
+で指定できる(はず)。
+指定がなければ、`__STC_VERSION__` や `__cplusplus` の値から決定。
 あるいは ccwrap を使っているなら `_CCW_TARGEAT_???` の値を採用。
 
 - test_c/     c標準ライビラリのテスト
@@ -354,8 +354,8 @@ ctest --preset <preset>
 
 を実行、結果は test/result_* フォルダ。
 
-preset は CMakePresets.json を直にみるか、  
-cmake --list-presets  
+preset は CMakePresets.json を直にみるか、
+cmake --list-presets
 で確認のこと。
 
 vc は自動でコンパイラ選択になるが、watcom は ここに書いたPATH(か環境変数WATCOM)を使うので、環境似合わせて修正。
@@ -372,21 +372,21 @@ cmake --preset vc141-x86 -DTST_MSVC_STD=c++14       :: 言語水準
 
 ##  License
 
-無保証。  
+無保証。
 
 - Apache-2.0 WITH LLVM-exception
 - Boost Software License Version 1.0
 
-ソースよって違うがバイナリ配布時に言及不要/してもしなくてもよいライセンスのはず。  
-LLVM libc++ ベースが多いので そのライセンスで、boost由来や己の書いたモノは boost。  
+ソースよって違うがバイナリ配布時に言及不要/してもしなくてもよいライセンスのはず。
+LLVM libc++ ベースが多いので そのライセンスで、boost由来や己の書いたモノは boost。
 
-ただ、AI おまかせソースなので、どの程度安心かは不明。  
+ただ、AI おまかせソースなので、どの程度安心かは不明。
 
 
 ##  おわり
 
-AI 任せ。  
-AI がんばる。  
+AI 任せ。
+AI がんばる。
 
-作ってみただけのまだまだバギー。  
+作ってみただけのまだまだバギー。
 (locale 関係いろいろ誤。)
