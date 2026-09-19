@@ -277,7 +277,7 @@ static inline size_t _ccw_mbsrtowcs(wchar_t *__dst, const char **__src, size_t _
     static int    __internal = 0;
     const char   *__p;
     unsigned long __cp;
-    size_t        __r, __out = 0;
+    size_t        __r, __outn = 0;
     int           __wide;
 
     if (__ps == 0) __ps = &__internal;
@@ -289,28 +289,28 @@ static inline size_t _ccw_mbsrtowcs(wchar_t *__dst, const char **__src, size_t _
         if (__r == (size_t)-2) { *__ps = 0; errno = EILSEQ; return (size_t)-1; }
         if (__cp == 0uL) {
             if (__dst != 0) {
-                if (__out >= __n) break;
-                __dst[__out] = 0;
+                if (__outn >= __n) break;
+                __dst[__outn] = 0;
                 *__src = 0;
             }
-            return __out;
+            return __outn;
         }
         __wide = __cp >= 0x10000uL ? 2 : 1;
-        if (__dst != 0 && __out + (size_t)__wide > __n) break;
+        if (__dst != 0 && __outn + (size_t)__wide > __n) break;
         if (__dst != 0) {
             if (__wide == 2) {
                 unsigned long __v = __cp - 0x10000uL;
-                __dst[__out]     = (wchar_t)(0xD800uL + (__v >> 10));
-                __dst[__out + 1] = (wchar_t)(0xDC00uL + (__v & 0x3FFuL));
+                __dst[__outn]     = (wchar_t)(0xD800uL + (__v >> 10));
+                __dst[__outn + 1] = (wchar_t)(0xDC00uL + (__v & 0x3FFuL));
             } else {
-                __dst[__out] = (wchar_t)__cp;
+                __dst[__outn] = (wchar_t)__cp;
             }
         }
-        __out += (size_t)__wide;
+        __outn += (size_t)__wide;
         __p   += __r;
     }
     if (__dst != 0) *__src = __p;
-    return __out;
+    return __outn;
 }
 
 static inline size_t _ccw_wcsrtombs(char *__dst, const wchar_t **__src, size_t __n, int *__ps)
@@ -319,7 +319,7 @@ static inline size_t _ccw_wcsrtombs(char *__dst, const wchar_t **__src, size_t _
     const wchar_t *__p;
     char           __buf[_CCW_MB_MAX_BYTES];
     unsigned long  __cp;
-    size_t         __out = 0;
+    size_t         __outn = 0;
     int            __k, __step, __i;
 
     if (__ps == 0) __ps = &__internal;
@@ -338,23 +338,23 @@ static inline size_t _ccw_wcsrtombs(char *__dst, const wchar_t **__src, size_t _
         }
         if (__cp == 0uL) {
             if (__dst != 0) {
-                if (__out >= __n) break;
-                __dst[__out] = 0;
+                if (__outn >= __n) break;
+                __dst[__outn] = 0;
                 *__src = 0;
             }
-            return __out;
+            return __outn;
         }
         __k = __ccw_mb_put(__buf, __cp);
         if (__k <= 0) { errno = EILSEQ; return (size_t)-1; }
-        if (__dst != 0 && __out + (size_t)__k > __n) break;
+        if (__dst != 0 && __outn + (size_t)__k > __n) break;
         if (__dst != 0) {
-            for (__i = 0; __i < __k; ++__i) __dst[__out + (size_t)__i] = __buf[__i];
+            for (__i = 0; __i < __k; ++__i) __dst[__outn + (size_t)__i] = __buf[__i];
         }
-        __out += (size_t)__k;
+        __outn += (size_t)__k;
         __p   += __step;
     }
     if (__dst != 0) *__src = __p;
-    return __out;
+    return __outn;
 }
 
 static inline size_t _ccw_mbstowcs(wchar_t *__dst, const char *__src, size_t __n)
