@@ -162,7 +162,7 @@ TEST_CASE(system_error, system_error_exception) {
 }
 #endif  // TEST_HAS_EH
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 typedef STD::io_errc::io_errc _tst_io_errc;
 #else
 typedef STD::io_errc _tst_io_errc;

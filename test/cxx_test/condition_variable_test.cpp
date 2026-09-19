@@ -10,7 +10,7 @@ namespace {
 struct cv_true  { bool operator()() const { return true; } };
 struct cv_false { bool operator()() const { return false; } };
 }
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 typedef STD::cv_status::cv_status _tst_cv_status;
 #else
 typedef STD::cv_status _tst_cv_status;

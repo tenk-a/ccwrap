@@ -360,7 +360,7 @@ TEST_CASE(memory, allocator_traits_members) {
 #endif
 
 #if !_TST_HAS_ALIAS_TEMPLATE
-#if defined(_MSC_VER) && _MSC_VER >= 1600
+#if defined(_MSC_VER) && _MSC_VER >= 1700
     test_true( (STD::is_same<T::rebind_alloc<double>::other, STD::allocator<double> >::value) );
     test_true( (STD::is_same<T::rebind_traits<double>::other::value_type, double>::value) );
 #else

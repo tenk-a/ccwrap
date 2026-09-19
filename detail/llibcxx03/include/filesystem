@@ -758,7 +758,7 @@ public:
 };
 
 void __ccw_fs_throw(const char* __what, const path* __p1, const path* __p2,
-                    const _CCW_STD::error_code& __ec);   // src -- the one non-inline throw site (A55)
+                    const _CCW_STD::error_code& __ec);   // src -- the one non-inline throw site
 
 file_status   status(const path& __p, _CCW_STD::error_code& __ec);            // src
 file_status   symlink_status(const path& __p, _CCW_STD::error_code& __ec);    // src

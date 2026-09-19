@@ -82,7 +82,7 @@ struct uses_allocator<UsesAllocTrailing, STD::scoped_allocator_adaptor<InnerI> >
 };
 }
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, member_types)
 #else
 TEST_CASE(scoped_allocator, member_types) {
@@ -107,7 +107,7 @@ TEST_CASE(scoped_allocator, member_types) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, construction_and_accessors)
 #else
 TEST_CASE(scoped_allocator, construction_and_accessors) {
@@ -136,7 +136,7 @@ TEST_CASE(scoped_allocator, construction_and_accessors) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, allocate_goes_to_the_outer_allocator)
 #else
 TEST_CASE(scoped_allocator, allocate_goes_to_the_outer_allocator) {
@@ -156,7 +156,7 @@ TEST_CASE(scoped_allocator, allocate_goes_to_the_outer_allocator) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1920
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1920
 TEST_CASE_SKIP(scoped_allocator, construct_passes_the_inner_allocator)
 #else
 TEST_CASE(scoped_allocator, construct_passes_the_inner_allocator) {
@@ -180,7 +180,7 @@ TEST_CASE(scoped_allocator, construct_passes_the_inner_allocator) {
 
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, construct_leaves_plain_types_alone)
 #else
 TEST_CASE(scoped_allocator, construct_leaves_plain_types_alone) {
@@ -201,7 +201,7 @@ TEST_CASE(scoped_allocator, construct_leaves_plain_types_alone) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, comparison)
 #else
 TEST_CASE(scoped_allocator, comparison) {
@@ -220,7 +220,7 @@ TEST_CASE(scoped_allocator, comparison) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, two_inner_allocators)
 #else
 TEST_CASE(scoped_allocator, two_inner_allocators) {
@@ -239,7 +239,7 @@ TEST_CASE(scoped_allocator, two_inner_allocators) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, typedefs_and_traits)
 #else
 TEST_CASE(scoped_allocator, typedefs_and_traits) {
@@ -269,7 +269,7 @@ TEST_CASE(scoped_allocator, typedefs_and_traits) {
 }
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 TEST_CASE_SKIP(scoped_allocator, ctors_and_soccc)
 #else
 TEST_CASE(scoped_allocator, ctors_and_soccc) {
@@ -633,7 +633,7 @@ TEST_CASE(scoped_allocator, equality_branches_cxx11) {
     test_pass("cxx20:scoped_allocator_adaptor operator!= (rewritten from operator==)");
 }
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1920
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1920
 TEST_CASE(scoped_allocator, construct_forms_cxx11) {
     test_skip("cxx11:scoped_allocator_adaptor::construct (uses_allocator, leading allocator_arg form)");
     test_skip("cxx11:scoped_allocator_adaptor::construct (uses_allocator false, plain form)");

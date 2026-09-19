@@ -27,6 +27,7 @@ template <class _Rp, class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI _Rp invoke(_Rp (_Cp::*
 template <class _Rp, class _Cp, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI _Rp invoke(_Rp (_Cp::*__f)(_A0), _Cp& __o, _A0 __a0) { return (__o.*__f)(__a0); }
 template <class _Rp, class _Cp, class _A0> _CCW_LIBCPP_HIDE_FROM_ABI _Rp invoke(_Rp (_Cp::*__f)(_A0) const, const _Cp& __o, _A0 __a0) { return (__o.*__f)(__a0); }
 template <class _Rp, class _Cp, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI _Rp invoke(_Rp (_Cp::*__f)(_A0, _A1), _Cp& __o, _A0 __a0, _A1 __a1) { return (__o.*__f)(__a0, __a1); }
+template <class _Rp, class _Cp, class _A0, class _A1> _CCW_LIBCPP_HIDE_FROM_ABI _Rp invoke(_Rp (_Cp::*__f)(_A0, _A1) const, const _Cp& __o, _A0 __a0, _A1 __a1) { return (__o.*__f)(__a0, __a1); }
 
 template <class _Rp, class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI _Rp& invoke(_Rp _Cp::*__m, _Cp& __o) { return __o.*__m; }
 template <class _Rp, class _Cp> _CCW_LIBCPP_HIDE_FROM_ABI const _Rp& invoke(_Rp _Cp::*__m, const _Cp& __o) { return __o.*__m; }

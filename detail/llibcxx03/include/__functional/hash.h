@@ -7,7 +7,7 @@
 #define _CCW_LIBCPP___FUNCTIONAL_HASH_H
 #include "../__config"
 #include <cstddef>
-#if _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+#if _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #  if defined(_LIBCPP_VERSION)
 #    include <type_traits>
 #  else

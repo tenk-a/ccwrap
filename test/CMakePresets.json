@@ -83,7 +83,9 @@
       "displayName": "clang++ -std=c++26 / clang -std=c23",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "26",
-        "CMAKE_C_STANDARD": "23"
+        "CMAKE_C_STANDARD": "23",
+        "TEST_TARGET_CXX": "2026",
+        "TEST_TARGET_C": "2023"
       }
     },
     {

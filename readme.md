@@ -377,8 +377,8 @@ cmake --preset vc141-x86 -DTST_MSVC_STD=c++14       :: 言語水準
 - Apache-2.0 WITH LLVM-exception
 - Boost Software License Version 1.0
 
-ソースよって違うがバイナリ配布時に言及不要/してもしなくてもよいライセンスのはず。
-LLVM libc++ ベースが多いので そのライセンスで、boost由来や己の書いたモノは boost。
+ソースによって違うがバイナリ配布時に言及不要/してもしなくてもよいライセンスのはず。  
+LLVM libc++ ベースが多いので そのライセンスで、boost由来や己の書いたモノは boost。  
 
 ただ、AI おまかせソースなので、どの程度安心かは不明。
 

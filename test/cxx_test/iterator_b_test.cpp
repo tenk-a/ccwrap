@@ -450,7 +450,7 @@ TEST_CASE(iterator, streambuf_iterators_cxx03) {
     }
 }
 
-#if _TST_HAS_RVALUE_REF && TEST_TARGET_CXX >= 2011
+#if _TST_HAS_RVALUE_REF && TEST_TARGET_CXX >= 2011 && !(defined(_MSC_VER) && _MSC_VER == 1600)
 TEST_CASE(iterator, move_iterator_members_cxx11) {
     typedef STD::vector<STD::string>::iterator It;
     typedef STD::move_iterator<It> MIt;

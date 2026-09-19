@@ -21,7 +21,7 @@
 #include "../__config"
 #include "../../../cxx/move03.hpp"
 
-#if _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB
+#if _CCW_LIBCPP_HAS_NATIVE_CXX11_LIB || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #  include <utility>
 #else
 

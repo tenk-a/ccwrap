@@ -26,7 +26,7 @@ public:
 
 typedef void (*new_handler)();
 #if defined(__WATCOMC__)
-new_handler& __ccw_new_handler_slot();                             // src/new.cpp; one per program (A54)
+new_handler& __ccw_new_handler_slot();                             // src/new.cpp; one per program
 void*        __ccw_new_nothrow(_CCW_STD::size_t) _CCW_LIBCPP_NOEXCEPT;  // src/new.cpp
 void         __ccw_throw_bad_array_new_length();                   // src/new.cpp; non-inline (A1c/A55)
 #else

@@ -378,7 +378,7 @@ TEST_CASE(ios, fill_fpos_events) {
     test_skip("cxx11:basic_ios::swap");
 }
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 typedef STD::io_errc::io_errc _tst_io_errc;
 #else
 typedef STD::io_errc _tst_io_errc;

@@ -33,7 +33,7 @@ template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_polymorphic : public int
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_pod : public integral_constant<bool, __is_pod(_Tp) || __ccw_scalar_core<_Tp>::value> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS has_virtual_destructor : public integral_constant<bool, __has_virtual_destructor(_Tp)> {};
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1600
+#if !defined(_MSC_VER) || _MSC_VER >= 1700
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_standard_layout : public integral_constant<bool, __is_standard_layout(_Tp) || __ccw_scalar_core<_Tp>::value> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivial : public integral_constant<bool, __is_trivial(_Tp) || __ccw_scalar_core<_Tp>::value> {};
 template <class _Tp> struct _CCW_LIBCPP_TEMPLATE_VIS is_trivially_copyable : public integral_constant<bool, __has_trivial_copy(_Tp) || __ccw_scalar_core<_Tp>::value> {};

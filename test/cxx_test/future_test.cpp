@@ -23,7 +23,7 @@ namespace {
 #endif
 }
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && _MSC_VER < 1800
 typedef STD::future_status::future_status _tst_future_status;
 typedef STD::future_errc::future_errc     _tst_future_errc;
 typedef STD::launch::launch               _tst_launch;

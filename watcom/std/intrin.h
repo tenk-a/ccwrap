@@ -122,9 +122,6 @@ extern void __cpuid(int _CpuInfo[4], int _FunctionId);
 
 #if _M_IX86 < 400
 
-// 386: no xadd / cmpxchg / bswap. `lock xchg` is all the atomicity the part has, so the
-// read-modify-write forms run under a spin lock built from it. doc/src/watcom/std/intrin.h.md
-// states what that guarantees (and what it does not, in C).
 #ifdef __cplusplus
 inline long* __ccw_ilk_lock386() { static long __ccw_lk = 0; return &__ccw_lk; }
 #else

@@ -17,6 +17,6 @@
  #include <../../detail/llibcxx03/include/__algorithm/execution_overloads.h>
 #endif
 
-#if defined(__cplusplus) && !defined(__cpp_lib_ranges)
+#if defined(__cplusplus) && __cplusplus < 202002L && !defined(__cpp_lib_ranges)
 #include <../../detail/cxx/ranges_algo_pack.hpp>
 #endif

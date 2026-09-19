@@ -1,4 +1,10 @@
 #include "test_cxx.hpp"
+#if defined(_MSC_VER) && _MSC_VER == 1600
+#define _tst_eptr_bool(p) (!((p) == STD::exception_ptr()))
+#else
+#define _tst_eptr_bool(p) (static_cast<bool>(p))
+#endif
+
 
 #include <exception>
 #include <string>
@@ -205,7 +211,7 @@ TEST_CASE(exception, exception_ptr_basics) {
     } catch (...) {
         e = STD::current_exception();
     }
-    test_true( static_cast<bool>(e) );
+    test_true( _tst_eptr_bool(e) );
     test_true( e != p );
     test_pass("cxx11:current_exception");
 
@@ -235,9 +241,9 @@ TEST_CASE(exception, exception_ptr_basics) {
 
     {
         STD::exception_ptr tmp(e);
-        test_true( static_cast<bool>(tmp) );
+        test_true( _tst_eptr_bool(tmp) );
     }
-    test_true( static_cast<bool>(e) );
+    test_true( _tst_eptr_bool(e) );
     test_pass("cxx11:exception_ptr (destructor)");
 }
 #else   // !TEST_HAS_EH
@@ -286,7 +292,7 @@ TEST_CASE(exception, exception_ptr_swap) {
 TEST_CASE(exception, rethrow_and_make_exception_ptr) {
 
     STD::exception_ptr p = STD::make_exception_ptr(MyError(99));
-    test_true( static_cast<bool>(p) );
+    test_true( _tst_eptr_bool(p) );
     test_pass("cxx11:make_exception_ptr");
 
     int code = 0;
@@ -307,7 +313,7 @@ TEST_CASE(exception, rethrow_and_make_exception_ptr) {
     } catch (...) {
         p2 = STD::current_exception();
     }
-    test_true( static_cast<bool>(p2) );
+    test_true( _tst_eptr_bool(p2) );
 #if !defined(__WATCOMC__)
     int code2 = 0;
     try { STD::rethrow_exception(p2); } catch (const MyError& e) { code2 = e.code; }
@@ -378,7 +384,7 @@ TEST_CASE(exception, nested_exception_class) {
         throw STD::runtime_error("inner");
     } catch (...) {
         STD::nested_exception n;
-        bool captured = static_cast<bool>(n.nested_ptr());
+        bool captured = _tst_eptr_bool(n.nested_ptr());
         test_true( captured );
 
         if (captured) {
@@ -416,7 +422,7 @@ static bool tst_nested_captures() {
         throw STD::runtime_error("probe");
     } catch (...) {
         STD::nested_exception n;
-        return static_cast<bool>(n.nested_ptr());
+        return _tst_eptr_bool(n.nested_ptr());
     }
     return false;
 }
@@ -694,9 +700,9 @@ TEST_CASE(exception, gap_fill) {
 
     STD::exception_ptr n;
     test_true( !n );
-    test_true( !static_cast<bool>(n) );
+    test_true( !_tst_eptr_bool(n) );
     STD::exception_ptr v = STD::make_exception_ptr(MyError(1));
-    test_true( static_cast<bool>(v) );
+    test_true( _tst_eptr_bool(v) );
     test_pass("cxx11:exception_ptr null/operator bool");
 
     STD::exception_ptr v2 = v;
@@ -712,7 +718,7 @@ TEST_CASE(exception, gap_fill) {
         STD::nested_exception ne;
         inner = ne.nested_ptr();
     }
-    test_true( static_cast<bool>(inner) );
+    test_true( _tst_eptr_bool(inner) );
     test_pass("cxx11:nested_exception::nested_ptr");
 
 #if _TST_PRE17

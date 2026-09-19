@@ -125,7 +125,7 @@ TEST_CASE(mutex, unique_lock) {
     {
         bool got = false;
         try { empty.lock(); }
-        catch (STD::system_error& se) { got = (se.code() == STD::make_error_code(STD::errc::operation_not_permitted)); }
+        catch (STD::system_error& se) { got = (se.code() == STD::errc::operation_not_permitted); }
         catch (...) {}
         test_true( got );
     }
