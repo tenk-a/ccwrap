@@ -2,7 +2,9 @@
 
 (2026-09)
 
-Open Watcom C/C++ 2.0 (`__WATCOMC__` = 1300) で ccwrap を使ったときに、
+使い方等は、[/readme.md](../readme.md) を参照。
+
+以下は、Open Watcom C/C++ 2.0 beta (2026-8) で ccwrap を使ったときに、
 標準ヘッダがどこまで使えそうかのヘッダ別のまとめ。
 
 C++ 専用のヘッダは ccwrap の llibcxx03 (libc++ を C++03 向けに移植したもの) が
