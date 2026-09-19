@@ -394,6 +394,10 @@ rem ## vc ######################################
 :L_WATCOM_CCW
     set CcCompiler=watcom-ccwrap
     if /i "%WATCOM%"=="" set "WATCOM=c:\watcom"
+    if /i "%CCWRAP_ROOT%"=="" set "CCWRAP_ROOT=.."
+    pushd "%CCWRAP_ROOT%"
+    set "CCWRAP_ROOT=%CD%"
+    popd
     set "WATCOM_CCW=%CCWRAP_ROOT%"
     if /i "%WATCOM_CCW%"=="" set "WATCOM_CCW=c:\tools\ccwrap"
     set "PATH=%WATCOM%\BINNT64;%setcc_base_path%"
@@ -411,6 +415,10 @@ rem ## vc ######################################
     set CcCompiler=watcom-nora-ccwrap
     ::if /i "%WATCOM%"=="" set "WATCOM=c:\watcom"
     set "WATCOM=D:\proj\open-watcom-v2\rel"
+    if /i "%CCWRAP_ROOT%"=="" set "CCWRAP_ROOT=.."
+    pushd "%CCWRAP_ROOT%"
+    set "CCWRAP_ROOT=%CD%"
+    popd
     set "WATCOM_CCW=%CCWRAP_ROOT%"
     if /i "%WATCOM_CCW%"=="" set "WATCOM_CCW=c:\tools\ccwrap"
     set "PATH=%WATCOM%\BINNT64;%setcc_base_path%"
